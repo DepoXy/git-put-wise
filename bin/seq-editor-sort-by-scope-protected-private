@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# vim:tw=0:ts=2:sw=2:et:norl:ft=bash
+# Author: Landon Bouma <https://tallybark.com/>
+# Project: https://github.com/depoxy/git-put-wise#🥨
+# License: MIT
+
+# Copyright (c) © 2022-2023 Landon Bouma. All Rights Reserved.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# USAGE:
+#
+#   GIT_SEQUENCE_EDITOR='/path/to/git-rebase-sort-by-scope-protected-private' \
+#     git rebase -i <gitref>
+
+# USETO: This automatic rebase reorders commits based on a couple
+#        of special prefixes and rules that the author uses.
+#
+#        - Reorder commits being rebased using stable sorting:
+#          - If commit message has "PRIVATE: " prefix, order latest.
+#          - If commit message has "PROTECTED: " prefix, order penultimate
+#            to "PRIVATE: ".
+#          - For all other commits, leave them (as older ancestors to
+#            the "PRIVATE: " and PROTECTED: " commits).
+#
+#        - This is a "contactless interactive" rebase, so to speak:
+#          There is no user interaction involved.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# DEV: Uncomment to show rebase-todo before and after:
+#  DX_SHOW_TODO=true
+DX_SHOW_TODO=${DX_SHOW_TODO:-false}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# SAVVY: Good-to-know's about being a GIT_SEQUENCE_EDITOR:
+#
+# - You can `export` environs before `GIT_SEQUENCE_EDITOR=... git rebase ...`
+#   to see them herein; but you cannot (obviously) pass back any variables
+#   to the caller (though you could use a file to return data).
+#
+# - Any nonzero return causes git to print the following to stderr:
+#     hint: Waiting for your editor to close the file... error:
+#       There was a problem with the editor 'git-rebase-sort-by-scope'.
+#   And then git-rebase returns 1 (regardless of the exit code here).
+#
+# - If the rebase-todo is truncated or all commented, git prints to stderr:
+#     fatal: No rebase in progress?
+#   So the git-rebase caller could redirect stderr and replace with their
+#   own message. (This script prints to stdout on error.)
+#
+# - The current working directory is the repo root.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# REFER: The `awk -i inplace` specifies an awk extension:
+#
+#   https://www.gnu.org/software/gawk/manual/html_node/Extension-Sample-Inplace.html
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# USAGE: This rebase-resort looks for commit messages with specific prefixing.
+#
+# - Any commit message that starts with "PROTECTED: " or "PRIVATE: "
+#   will be resorted "upwards" chronologically to be the latest commits.
+#
+#   - The "PRIVATE" commits will bubble up to be the latest commits,
+#     and the "PROTECTED" commits will bubble up to follow those.
+#
+# - You can change the prefixes via the SCOPING_PREFIX and PRIVATE_PREFIX
+#   environs, respectively.
+
+# REFER: See the README for why this rebase pattern exists,
+#        and how to use it practically.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# Git passes us the full path to the temporary rebase-todo file, e.g.,
+#   /path/to/project/.git/rebase-merge/git-rebase-todo
+git_rebase_sort_by_scope () {
+  local rebase_todo_path="$1"
+
+  # DX: A dev switch and input-waiter useful for debugging the awk.
+  print_todo_maybe "${rebase_todo_path}" "before"
+  #
+  # DEV: If you'd like to view the actual rebase-todo file, stop
+  # on git-rebase-interactive here in one terminal, and then poke
+  # around with the rebase-todo and awk in another terminal.
+  if false && ${DX_SHOW_TODO}; then
+    echo "rebase-todo file: ${rebase_todo_path}"
+    printf " Are you ready to continue? [Y/n] "
+    read -n 1 the_choice
+  fi
+
+  # Sort the rebase-todo commits and check for errors along the way.
+  awk -i inplace '
+    BEGIN { lnum = 0; i_priv = 0; i_prot = 0; }
+    {
+      if ($0 ~ /^pick [0-9a-f]+ '"${PRIVATE_PREFIX:-PRIVATE: }"'/) {
+        private[i_priv] = $0
+        i_priv++;
+        next
+      } else if ($0 ~ /^pick [0-9a-f]+ '"${SCOPING_PREFIX:-PROTECTED: }"'/) {
+        protected[i_prot] = $0
+        i_prot++;
+        next
+      }
+    }
+    $0 ~ /^$/ && state++
+    state == 0 { print $0 }
+    state == 1 {
+      # Print PROTECTED commits following release commits.
+      for (i_todo = 0; i_todo < i_prot; i_todo++) {
+        print protected[i_todo]
+      }
+      # Print PRIVATE commits last, following PROTECTED.
+      for (i_todo = 0; i_todo < i_priv; i_todo++) {
+        print private[i_todo]
+      }
+      # All done.
+      state = 2;
+    }
+    { next }
+  ' ${rebase_todo_path}
+
+  print_todo_maybe "${rebase_todo_path}" "after"
+
+  return 0
+}
+
+# ***
+
+print_todo_maybe () {
+  local rebase_todo_path="$1"
+  local context="$2"
+
+  ${DX_SHOW_TODO} || return 0
+
+  >&2 echo
+  >&2 echo "rebase-todo ${context}:"
+  >&2 echo "$(cat "${rebase_todo_path}" | grep -v "^#")"
+  >&2 echo
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+main () {
+  git_rebase_sort_by_scope "${@}"
+}
+
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
+  main "${@}"
+fi
+

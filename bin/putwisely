@@ -1,0 +1,292 @@
+#!/usr/bin/env bash
+# vim:tw=0:ts=2:sw=2:et:norl:ft=bash
+# Author: Landon Bouma <https://tallybark.com/>
+# Project: https://github.com/depoxy/git-put-wise#🥨
+# License: MIT
+
+# Copyright (c) © 2022-2023 Landon Bouma. All Rights Reserved.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+source_deps () {
+  local project_root
+  project_root="$(dirname "$(realpath "$0")")/.."
+
+  # *I'll have what they're having.*
+  . "${project_root}/bin/git-put-wise"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+_pw_putwisely () {
+  local action_in=false
+  local action_out=false
+  local action_pin=false
+  local action_pout=false
+  local host_is_client=false
+  local has_args=false
+
+  # ***
+
+  while [ "$1" != '' ]; do
+    if [ "$1" = '--' ]; then
+      has_args=true
+
+      break
+    fi
+
+    case $1 in
+      in)
+        action_in=true
+
+        shift
+        ;;
+
+      out)
+        action_out=true
+
+        shift
+        ;;
+
+      pin)
+        action_pin=true
+
+        shift
+        ;;
+
+      pout)
+        action_pout=true
+
+        shift
+        ;;
+
+      --is-client)
+        option_value_must_be_specified "$@"
+        host_is_client="$2"
+
+        shift 2
+        ;;
+
+      *)
+        has_args=true
+
+        break
+        ;;
+    esac
+  done
+
+  # ***
+
+  if ${has_args}; then
+    # Append usage, for -h/--help.
+    append_usage ${host_is_client}
+
+    cli_parse_params "$@"
+  fi
+
+  _pw_putwisely_act \
+    ${action_in} \
+    ${action_out} \
+    ${action_pin} \
+    ${action_pout} \
+    ${host_is_client} \
+    "$@"
+}
+
+_pw_putwisely_act () {
+  local action_in=$1
+  local action_out=$2
+  local action_pin=$3
+  local action_pout=$4
+  local host_is_client=$5
+  shift 5
+
+  # ***
+
+  local specified_action=true
+  ( cli_must_verify_action_specified 2> /dev/null ) || specified_action=false
+
+  # ***
+
+  local is_patches_repo
+  is_patches_repo=$(check_if_patches_repo)
+
+  # ***
+
+  local retcode=0
+
+  if ${specified_action}; then
+    git-put-wise "$@"
+  elif ${action_in}; then
+    if ${host_is_client}; then
+      git-put-wise --pull --fail-elevenses "$@" || retcode=$?
+      # Pulling private-private from @client.
+      [ ${retcode} -ne 11 ] && return ${retcode} || git-put-wise --apply "$@"
+    elif ${is_patches_repo}; then
+      git-put-wise --apply-all "$@"
+    else
+      git-put-wise --apply "$@"
+    fi
+  elif ${action_out}; then
+    if ${host_is_client}; then
+      git-put-wise --archive "$@"
+    else
+      git-put-wise --push --fail-elevenses "$@" || retcode=$?
+      # Pushing private-private from @leader.
+      [ ${retcode} -ne 11 ] && return ${retcode} || git-put-wise --archive "$@"
+    fi
+  elif ${action_pin}; then
+    # Very esoteric DepoXy aliases being used here.
+    # - Somewhat common workflow, or at least one I could see happening more
+    #   than once: Pull patches repo for upstream changes and see if any
+    #   patchkage for current directory.
+    cdpr && git p && popd && pw "in"
+  elif ${action_pout}; then
+    # Very esoteric DepoXy aliases being used here.
+    # MAYBE/2022-12-25: Honor -U and don't -f[orce] push.
+    pw "out" && cdpr && git push -f && popd
+  elif ${is_patches_repo}; then
+    git_put_wise_apply_all_accordingly "$@"
+  else
+    if ${host_is_client}; then
+      git-put-wise --pull --fail-elevenses "$@" || retcode=$?
+      [ ${retcode} -ne 11 ] && return ${retcode} || git-put-wise --archive "$@"
+    else
+      git-put-wise --apply --fail-elevenses "$@" || retcode=$?
+      [ ${retcode} -ne 11 ] && return ${retcode} || git-put-wise --push "$@"
+    fi
+  fi
+}
+
+# ***
+
+append_usage () {
+  local host_is_client=$1
+
+  local client_txt="*enabled*"
+  ${host_is_client} || client_txt="*not enabled*"
+
+  PW_USAGE="${PW_USAGE}
+putwisely commands & options
+============================
+
+  in                      Use --pull or --apply
+  out                     Use --push or --archive
+
+  --is-client             Use --apply/--archive;
+                          otherwise --pull/--push
+                          (option is ${client_txt})
+"
+}
+
+# ***
+
+# Running `putwisely` from patches repo will --apply-all if anything present.
+# Otherwise, it compares the commit-message-count of local and remote
+# branches to know whether to push, pull, or do nothing. (Silly that
+# the gimmicky commit count is more than just a gimmick.)
+git_put_wise_apply_all_accordingly () {
+  if [ -n "$(print_repo_archive_list)" ]; then
+    git-put-wise --apply-all "$@"
+  else
+    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
+    git fetch "${SCOPING_REMOTE_NAME}"
+
+    local local_cnt
+    local other_cnt
+    local_cnt="$(patches_repo_commit_count)"
+    other_cnt="$(patches_repo_commit_count "${REMOTE_BRANCH_SCOPING}")"
+
+    if [ ${local_cnt} -lt ${other_cnt} ]; then
+      # git-put-wise --pull "$@"
+      prompt_user_to_push_or_pull_patches_repo "pull"
+
+      git pull --force "${REMOTE_BRANCH_SCOPING}"
+    elif [ ${local_cnt} -gt ${other_cnt} ]; then
+      # git-put-wise --push "$@"
+      prompt_user_to_push_or_pull_patches_repo "push"
+      maybe_fixup_commits_there_can_be_only_two
+      git_gc_expire_all_prune_now
+      echo git push --force "${SCOPING_REMOTE_NAME}" "${SCOPING_REMOTE_BRANCH}"
+      git push --force "${SCOPING_REMOTE_NAME}" "${SCOPING_REMOTE_BRANCH}"
+      git_gc_expire_all_prune_now
+    else
+      echo "No-op: Nothing to --apply, nor --push, nor --pull"
+    fi
+  fi
+}
+
+prompt_user_to_push_or_pull_patches_repo () {
+  local action="$1"
+
+  if [ "${action}" = "push" ]; then
+    local squash_and=""
+    [ $(git_number_of_commits) -eq 2 ] || squash_and="squash and"
+
+    printf "Would you like to ${squash_and}force-push the patches repo? [Y/n] "
+  else
+    printf "Would you like to force-pull remote patches repo changes? [Y/n] "
+  fi
+
+  local key_pressed
+  local opt_chosen
+  prompt_read_single_keypress "y" "n"
+  [ "${opt_chosen}" = "y" ] && return 0 || exit 1
+}
+
+# ***
+
+maybe_fixup_commits_there_can_be_only_two () {
+  [ $(git_number_of_commits) -gt 2 ] || return 0
+
+  local commit_message
+  commit_message="$(git_latest_commit_message)"
+
+  local first_commit
+  first_commit="$(git_first_commit_sha)"
+
+  echo git reset --soft "${first_commit}"
+  git reset --soft "${first_commit}"
+
+  echo git commit -m "${commit_message}"
+  git commit -m "${commit_message}"
+}
+
+# ***
+
+check_if_patches_repo () {
+  local is_patches_repo=false
+
+  # See also: git_project_root.
+  local proj_root="$(git root 2> /dev/null)"
+
+  if [ -n "${proj_root}" ]; then
+    cd "${proj_root}"
+
+    if [ -f ".gpw" ] \
+      && [ ! -s ".gpw" ] \
+      && [ "$(git_first_commit_message)" = "🥨" ]; \
+    then
+      is_patches_repo=true
+    fi
+
+    cd - > /dev/null
+  fi
+
+  echo ${is_patches_repo}
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+main () {
+  set -e
+
+  source_deps
+
+  _pw_putwisely "$@"
+}
+
+if [ "$0" = "${BASH_SOURCE}" ]; then
+  main "$@"
+fi
+

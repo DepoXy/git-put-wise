@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# vim:tw=0:ts=2:sw=2:et:norl:ft=bash
+# Author: Landon Bouma (landonb &#x40; retrosoft &#x2E; com)
+# Project: https://github.com/depoxy/git-put-wise#🥨
+# License: MIT
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# USAGE: See way TMI notes in the sequence-editor script:
+#         ~/.depoxy/ambers/bin/seq-editors/sort-by-scope-protected-private
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# NOTES:
+#
+# If seq. editor refuses to rebase, it prints errors to stdout.
+#
+# - E.g., git-rebase might fail and emit, "You have unstaged changes".
+#
+# If the sequence editor fails, git-rebase emits to stderr.
+#
+# - E.g., "...problem with the editor...", and/or "fatal: No rebase in progress?".
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# SAVVY: If no ${starting_ref}, git-rebase defaults to upstream ancestor.
+#
+# BWARE: If common ancestor is first-commit, it means the two branches
+#        do not share a common history.
+#
+#        - More importantly, the rebase might conclude with unexpected
+#          results, e.g., missing commits.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+git-rebase-sort-by-scope-protected-private () {
+  local starting_ref="$1"
+
+  set -e
+
+  local seq_editor
+  seq_editor="$(must_locate_seq_editor)"
+
+  must_specify_starting_ref "${starting_ref}"
+
+  local head_sha_before_rebase
+  head_sha_before_rebase="$(git rev-parse HEAD)"
+
+  local rev_count_before_rebase
+  rev_count_before_rebase="$(git rev-list HEAD --count)"
+
+  set +e
+
+  local exit_code
+
+  GIT_SEQUENCE_EDITOR="${seq_editor}" \
+    git rebase --quiet -i ${starting_ref}
+  exit_code=$?
+
+  print_hint_if_rebase_incomplete_or_new_state_suspicious \
+    "${head_sha_before_rebase}" "${rev_count_before_rebase}"
+
+  return ${exit_code}
+}
+
+# ***
+
+must_locate_seq_editor () {
+  local real_parent
+  real_parent="$(dirname "$(realpath "$0")")"
+
+  local seq_editor="${real_parent}/seq-editor-sort-by-scope-protected-private"
+
+  if [ ! -e "${seq_editor}" ]; then
+    >&2 echo "ERROR: Sequence editor missing or not executable: ${seq_editor}"
+
+    return 1
+  fi
+
+  echo "${seq_editor}"
+}
+
+# ***
+
+must_specify_starting_ref () {
+  local starting_ref="$1"
+
+  [ -z "${starting_ref}" ] || return 0
+
+  >&2 echo "ERROR: Please specify the rebase starting gitref."
+
+  return 1
+}
+
+# ***
+
+print_hint_if_rebase_incomplete_or_new_state_suspicious () {
+  local head_sha_before_rebase="$1"
+  local rev_count_before_rebase="$2"
+
+  if [ -f ".git/rebase-merge/git-rebase-todo" ]; then
+    # git-rebase exited 1.
+    echo "Looks like you got work to do!"
+  else
+    if [ -n "$(git diff ${head_sha_before_rebase}..HEAD)" ]; then
+      echo "BWARE: The sort-by-scope resulted in changes."
+      echo "- If you had to resolve conflicts, that's probably why."
+      echo "- If not, consider this alert that sort-by-scope finished "\
+        "abnormally, and perhaps you should investigate."
+      echo "Previous HEAD: ${head_sha_before_rebase}"
+      echo "- Try:"
+      echo
+      echo "    git diff ${head_sha_before_rebase}..HEAD"
+    fi
+
+    local rev_count_after_rebase
+    rev_count_after_rebase="$(git rev-list HEAD --count)"
+
+    if [ ${rev_count_before_rebase} -ne ${rev_count_after_rebase} ]; then
+      echo "BWARE: The number of commits before and after rebase has changed."
+      echo "- Count before: ${rev_count_before_rebase} / Count after: ${rev_count_after_rebase}"
+      echo "- If you had to resolve conflicts, maybe this was you."
+      echo "- If not, perhaps you should investigate."
+      echo "Previous HEAD: ${head_sha_before_rebase}"
+    fi
+  fi
+
+  return 0
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+main () {
+  git-rebase-sort-by-scope-protected-private "$@"
+}
+
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
+  main "$@"
+fi
+

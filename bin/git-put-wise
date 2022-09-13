@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# vim:tw=0:ts=2:sw=2:et:norl:ft=bash
+# Author: Landon Bouma <https://tallybark.com/>
+# Project: https://github.com/depoxy/git-put-wise#🥨
+# License: MIT
+
+# Copyright (c) © 2022-2023 Landon Bouma. All Rights Reserved.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+check_deps () {
+  check_dep_realpath || exit 1
+}
+
+check_dep_realpath () {
+  ( true \
+    && command -v realpath > /dev/null \
+    && realpath --version 2> /dev/null | head -1 | grep -q -e "(GNU coreutils)" \
+  ) && return 0 || true
+
+  >&2 echo "ERROR: Missing \`realpath\` (from coreutils)"
+  >&2 echo "- Hint: On macOS? Try \`brew install realpath\`"
+
+  return 1
+}
+
+# ***
+
+source_deps () {
+  # Sets LOG_LEVEL=${LOG_LEVEL:-40}.
+  source_dep "deps/sh-logger/bin/logger.sh"
+  source_dep "deps/sh-git-nubs/bin/git-nubs.sh"
+  source_dep "lib/cli_parse_params.sh"
+  source_dep "lib/common_put_wise.sh"
+  source_dep "lib/dep_apply_confirm_patch_base.sh"
+  source_dep "lib/dep_ephemeral_branch.sh"
+  source_dep "lib/dep_tig_prompt.sh"
+}
+
+source_dep () {
+  local dep_path="$1"
+
+  local project_root
+  project_root="$(dirname "$(realpath "$0")")/.."
+
+  # DEV: This is for testing individual functions, by sourcing this script.
+  # - Notice you'll need to source the apply/archive/pull/push script, too.
+  if [ "$(basename "$0")" = "bash" ]; then
+    project_root="$(pwd -L)"
+  fi
+
+  local dep_path="${project_root}/${dep_path}"
+
+  if [ ! -f "${dep_path}" ]; then
+    >&2 echo "ERROR: Could not identify git-put-wise dependency path."
+    >&2 echo "- Hint: Did you *copy* bin/git-put-wise somewhere on PATH?"
+    >&2 echo "  - Please use a symlink instead."
+    >&2 echo "- Our incorrect dependency path guess: “${dep_path}”"
+
+    exit 1
+  fi
+
+  . "${dep_path}"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+main () {
+  set -e
+
+  source_deps
+
+  cli_parse_params "$@"
+
+  cli_must_verify_action_specified "$@"
+
+  cli_setup_log_level
+
+  # Verify and normalize PW_PATCHES_REPO.
+  local insist_repo=false
+  # I.e., on --apply, --apply-all, or --archive, create the repo or
+  # complain if bad path; but on --push or -pull, ignore if unset.
+  ${PW_ACTION_PUSH} || ${PW_ACTION_PULL} || ${PW_ACTION_SHA} || insist_repo=true
+  maybe_create_patches_repo_and_canonicalize_path ${insist_repo}
+
+  # The action functions will each verify and normalize PW_PROJECT_PATH.
+
+  # 2022-11-05: I've never down case this way, seems silly. Very dispatcher.
+  case true in
+    ${PW_ACTION_PUSH})
+      source_dep "lib/put_wise_push_remotes.sh"
+      put_wise_push_remotes
+      ;;
+    ${PW_ACTION_PULL})
+      source_dep "lib/put_wise_pull_remotes.sh"
+      put_wise_pull_remotes
+      ;;
+    ${PW_ACTION_ARCHIVE})
+      source_dep "lib/put_wise_archive_patches.sh"
+      put_wise_archive_patches
+      ;;
+    ${PW_ACTION_APPLY})
+      # --apply needs to discern if path specified is file
+      # path to archive, or directory path to project.
+      source_dep "lib/put_wise_apply_patches.sh"
+      put_wise_apply_patches
+      ;;
+    ${PW_ACTION_APPLY_ALL})
+      # --apply-all doesn't use a path, but prints if set.
+      source_dep "lib/put_wise_apply_patches.sh"
+      put_wise_apply_patches
+      ;;
+    ${PW_ACTION_RESET})
+      put_wise_reset_patches_repo
+      ;;
+    ${PW_ACTION_SHA})
+      put_wise_print_sha_or_sha
+      ;;
+  esac  
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+check_deps
+source_deps
+
+if [ "$0" = "${BASH_SOURCE}" ]; then
+  if [ ${BASH_VERSINFO[0]} -le 3 ] && [ -n "${HOMEBREW_PREFIX}" ]; then
+    # Sneakily switch to Bash 5+.
+    # - Currently only necessary for `read -N` support.
+    "${HOMEBREW_PREFIX}/bin/bash" "$0" "$@"
+  else
+    main "$@"
+  fi
+fi
+

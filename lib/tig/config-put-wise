@@ -1,0 +1,33 @@
+# The `git put-wise push` (aka `pw push`) command creates temporary tags and
+# calls `tig` so user can confirm that the correct revisions will be pushed.
+# - Basic (new user?) interaction has user interact with and 'q' quit `tig`
+#   like normal, and then put-wise prompts user to confirm push.
+# - Faster workflow is this 'w' binding: put-wise runs `tig`, then user
+#   presses 'w' to authorize the push, which quits tig and tells put-wise
+#   to complete the push, end of interaction.
+# - Note the 'w' key chosen mostly because it's not bound (which itself is
+#   rare: there aren't that many lower case characters left to bind in tig),
+#   but it also nicely complements the 'w' binding in interactive-rebase-tool
+#   (and if you edit  ~/.gitconfig to set `inputForceRebase = w`, then you
+#    can just press 'w' to save and apply the todo (where by default it's
+#    'W', but pressing the Shift key is so annoying sometimes)).
+
+# - Get parent process ID of parent process:
+#     $(ps -o ppid= $PPID)
+#   aka grand parent process ID: GPPID.
+# - Get grand parent process executable and parameters:
+#   - Just FYI, /proc/PID/exe is symlink to executable,
+#     which for put-wise is the shell, e.g., bash.
+#   - Fortunately, `ps -ocommand= -p <PID>` returns original
+#     call, including executable path and parameters, e.g.,
+#       bash /home/user/.local/bin/git-put-wise push
+bind generic w +<sh -c " \
+ git_put_wise__prompt__w_for_yes__q_for_no_ () { \
+    REPLY_PATH=\"${PW_PUSH_TIG_REPLY_PATH:-.gpw-yes}\"; \
+    if [ ! -e \"${REPLY_PATH}\" ]; then \
+      date > \"${REPLY_PATH}\"; \
+    else \
+      >&2 echo \"ERROR: Already exists: ${REPLY_PATH}\"; \
+    fi; \
+  }; git_put_wise__prompt__w_for_yes__q_for_no_"
+
