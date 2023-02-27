@@ -34,8 +34,8 @@ This software is released under the MIT license (see <LICENSE> file for more)
 
 ## REPORTING BUGS
 
-&lt;<https://github.com/depoxy/git-put-wise/issues>&gt;
+&lt;<https://github.com/DepoXy/git-put-wise/issues>&gt;
 
 ## SEE ALSO
 
-&lt;<https://github.com/depoxy/git-put-wise>&gt;
+&lt;<https://github.com/DepoXy/git-put-wise>&gt;
