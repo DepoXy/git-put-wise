@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim:tw=0:ts=2:sw=2:et:norl:ft=bash
 # Author: Landon Bouma <https://tallybark.com/>
-# Project: https://github.com/depoxy/depoxy#🍯
+# Project: https://github.com/DepoXy/depoxy#🍯
 # License: MIT
 
 # Copyright (c) © 2022-2023 Landon Bouma. All Rights Reserved.
