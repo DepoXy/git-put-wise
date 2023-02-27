@@ -18,8 +18,28 @@ check_dep_realpath () {
     && realpath --version 2> /dev/null | head -1 | grep -q -e "(GNU coreutils)" \
   ) && return 0 || true
 
-  >&2 echo "ERROR: Missing \`realpath\` (from coreutils)"
-  >&2 echo "- Hint: On macOS? Try \`brew install realpath\`"
+  hint_install_deb () { >&2 echo "  sudo apt-get install coreutils"; }
+  hint_install_brew () { >&2 echo "  brew install realpath"; }
+
+  check_dep_with_hint 'realpath' 'realpath (from coreutils)' true
+
+  return 1
+}
+
+check_dep_with_hint () {
+  cmd="$1"
+  name="${2:-${cmd}}"
+  assume_failed=${3:-false}
+
+  if ! ${assume_failed}; then
+    command -v ${cmd} > /dev/null && return 0 || true
+  fi
+
+  os_is_macos () { [ "$(uname)" = 'Darwin' ]; }
+
+  >&2 echo "ERROR: Requires ‘${cmd}’"
+  >&2 echo "- Hint: Install ‘${cmd}’, e.g.:"
+  os_is_macos && hint_install_brew || hint_install_deb 
 
   return 1
 }
