@@ -165,6 +165,27 @@ to your projects.
   privately move that change to your personal machine to test it,
   refine it, and finally publish it.
 
+## INSTALL
+
+You could put `bin/git-put-wise` on PATH to use it conveniently.
+
+You can also add symlinks to `~/.local/bin` using make install:
+
+    $ PREFIX=~/.local make install 
+
+This symlinks the put-wise script back to the source repo, e.g.,
+
+    $ ls -la ~/.local/bin/git-put-wise
+    … ~/.local/bin/git-put-wise -> /path/to/git-put-wise/bin/git-put-wise
+
+The install task will also copy the man page under user local:
+
+    ~/.local/share/man/man1/git-put-wise.1
+
+Which you can access via `man git-put-wise` or `git put-wise --help`.
+
+Run `PREFIX=~/.local make uninstall` to remove both symlinks.
+
 ## EXAMPLES
 
   Push the appropriate commit to the remote branch:
