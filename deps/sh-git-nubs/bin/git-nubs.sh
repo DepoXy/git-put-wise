@@ -310,7 +310,7 @@ git_project_root () {
 }
 
 git_project_root_absolute () {
-  # Same output as `git root`.
+  # Same output as git-extras's `git root`.
   git rev-parse --show-toplevel
 }
 
