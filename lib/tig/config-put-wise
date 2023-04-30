@@ -13,7 +13,7 @@
 #    'W', but pressing the Shift key is so annoying sometimes)).
 
 # - Get parent process ID of parent process:
-#     $(ps -o ppid= $PPID)
+#     $(ps -o ppid= $PPID | tr -d " ")
 #   aka grand parent process ID: GPPID.
 # - Get grand parent process executable and parameters:
 #   - Just FYI, /proc/PID/exe is symlink to executable,
