@@ -748,7 +748,7 @@ prompt_user_to_continue_processing () {
 
 maybe_stash_changes () {
   # Make a WIP commit if we must.
-  local wip_commit_message="${PRIVATE_PREFIX} WIP"
+  local wip_commit_message="${PRIVATE_PREFIX}WIP"
 
   local pop_after=false
 

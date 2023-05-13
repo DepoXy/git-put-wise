@@ -119,7 +119,7 @@ put_wise_pull_complicated () {
   #     must_confirm_commit_at_or_behind_commit "${pick_from}" "HEAD"
 
   local protected_boundary_or_HEAD
-  protected_boundary_or_HEAD="$(identify_scope_ends_at "^${PRIVATE_PREFIX} ")"
+  protected_boundary_or_HEAD="$(identify_scope_ends_at "^${PRIVATE_PREFIX}")"
 
   local divergent_ok=false
   must_confirm_commit_at_or_behind_commit \

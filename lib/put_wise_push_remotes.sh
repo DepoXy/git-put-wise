@@ -268,12 +268,12 @@ put_wise_push_remotes_go () {
 
   local release_boundary_or_HEAD
   release_boundary_or_HEAD="$( \
-    identify_scope_ends_at "^${SCOPING_PREFIX} " "^${PRIVATE_PREFIX} " \
+    identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
   )"
 
   local protected_boundary_or_HEAD
   protected_boundary_or_HEAD="$( \
-    identify_scope_ends_at "^${PRIVATE_PREFIX} " \
+    identify_scope_ends_at "^${PRIVATE_PREFIX}" \
   )"
 
   # It's assumed you control the 'release' branch and that you wouldn't

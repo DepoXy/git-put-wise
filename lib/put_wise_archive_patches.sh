@@ -450,7 +450,7 @@ identify_commit_range_end () {
   # Find the latest non-PRIVATEly-scoped commit.
   # - Not using determine_scoping_boundary, because the --archive
   #   may contain PROTECTED commits, but not PRIVATE.
-  commit_range_end="$(find_oldest_commit_by_message "^${PRIVATE_PREFIX} ")"
+  commit_range_end="$(find_oldest_commit_by_message "^${PRIVATE_PREFIX}")"
 
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
     # A 'private' branch doesn't publish its PRIVATE commits.

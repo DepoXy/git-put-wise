@@ -177,10 +177,10 @@ determine_scoping_boundary () {
   local scoping_starts_at=""
 
   local private_scope_starts_at
-  private_scope_starts_at="$(find_oldest_commit_by_message "^${PRIVATE_PREFIX} ")"
+  private_scope_starts_at="$(find_oldest_commit_by_message "^${PRIVATE_PREFIX}")"
 
   local protected_scope_starts_at
-  protected_scope_starts_at="$(find_oldest_commit_by_message "^${SCOPING_PREFIX} ")"
+  protected_scope_starts_at="$(find_oldest_commit_by_message "^${SCOPING_PREFIX}")"
 
   # If patches from 'release' but there's only 'private' locally, then
   # also exclude earlier protected-prefix commits from git-am, to avoid
@@ -209,8 +209,8 @@ determine_scoping_boundary () {
 #   . ~/.kit/git/git-put-wise/lib/common_put_wise.sh
 #   . ~/.kit/git/git-put-wise/lib/dep_apply_confirm_patch_base.sh
 #   . ~/.kit/git/git-put-wise/lib/put_wise_push_remotes.sh
-#   identify_scope_ends_at "^${PRIVATE_PREFIX} "
-#   identify_scope_ends_at "^${SCOPING_PREFIX} " "^${PRIVATE_PREFIX} "
+#   identify_scope_ends_at "^${PRIVATE_PREFIX}"
+#   identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}"
 identify_scope_ends_at () {
   local scope_ends_at=""
 
