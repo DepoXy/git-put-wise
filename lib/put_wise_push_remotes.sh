@@ -302,7 +302,7 @@ put_wise_push_remotes_go () {
   PW_TAG_SCOPE_PUSHES_SCOPING="${PW_TAG_SCOPE_PUSHES_PREFIX}-${SCOPING_REMOTE_NAME}"
   PW_TAG_SCOPE_PUSHES_THEREST="${PW_TAG_SCOPE_PUSHES_PREFIX}-${branch_name}"
 
-  # Skip ${DRY_RUN}, tags not biggie, and user wants to see in tig.
+  # Skip ${DRY_RUN}, tags no biggie, and user wants to see in tig.
   git tag -f "${PW_TAG_SCOPE_MARKER_PRIVATE}" "${protected_boundary_or_HEAD}" > /dev/null
   git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${release_boundary_or_HEAD}" > /dev/null
 
