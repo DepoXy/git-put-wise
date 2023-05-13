@@ -44,6 +44,7 @@ prompt_user_to_review_action_plan_using_tig () {
   # ~/.local/bin/git-put-wise, and symlinks git-put-wise/bin/git-put-wise.
   local pw_lib="$(dirname $(realpath "$0"))/../lib"
 
+  local old_shim_cfg
   local shim_cfg
   shim_cfg="$(prepare_shim_tig_config "${pw_lib}" "${custom_cfg}")" \
     || return 1
@@ -51,6 +52,14 @@ prompt_user_to_review_action_plan_using_tig () {
   XDG_CONFIG_HOME="${pw_lib}" tig
 
   /bin/rm "${shim_cfg}"
+
+  if [ -f "${old_shim_cfg}" ] \
+    && diff -q "${shim_cfg}" "${old_shim_cfg}" >/dev/null \
+  ; then
+    /bin/rm "${old_shim_cfg}"
+  elif [ -n "${old_shim_cfg}" ]; then
+    >&2 echo "ALERT: Moved old shim cfg: ‘${old_shim_cfg}’ (unrecognized)"
+  fi
 
   if [ -f "${PW_PUSH_TIG_REPLY_PATH}" ]; then
     approved=true
@@ -67,8 +76,12 @@ prepare_shim_tig_config () {
 
   local shim_cfg="${pw_lib}/tig/config"
 
-  path_not_exists "${shim_cfg}" "prepare_shim_tig_config" \
-    || return 1
+  if [ -e "${shim_cfg}" ]; then
+    # Should mean user killed `tig` prompt and we didn't cleanup.
+    old_shim_cfg="${shim_cfg}-$(date +%Y%m%d%H%M%S)"
+
+    command mv -i "${shim_cfg}" "${old_shim_cfg}"
+  fi
 
   truncate -s 0 "${shim_cfg}"
 
