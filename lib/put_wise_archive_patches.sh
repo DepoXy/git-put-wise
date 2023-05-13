@@ -465,7 +465,7 @@ identify_commit_range_end () {
     # A branch not named 'private' contains PRIVATE commits.
     # - See comment afore this function for reasoning why this is discouraged.
     >&2 echo "ERROR: The branch named “${branch_name}” contains PRIVATE commits."
-    >&2 echo "- Please keep your PRIVATEs to a “${PRIVATE_PREFIX}” branch."
+    >&2 echo "- Please keep your PRIVATEs to a “${LOCAL_BRANCH_PRIVATE}” branch."
     >&2 echo "- (This is a convention for your own good, so that when you see the "
     >&2 echo "   branch name, you are reminded that the branch contains PRIVATEs.)"
     >&2 echo "- Hint: If you are worried that you might accidentally \`git push\` to"
