@@ -210,6 +210,7 @@ must_verify_looks_like_our_repo () {
 
   local home_relative_path
   home_relative_path="$(echo "${cur_dir}" | sed -E "s#^${HOME}(/|$)#\1#")"
+  # KLUGE/2023-05-28: Vim Bash highlight bug: Backslash &/or pound  ↑ ↑")"
 
   if [ "${home_relative_path}" = "${cur_dir}" ]; then
     >&2 echo "ERROR: You need to specify a path under \$HOME, sorry, eh."
