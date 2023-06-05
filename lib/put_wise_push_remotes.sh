@@ -334,6 +334,19 @@ put_wise_push_remotes_go () {
 
   # ***
 
+  # Don't errexit on git-push failure until after cleaning up tags.
+  local keep_going=false
+
+  handle_push_failed () {
+    local remote_branch="$1"
+
+    keep_going=false
+
+    local ornament="$(fg_lightyellow)$(bg_myrtle)"
+
+    echo "${ornament}ERROR: Push failed! denied by ‘${remote_branch}’$(attr_reset)"
+  }
+
   if prompt_user_to_continue_update_remotes \
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
     "${tagged_scoping}" "${remote_scoping_branch}" \
@@ -341,24 +354,33 @@ put_wise_push_remotes_go () {
     if ! prompt_user_to_review_action_plan_using_tig; then
       >&2 echo "${PW_USER_CANCELED_GOODBYE}"
     else
-      if prompt_user_to_continue_push_remote_branch "${remote_release}"; then
+      keep_going=true
+
+      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
         announce_git_push "${RELEASE_REMOTE_BRANCH}"
         ${DRY_RUN} git push "${RELEASE_REMOTE_NAME}" \
-          "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force}
+          "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
+            || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
 
-      if prompt_user_to_continue_push_remote_branch "${remote_protected}"; then
+      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_protected}"; then
         announce_git_push "${SCOPING_REMOTE_BRANCH}"
         ${DRY_RUN} git push "${SCOPING_REMOTE_NAME}" \
-          "${protected_boundary_or_HEAD}:refs/heads/${SCOPING_REMOTE_BRANCH}" ${git_push_force}
+          "${protected_boundary_or_HEAD}:refs/heads/${SCOPING_REMOTE_BRANCH}" ${git_push_force} \
+            || handle_push_failed "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
       fi
 
-      if prompt_user_to_continue_push_remote_branch "${remote_current}"; then
+      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
         announce_git_push "${branch_name}"
         ${DRY_RUN} git push "${remote_name}" \
-          "${release_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force}
+          "${release_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
+            || handle_push_failed "${remote_name}/${branch_name}"
       fi
     fi
+  fi
+
+  if ! ${keep_going}; then
+    pw_push_announce "Canceled put-wise-push"
   fi
 
   # ***
@@ -373,6 +395,9 @@ put_wise_push_remotes_go () {
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_RELEASE}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_SCOPING}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_THEREST}"
+
+  # Indicate success/failure.
+  ${keep_going}
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -466,7 +491,10 @@ prompt_user_to_continue_update_remotes () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 prompt_user_to_continue_push_remote_branch () {
-  local remote_branch="$1"
+  local keep_going="$1"
+  local remote_branch="$2"
+
+  ${keep_going} || return 1
 
   [ -n "${remote_branch}" ] || return 1
 
