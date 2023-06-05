@@ -76,6 +76,11 @@ DX_SHOW_TODO=${DX_SHOW_TODO:-false}
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# This is the special tag at the end of the 'exec' line that
+# you must use if you git-abort to run that 'exec'.
+# - USYNC: This environ is used in git-smart and tig-newtons:
+GITSMART_POST_REBASE_EXECS_TAG=" #git-abort"
+
 # Git passes us the full path to the temporary rebase-todo file, e.g.,
 #   /path/to/project/.git/rebase-merge/git-rebase-todo
 git_rebase_sort_by_scope () {
@@ -122,6 +127,10 @@ git_rebase_sort_by_scope () {
       state = 2;
     }
     { next }
+    END {
+      print "exec '"${GIT_POST_REBASE_EXEC} ${GITSMART_POST_REBASE_EXECS_TAG}"'" \
+        >> "'${rebase_todo_path}'";
+    }
   ' ${rebase_todo_path}
 
   print_todo_maybe "${rebase_todo_path}" "after"
