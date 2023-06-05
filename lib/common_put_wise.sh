@@ -473,6 +473,7 @@ print_project_path_normalized () {
   local project_path
 
   project_path="$(echo ${path} | sed -E "s#^${HOME}(/|$)#\\\$HOME\1#")"
+  # KLUGE/2023-05-28: Vim Bash highlight bug: \ &/or #           ↑ ↑")"
 
   printf "%s" "${project_path}"
 }
@@ -492,6 +493,7 @@ shorten_sha () {
 
 substitute_home_tilde () {
   echo "$1" | sed -E "s#^${HOME}(/|$)#~\1#"
+  # KLUGE/2023-05-28: Vim high issue:  ↑ ↑"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
