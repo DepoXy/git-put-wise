@@ -279,7 +279,7 @@ git_upstream_parse_names () {
   local print_branch="${2:-false}"
   local upstream_ref="$3"
 
-  local deprefixed="$(echo "${upstream_ref}" | sed 's#^refs/remotes/##')"
+  local deprefixed="$(echo "${upstream_ref}" | command sed 's#^refs/remotes/##')"
   local remote_name="$(_git_parse_path_rootname "${deprefixed}")"
   local branch_name="$(_git_parse_path_rootless "${deprefixed}")"
 
@@ -310,12 +310,12 @@ git_upstream_parse_names () {
 
 # The other opposite of `dirname`, `rootname`.
 _git_parse_path_rootname () {
-  echo "$1" | sed 's#/.*$##'
+  echo "$1" | command sed 's#/.*$##'
 }
 
 # The other opposite of `basename`, something progenitor? `progname`?
 _git_parse_path_rootless () {
-  echo "$1" | sed 's#^[^/]*/##'
+  echo "$1" | command sed 's#^[^/]*/##'
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -346,7 +346,7 @@ print_parent_path_to_project_root () {
   ( [ "${depth_path}" = "." ] || [ "${depth_path}" = "" ] ) \
     && return 0 || true
 
-  printf "${depth_path}" | sed 's#\([^/]\+\)#..#g'
+  printf "${depth_path}" | command sed 's#\([^/]\+\)#..#g'
 }
 
 # Check that the current directory exists in a Git repo.
