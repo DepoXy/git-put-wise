@@ -100,7 +100,13 @@ main () {
   local insist_repo=false
   # I.e., on --apply, --apply-all, or --archive, create the repo or
   # complain if bad path; but on --push or -pull, ignore if unset.
-  ${PW_ACTION_PUSH} || ${PW_ACTION_PULL} || ${PW_ACTION_SHA} || insist_repo=true
+  if ! ( \
+    ${PW_ACTION_PUSH} ||
+    ${PW_ACTION_PULL} ||
+    ${PW_ACTION_SHA} ||
+  false); then
+    insist_repo=true
+  fi
   maybe_create_patches_repo_and_canonicalize_path ${insist_repo}
 
   # The action functions will each verify and normalize PW_PROJECT_PATH.
