@@ -88,7 +88,13 @@ put_wise_pull_unspecially () {
     || retcode=$?
 
   if [ ${retcode} -ne 0 ]; then
+    # Set rebase-todo 'exec' to call optional user hook, GIT_POST_REBASE_EXEC.
+    git_post_rebase_exec_inject
+
     badger_user_rebase_failed
+  else
+    # Call optional post-rebase user hook immediately.
+    git_post_rebase_exec_run
   fi
 
   return ${retcode}
@@ -423,6 +429,9 @@ put_wise_pull_remotes_cleanup () {
     git checkout "${branch_name}"
     git branch -q -D "${ephemeral_branch}"
   fi
+
+  # Call optional post-rebase user hook immediately.
+  git_post_rebase_exec_run
 
   maybe_unstash_changes ${pop_after}
 

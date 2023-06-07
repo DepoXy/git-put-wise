@@ -800,6 +800,30 @@ put_wise_rebase_abort () {
   git_abort
 }
 
+# Set rebase-todo 'exec' to call optional user hook, GIT_POST_REBASE_EXEC.
+git_post_rebase_exec_inject () {
+  must_rebase_todo_exist || return 1
+
+  # ***
+
+  # CXREF: See git-smart for $GITSMART_POST_REBASE_EXECS_TAG details,
+  # and why we sleep-& the git-reset (tl;dr avoids failing git-rebase).
+  #
+  #   https://github.com/landonb/git-smart#💡
+
+  if [ -n "${GIT_POST_REBASE_EXEC}" ]; then
+    echo "exec ${GIT_POST_REBASE_EXEC} ${GITSMART_POST_REBASE_EXECS_TAG}" \
+      >> "${GIT_REBASE_TODO_PATH}"
+  fi
+}
+
+git_post_rebase_exec_run () {
+  # Run any post-rebase user hooks.
+  if [ -n "${GIT_POST_REBASE_EXEC}" ]; then
+    eval ${GIT_POST_REBASE_EXEC}
+  fi
+}
+
 must_rebase_todo_exist () {
   if [ ! -f "${GIT_REBASE_TODO_PATH}" ]; then
     # Should be unreachable unless Git changes something.
