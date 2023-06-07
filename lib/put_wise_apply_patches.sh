@@ -930,7 +930,7 @@ manage_pw_tracking_tags () {
   # Delete pw/out.
   echo "git tag -d \"${pw_tag_archived}\""
   # Don't show not-found output, e.g., "error: tag 'foo' not found."
-  ${DRY_RUN} git tag -d "${pw_tag_archived}" 2> /dev/null
+  ${DRY_RUN} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 
   # Move pw/work.
   echo "git tag -f \"${pw_tag_starting}\" \"${patch_base}\""
@@ -938,7 +938,7 @@ manage_pw_tracking_tags () {
 
   # Delete user's pw-apply-here.
   echo "git tag -d \"${PW_TAG_ONTIME_APPLY}\""
-  ${DRY_RUN} git tag -d "${PW_TAG_ONTIME_APPLY}" 2> /dev/null
+  ${DRY_RUN} git tag -d "${PW_TAG_ONTIME_APPLY}" > /dev/null 2>&1 || true
 }
 
 # ***

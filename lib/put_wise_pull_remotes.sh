@@ -611,7 +611,7 @@ manage_pw_tracking_tags () {
   # Remove pw/out. Confirms user has consolidated with remote.
   # - If they run put-wise --pull again, calls normal git-pull.
   echo "  git tag -d \"${pw_tag_archived}\""
-  ${DRY_RUN} git tag -d "${pw_tag_archived}" 2> /dev/null
+  ${DRY_RUN} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
