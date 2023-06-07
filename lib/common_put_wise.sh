@@ -781,6 +781,34 @@ maybe_unstash_changes () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+must_rebase_todo_exist () {
+  if [ ! -f "${GIT_REBASE_TODO_PATH}" ]; then
+    # Should be unreachable unless Git changes something.
+    # - Or if put-wise is in an unknown state, or has a misperception
+    #   about the state of a git op.
+    >&2 error "ERROR: Expected rebase-todo at: ${GIT_REBASE_TODO_PATH}"
+
+    # Trip errexit so user-dev can fix.
+    return 1
+  fi
+
+  return 0
+}
+
+# ***
+
+git_post_rebase_exec_inject_callback () {
+  must_rebase_todo_exist
+
+  # Must sleep so git-rebase finishes (cannot cleanup while detached
+  # HEAD or mess with branch too much, lest git-rebase fault us).
+
+  echo "exec sleep 0.1 && \"$0\" $@ &" \
+    >> "${GIT_REBASE_TODO_PATH}"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 must_confirm_commit_at_or_behind_commit () {
   local early_commit="$1"
   local later_commit="${2:-HEAD}"
@@ -1391,6 +1419,13 @@ branch_name_path_decode () {
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+badger_user_rebase_failed () {
+  echo "============================================"
+  echo
+  echo "Uffda! You got work to do ☝ ☝ ☝."
+  echo
+}
 
 must_await_user_resolve_conflicts () {
   >&2 echo "============================================"

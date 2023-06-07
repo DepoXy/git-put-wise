@@ -46,6 +46,8 @@ PW_ACTION_APPLY=${PW_ACTION_APPLY:-false}
 PW_ACTION_APPLY_ALL=${PW_ACTION_APPLY_ALL:-false}
 PW_ACTION_RESET=${PW_ACTION_RESET:-false}
 PW_ACTION_SHA=${PW_ACTION_SHA:-false}
+# - Rebase-todo 'exec' actions not meant to be called by user.
+PW_ACTION_PULL_CLEANUP=${PW_ACTION_PULL_CLEANUP:-false}
 
 PW_OPTION_NO_CLEANUP=${PW_OPTION_NO_CLEANUP:-false}
 
@@ -152,6 +154,16 @@ cli_parse_params () {
         PW_ACTION_SHA=true
 
         shift
+        ;;
+
+      # Internal/private func. (called via rebase-todo 'exec').
+      put_wise_pull_remotes_cleanup)
+        PW_ACTION_PULL_CLEANUP=true
+
+        # Clear $@, so `-- $1` not assumed below.
+        set --
+
+        break
         ;;
 
       -J | --project-path)
@@ -533,7 +545,8 @@ cli_must_verify_action_specified () {
     ${PW_ACTION_APPLY} ||
     ${PW_ACTION_APPLY_ALL} ||
     ${PW_ACTION_RESET} ||
-    ${PW_ACTION_SHA} \
+    ${PW_ACTION_SHA} ||
+    ${PW_ACTION_PULL_CLEANUP} \
   ) && return 0
 
   # (lb): I like -v for verbose because -vvv feels like a popular option

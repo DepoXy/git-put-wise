@@ -82,9 +82,16 @@ put_wise_pull_unspecially () {
 
   echo "  git pull --rebase --autostash \"${upstream_remote}\" \"${upstream_branch}\""
 
-  if ! git pull --rebase --autostash "${upstream_remote}" "${upstream_branch}"; then
-    must_await_user_resolve_conflicts
+  local retcode=0
+
+  git pull --rebase --autostash "${upstream_remote}" "${upstream_branch}" \
+    || retcode=$?
+
+  if [ ${retcode} -ne 0 ]; then
+    badger_user_rebase_failed
   fi
+
+  return ${retcode}
 }
 
 # ***
@@ -304,24 +311,87 @@ bind generic E !sh -c \" \\
   echo "git reset --hard \"${reset_ref}\""
   ${DRY_RUN} git reset --hard "${reset_ref}"
 
-  # If cherry-pick fails, stop for user to confirm they resolved conflicts
-  # and finished the cherry-pick. If user kills this process, it's not a
-  # real biggie: the branch they were on still exists and has not been
-  # changed, so they can check that out and delete the ephemeral branch;
-  # or, if the user wants to keep the ephemeral branch, or they could delete
-  # their old branch, and rename the ephemeral branch. They would also need
-  # to pop the wip-commit, anything thing we wouldn't have done. So, like,
-  # not a big deal if this process exits on await.
+  # The original put-wise-pull ran cherry-pick:
+  #     git cherry-pick "${pick_from}..${old_head}"
+  # - And then wait-prompts the user to resolve conflicts (if any).
+  # - If the user cancels (e.g., Ctrl-c) the wait-prompt, their working
+  #   tree is left in a weird state (on ephemeral branch, tags not deleted).
+  # - But we can do better if we play off rebase 'exec' — we don't need
+  #   to hog one terminal to wait-prompt.
+  # - Note that cherry-pick doesn't use an editable todo. It uses
+  #   `.git/sequencer/todo`, which contains 'pick' commands. But if you
+  #   try to append an 'exec', it breaks `git cherry-pick --continue`.
+
+  # Whether we cleanup immediately (on pick success) or if we defer
+  # cleanup via rebase-todo 'exec'.
+  local cleanup_func=put_wise_pull_remotes_cleanup
+
   if [ "${pick_from}" != "${old_head}" ]; then
     echo
-    echo "git cherry-pick $(shorten_sha "${pick_from}")..$(shorten_sha "${old_head}")"
+    echo_announce "Rebase-pick $(shorten_sha "${pick_from}")..$(shorten_sha "${old_head}")"
 
-    if ! ${DRY_RUN} git cherry-pick "${pick_from}..${old_head}"; then
-      must_await_user_resolve_conflicts
+    local retcode=0
+
+    export GIT_SEQUENCE_EDITOR="f () { \
+      local rebase_todo_path=\"\$1\"; \
+      \
+      local commit; \
+      \
+      for commit in \$(git rev-list ${pick_from}..${old_head}); do \
+        echo \"pick \$(git log -1 --pretty=oneline --abbrev-commit \${commit})\" \
+          >> \"\${rebase_todo_path}\"; \
+      done; \
+    }; f \"\$1\""
+
+    [ -z "${DRY_RUN}" ] || __DRYRUN "GIT_SEQUENCE_EDITOR=${GIT_SEQUENCE_EDITOR}"
+
+    ${DRY_RUN} git rebase -i HEAD || retcode=$?
+
+    unset -v GIT_SEQUENCE_EDITOR
+
+    if [ ${retcode} -ne 0 ]; then
+      cleanup_func="git_post_rebase_exec_inject_callback ${cleanup_func}"
+
+      badger_user_rebase_failed
     fi
-
-    echo
   fi
+
+  GIT_ABORT=false \
+  ${cleanup_func} \
+    "${branch_name}" \
+    "${pw_tag_archived}" \
+    "${pick_from}" \
+    "${old_head}" \
+    "${reset_ref}" \
+    "${merge_base}" \
+    "${pop_after}" \
+    "${ephemeral_branch}"
+
+  return ${retcode}
+}
+
+put_wise_pull_remotes_cleanup () {
+  local branch_name="$1"
+  local pw_tag_archived="$2"
+  local pick_from="$3"
+  local old_head="$4"
+  local reset_ref="$5"
+  local merge_base="$6"
+  local pop_after="$7"
+  local ephemeral_branch="$8"
+
+  # In case running via rebase-todo 'exec', or from `git abort`,
+  # run entry point checks.
+  #
+  # E.g., `PW_OPTION_DRY_RUN=true git put-wise abort`
+  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  #
+  local before_cd="$(pwd -L)"
+  #
+  # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
+  must_cd_project_path_and_verify_repo
+  #
+  must_not_be_patches_repo
 
   # Do you care how we wind down? We want to set the original branch
   # HEAD to the ephemeral branch HEAD, and then to delete the ephemeral
@@ -333,9 +403,13 @@ bind generic E !sh -c \" \\
   #
   # But an easier approach is to delete the original branch and then to
   # assume its position.
-  echo "resume branch \"${branch_name}\""
-  # Prints, e.g., "Deleted branch private (was 5aea192)."
-  git branch -D "${branch_name}" > /dev/null
+
+  # Don't blather or we besmirch user's terminal,
+  # because 'exec' ran in background (&).
+  # 
+  #  echo "resume branch \"${branch_name}\""
+
+  git branch -q -D "${branch_name}"
   git branch -m "${branch_name}"
 
   maybe_unstash_changes ${pop_after}
@@ -350,6 +424,9 @@ bind generic E !sh -c \" \\
   then
     maybe_move_branch_forward "${LOCAL_BRANCH_RELEASE}" "${reset_ref}"
   fi
+
+  # For completeness, otherwise completely unnecessary.
+  cd "${before_cd}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #

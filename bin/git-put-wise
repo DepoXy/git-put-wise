@@ -103,6 +103,7 @@ main () {
   if ! ( \
     ${PW_ACTION_PUSH} ||
     ${PW_ACTION_PULL} ||
+    ${PW_ACTION_PULL_CLEANUP} ||
     ${PW_ACTION_SHA} ||
   false); then
     insist_repo=true
@@ -141,6 +142,12 @@ main () {
       ;;
     ${PW_ACTION_SHA})
       put_wise_print_sha_or_sha
+      ;;
+    ${PW_ACTION_PULL_CLEANUP})
+      source_dep "lib/put_wise_pull_remotes.sh"
+      # Remove the action name.
+      shift
+      put_wise_pull_remotes_cleanup "$@"
       ;;
   esac  
 }
