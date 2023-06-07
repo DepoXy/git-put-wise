@@ -143,6 +143,9 @@ main () {
     ${PW_ACTION_SHA})
       put_wise_print_sha_or_sha
       ;;
+    ${PW_ACTION_REBASE_CONTINUE})
+      put_wise_rebase_continue
+      ;;
     ${PW_ACTION_REBASE_ABORT})
       put_wise_rebase_abort
       ;;

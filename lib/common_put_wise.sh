@@ -788,6 +788,11 @@ maybe_unstash_changes () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+put_wise_rebase_continue () {
+  # Pretty bland.
+  git rebase --continue
+}
+
 put_wise_rebase_abort () {
   source_dep "deps/git-smart/bin/git-abort"
 
@@ -1439,8 +1444,9 @@ badger_user_rebase_failed () {
   echo
   echo "Uffda! You got work to do ☝ ☝ ☝."
   echo
+  # Note that `git rebase --continue` also works, but not `git rebase --abort`.
   echo "  🚨 $(echo_alert "ALERT") 🚨"
-  echo "  Resolve conflicts and call \`git rebase --continue\`"
+  echo "  Resolve conflicts and call \`git put-wise --continue\`"
   echo "   — or call \`git put-wise --abort\` to revert changes."
 }
 

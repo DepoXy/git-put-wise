@@ -40,6 +40,8 @@ Specify one:
 
   --sha|sha [<path>]        Print <path> SHA (defaults to project directory)
 
+  --continue|continue       Restart the rebasing process after having resolved
+                              a merge conflict (Or call \`git rebase --continue\`)
   --abort|abort             Abort the rebase operation and restore state (Use
                               this command and do not call \`git rebase --abort\`)
 
@@ -106,6 +108,7 @@ Environment variables you can use instead of options above:
   -A|--apply-all|...        PW_ACTION_APPLY_ALL=true|false
   -R|--reset                PW_ACTION_RESET=true|false
   --sha|sha [<path>]        PW_ACTION_SHA=true PW_PROJECT_PATH=\"<path>\"
+  --continue|continue       PW_ACTION_REBASE_CONTINUE=true|false
   --abort|abort             PW_ACTION_REBASE_ABORT=true|false
 
   -J|--project-path <path>  PW_PROJECT_PATH=\"<path>\"
