@@ -101,7 +101,7 @@ put_wise_push_remotes_go () {
       # Always fetch the remote, so that our ref is current,
       # because this function also does a lot of state validating.
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      pw_push_announce "Fetch from ‘${SCOPING_REMOTE_NAME}’"
+      echo_announce "Fetch from ‘${SCOPING_REMOTE_NAME}’"
       git fetch "${SCOPING_REMOTE_NAME}"
     else
       remote_protected=""
@@ -113,7 +113,7 @@ put_wise_push_remotes_go () {
     if git_remote_branch_exists "${remote_release}"; then
       sort_from_commit="${remote_release}"
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      pw_push_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
+      echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
       git fetch "${RELEASE_REMOTE_NAME}"
     else
       remote_release=""
@@ -163,7 +163,7 @@ put_wise_push_remotes_go () {
 
     # So that merge-base is accurate.
     # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    pw_push_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
+    echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
     git fetch "${RELEASE_REMOTE_NAME}"
 
     sort_from_commit="${REMOTE_BRANCH_RELEASE}"
@@ -194,7 +194,7 @@ put_wise_push_remotes_go () {
       exit 1
     fi
 
-    pw_push_announce "Fetch from ‘${remote_name}’"
+    echo_announce "Fetch from ‘${remote_name}’"
     # MAYBE/2023-01-18: GIT_FETCH: Use -q?
     git fetch "${remote_name}"
 
@@ -265,7 +265,7 @@ put_wise_push_remotes_go () {
   >&2 debug "sort_from_commit: ${sort_from_commit}"
 
   if ! git_is_same_commit "${sort_from_commit}" "HEAD"; then
-    pw_push_announce "Resorting scoped commits"
+    echo_announce "Resorting scoped commits"
     confirm_state_and_resort_to_prepare_branch "${sort_from_commit}"
   fi
 
@@ -285,7 +285,7 @@ put_wise_push_remotes_go () {
   # be using this script otherwise, which is why we just move this pointer.
   if [ -n "${local_release}" ] || [ -n "${remote_release}" ]; then
     if [ "$(git_branch_name)" != "${LOCAL_BRANCH_RELEASE}" ]; then
-      pw_push_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
+      echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
       git_force_branch "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}"
     fi
   fi
@@ -380,7 +380,7 @@ put_wise_push_remotes_go () {
   fi
 
   if ! ${keep_going}; then
-    pw_push_announce "Canceled put-wise-push"
+    echo_announce "Canceled put-wise-push"
   fi
 
   # ***
@@ -423,10 +423,6 @@ must_verify_remote_branch_exists () {
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
-pw_push_announce () {
-  echo "$(fg_lightblue)$(bg_myrtle)${1}$(attr_reset)"
-}
 
 announce_git_push () {
   local branch="$1"

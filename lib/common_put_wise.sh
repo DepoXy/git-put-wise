@@ -1507,6 +1507,12 @@ pick_which_option_based_on_key_pressed () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+echo_announce () {
+  echo "$(fg_lightblue)$(bg_myrtle)${1}$(attr_reset)"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 # Complain if executed.
 if [ "$0" = "${BASH_SOURCE}" ]; then
   >&2 echo "😶"
