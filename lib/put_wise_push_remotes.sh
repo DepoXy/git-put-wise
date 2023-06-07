@@ -357,21 +357,21 @@ put_wise_push_remotes_go () {
       keep_going=true
 
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
-        announce_git_push "${RELEASE_REMOTE_BRANCH}"
+        echo_announce_push "${RELEASE_REMOTE_BRANCH}"
         ${DRY_RUN} git push "${RELEASE_REMOTE_NAME}" \
           "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
 
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_protected}"; then
-        announce_git_push "${SCOPING_REMOTE_BRANCH}"
+        echo_announce_push "${SCOPING_REMOTE_BRANCH}"
         ${DRY_RUN} git push "${SCOPING_REMOTE_NAME}" \
           "${protected_boundary_or_HEAD}:refs/heads/${SCOPING_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
       fi
 
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
-        announce_git_push "${branch_name}"
+        echo_announce_push "${branch_name}"
         ${DRY_RUN} git push "${remote_name}" \
           "${release_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
             || handle_push_failed "${remote_name}/${branch_name}"
@@ -424,10 +424,10 @@ must_verify_remote_branch_exists () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-announce_git_push () {
+echo_announce_push () {
   local branch="$1"
 
-  pw_push_announce "Sending ‘${branch}’"
+  echo_announce "Sending ‘${branch}’"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
