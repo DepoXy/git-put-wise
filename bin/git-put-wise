@@ -143,6 +143,9 @@ main () {
     ${PW_ACTION_SHA})
       put_wise_print_sha_or_sha
       ;;
+    ${PW_ACTION_REBASE_ABORT})
+      put_wise_rebase_abort
+      ;;
     ${PW_ACTION_PULL_CLEANUP})
       source_dep "lib/put_wise_pull_remotes.sh"
       # Remove the action name.

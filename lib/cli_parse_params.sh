@@ -46,6 +46,7 @@ PW_ACTION_APPLY=${PW_ACTION_APPLY:-false}
 PW_ACTION_APPLY_ALL=${PW_ACTION_APPLY_ALL:-false}
 PW_ACTION_RESET=${PW_ACTION_RESET:-false}
 PW_ACTION_SHA=${PW_ACTION_SHA:-false}
+PW_ACTION_REBASE_ABORT=${PW_ACTION_REBASE_ABORT:-false}
 # - Rebase-todo 'exec' actions not meant to be called by user.
 PW_ACTION_PULL_CLEANUP=${PW_ACTION_PULL_CLEANUP:-false}
 
@@ -152,6 +153,12 @@ cli_parse_params () {
 
       --sha | sha)
         PW_ACTION_SHA=true
+
+        shift
+        ;;
+
+      --abort | abort)
+        PW_ACTION_REBASE_ABORT=true
 
         shift
         ;;
@@ -546,6 +553,7 @@ cli_must_verify_action_specified () {
     ${PW_ACTION_APPLY_ALL} ||
     ${PW_ACTION_RESET} ||
     ${PW_ACTION_SHA} ||
+    ${PW_ACTION_REBASE_ABORT} ||
     ${PW_ACTION_PULL_CLEANUP} \
   ) && return 0
 

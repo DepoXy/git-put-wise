@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# vim:tw=0:ts=2:sw=2:et:norl:ft=bash
+# Author: Landon Bouma (landonb &#x40; retrosoft &#x2E; com)
+# Project: https://github.com/landonb/git-smart#💡
+# License: MIT. Please find more in the LICENSE file.
+
+# USAGE:
+#   git rebase ...
+#   # Decide you want to `git rebase --abort`
+#   git abort
+#
+# Also works during cherry-pick, merge, and revert operations.
+#
+# UCASE: This command is especially helpful if you normally use
+# a rebase todo 'exec' action to cleanup after a rebase, because
+# that 'exec' won't run if you `git rebase --abort` the rebase.
+# - So if you always abort via git-abort (and not `git rebase --abort`),
+#   then you'll be assured that any post-rebase hooks that might
+#   otherwise not run will run.
+#   - See the git-fup command for real-world usage. It uses an
+#     'exec' to pop the WIP commit, and to restage the "fixup!"
+#     commit. And it uses the #git-abort tag (see below) to tell
+#     git-abort to run the 'exec' if the user aborts the rebase.
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# This is the known Git rebase todo path.
+# - SPIKE: Can we get this from `git` so it's not hardcoded?
+GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
+
+# This is the special tag at the end of the 'exec' line that
+# you must use if you git-abort to run that 'exec'.
+# - USYNC: This environ is used in git-smart and tig-newtons.
+GITSMART_POST_REBASE_EXECS_TAG=" #git-abort"
+
+# This is an intermediate path git-abort uses to cache the
+# 'exec' lines, before `git rebase --abort` removes the todo.
+GITSMART_POST_REBASE_EXECS_PATH=".git/git-smart-git-abort-post-rebase-execs"
+
+# ***
+
+git_abort () {
+  local gitdir
+  gitdir="$(git rev-parse --git-dir)" || exit
+
+  local opfound=""
+  local fcnt=""
+  local plumbing_files=""
+
+  local abortable_ops="cherry-pick merge rebase revert"
+
+  local abortable_op
+  for abortable_op in ${abortable_ops}; do
+    local normalized
+    normalized="$(printf "${abortable_op}" | tr '[:lower:]' '[:upper:]')"
+    normalized="${normalized/-/_}"
+
+    local plumbing_file="${gitdir}/${normalized}_HEAD"
+
+    if [ -f "${plumbing_file}" ]; then
+      fcnt="1${fcnt}"
+      opfound="${abortable_op}"
+      plumbing_files="${plumbing_files} ${plumbing_file}"
+    fi
+  done
+
+  git_abort_try "${opfound}" "${fcnt}" "${plumbing_files}"
+}
+
+# ***
+
+git_abort_try () {
+  local opfound="$1"
+  local fcnt="$2"
+  local plumbing_files="$3"
+
+  # FIXME/2023-01-09 11:31: How better to detect this?:
+  # - If I `git ria! HEAD^` and try a squash, then rebase fails.
+  #   But there's no REBASE_HEAD, just a `.git/rebase-merge` directory.
+  #   - Why is it called `rebase-merge`? I.e., does git-merge use the
+  #     same-named directory?
+  if [ "${fcnt}" = "" ] && [ -d ".git/rebase-merge" ]; then
+    opfound="rebase"
+    fcnt=1
+  fi
+
+  if [ "${fcnt}" != "1" ]; then
+    if [ "${fcnt}" = "" ]; then
+      echo "(You're doing fine) Nothing to abort" >&2
+    else
+      echo "(Something stinks) More than one abortable operation detected:" >&2
+      echo "${plumbing_files}" | xargs ls >&2
+    fi
+
+    exit 1
+  fi
+
+  git_abort_post_rebase_execs_cache "${opfound}"
+
+  local retcode
+
+  git ${opfound} --abort
+  retcode=$?
+
+  if [ ${retcode} -eq 0 ]; then
+    git_abort_post_rebase_execs_run_maybe
+  fi
+
+  git_abort_post_rebase_execs_cleanup
+
+  return ${retcode}
+}
+
+# ***
+
+# Assumes any 'exec' tagged with #git-abort should be run on abort.
+# - In practice, these 'exec' will follow all the commit actions.
+#   But it's not worth our effort to be strict about it. Also the
+#   tag itself says it all, run this commit on abort.
+git_abort_post_rebase_execs_cache () {
+  local opfound="$1"
+
+  command rm -f "${GITSMART_POST_REBASE_EXECS_PATH}"
+
+  # The #git-abort 'exec' magic only applies to rebase,
+  # which is the only action that uses a todo file.
+  if [ "${opfound}" != "rebase" ]; then
+    return
+  fi
+
+  if [ ! -e "${GIT_REBASE_TODO_PATH}" ]; then
+    # Unreachable, unless Git changes rebase-todo path or something.
+    >&2 echo "ALERT: Expected to find rebase-todo (for ‘${opfound}’) at:"
+    >&2 echo "  ${GIT_REBASE_TODO_PATH}"
+
+    return
+  fi
+
+  # Look for special #git-abort tag and only cache those exec calls.
+  grep -e "^exec .*${GITSMART_POST_REBASE_EXECS_TAG}$" "${GIT_REBASE_TODO_PATH}" \
+    > "${GITSMART_POST_REBASE_EXECS_PATH}"
+}
+
+git_abort_post_rebase_execs_cleanup () {
+  command rm -f "${GITSMART_POST_REBASE_EXECS_PATH}"
+}
+
+git_abort_post_rebase_execs_run_maybe () {
+  [ -s "${GITSMART_POST_REBASE_EXECS_PATH}" ] \
+    || return
+
+  while read pre_line; do
+    local post_rebase_exec="${pre_line#exec }"
+
+    # Git prints "Executing: <exec>" for each 'exec', as do we.
+    echo "Executing: ${post_rebase_exec}"
+
+    # So trustworthy.
+    GIT_ABORT=true eval ${post_rebase_exec}
+  done < <(cat "${GITSMART_POST_REBASE_EXECS_PATH}")
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+main () {
+  git_abort "$@"
+}
+
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
+  main "$@"
+fi
+

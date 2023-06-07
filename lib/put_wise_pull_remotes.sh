@@ -317,7 +317,7 @@ bind generic E !sh -c \" \\
   # - If the user cancels (e.g., Ctrl-c) the wait-prompt, their working
   #   tree is left in a weird state (on ephemeral branch, tags not deleted).
   # - But we can do better if we play off rebase 'exec' — we don't need
-  #   to hog one terminal to wait-prompt.
+  #   to hog one terminal to wait-prompt; and we can support an abort.
   # - Note that cherry-pick doesn't use an editable todo. It uses
   #   `.git/sequencer/todo`, which contains 'pick' commands. But if you
   #   try to append an 'exec', it breaks `git cherry-pick --continue`.
@@ -393,26 +393,42 @@ put_wise_pull_remotes_cleanup () {
   #
   must_not_be_patches_repo
 
-  # Do you care how we wind down? We want to set the original branch
-  # HEAD to the ephemeral branch HEAD, and then to delete the ephemeral
-  # branch. Here's that approach:
-  #
-  #   git branch -f "${branch_name}" "${ephemeral_branch}"
-  #   checkout_branch_quietly "${branch_name}"
-  #   cleanup_ephemeral_branch "${ephemeral_branch}"
-  #
-  # But an easier approach is to delete the original branch and then to
-  # assume its position.
+  if ! ${GIT_ABORT:-false}; then
+    # Do you care how we wind down? We want to set the original branch
+    # HEAD to the ephemeral branch HEAD, and then to delete the ephemeral
+    # branch. Here's that approach:
+    #
+    #   git branch -f "${branch_name}" "${ephemeral_branch}"
+    #   checkout_branch_quietly "${branch_name}"
+    #   cleanup_ephemeral_branch "${ephemeral_branch}"
+    #
+    # But an easier approach is to delete the original branch and then to
+    # assume its position.
 
-  # Don't blather or we besmirch user's terminal,
-  # because 'exec' ran in background (&).
-  # 
-  #  echo "resume branch \"${branch_name}\""
+    # Don't blather or we besmirch user's terminal,
+    # because 'exec' ran in background (&).
+    # 
+    #  echo "resume branch \"${branch_name}\""
 
-  git branch -q -D "${branch_name}"
-  git branch -m "${branch_name}"
+    git branch -q -D "${branch_name}"
+    git branch -m "${branch_name}"
+  else
+    # User called `git abort`.
+
+    # Don't blather or we besmirch user's terminal,
+    # because 'exec' ran in background (&).
+    #
+    #  echo "restore branch \"${branch_name}\""
+
+    git checkout "${branch_name}"
+    git branch -q -D "${ephemeral_branch}"
+  fi
 
   maybe_unstash_changes ${pop_after}
+
+  ! ${GIT_ABORT:-false} || return 0
+
+  # ***
 
   add_patch_history_tags "${branch_name}" "${old_head}" \
     "${pick_from}" "${reset_ref}" "${merge_base}"
@@ -682,12 +698,14 @@ manage_pw_tracking_tags () {
   pw_tag_applied="$(format_pw_tag_applied "${branch_name}")"
 
   # Set pw/in.
-  echo "  git tag -f \"${pw_tag_applied}\" \"${reset_ref}\""
+  ! ${GIT_ABORT:-false} \
+    || echo "  git tag -f \"${pw_tag_applied}\" \"${reset_ref}\""
   ${DRY_RUN} git tag -f "${pw_tag_applied}" "${reset_ref}" > /dev/null
 
   # Remove pw/out. Confirms user has consolidated with remote.
   # - If they run put-wise --pull again, calls normal git-pull.
-  echo "  git tag -d \"${pw_tag_archived}\""
+  ! ${GIT_ABORT:-false} \
+    || echo "  git tag -d \"${pw_tag_archived}\""
   ${DRY_RUN} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 }
 
@@ -712,9 +730,12 @@ maybe_move_branch_forward () {
   ancestor_sha="$(git merge-base "${local_sha}" "${remote_sha}")"
 
   if [ "${ancestor_sha}" = "${local_sha}" ]; then
-    echo "Advance “${local_ref}” to match “${remote_ref}”."
+    ! ${GIT_ABORT:-false} \
+      || echo "Advance “${local_ref}” to match “${remote_ref}”."
 
-    echo "git branch -f --no-track \"${local_ref}\" \"${remote_ref}\""
+    ! ${GIT_ABORT:-false} \
+      || echo "git branch -f --no-track \"${local_ref}\" \"${remote_ref}\""
+
     ${DRY_RUN} git branch -f --no-track "${local_ref}" "${remote_ref}"
   fi
 }

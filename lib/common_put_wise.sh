@@ -36,9 +36,16 @@ PW_ELEVENSES=11
 
 PW_USER_CANCELED_GOODBYE="Be seeing you"
 
+# *** "External" environs (copied from upstream)
+
 # This is the known Git rebase todo path.
 # - SPIKE: Can we get this from `git` so it's not hardcoded?
 GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
+
+# This is the special tag at the end of the 'exec' line that
+# you must use if you git-abort to run that 'exec'.
+# - USYNC: This environ is used in git-smart and tig-newtons:
+GITSMART_POST_REBASE_EXECS_TAG=" #git-abort"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
@@ -781,6 +788,13 @@ maybe_unstash_changes () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+put_wise_rebase_abort () {
+  source_dep "deps/git-smart/bin/git-abort"
+
+  # Calls our 'exec' callbacks (that were tagged " #git-abort").
+  git_abort
+}
+
 must_rebase_todo_exist () {
   if [ ! -f "${GIT_REBASE_TODO_PATH}" ]; then
     # Should be unreachable unless Git changes something.
@@ -803,7 +817,7 @@ git_post_rebase_exec_inject_callback () {
   # Must sleep so git-rebase finishes (cannot cleanup while detached
   # HEAD or mess with branch too much, lest git-rebase fault us).
 
-  echo "exec sleep 0.1 && \"$0\" $@ &" \
+  echo "exec sleep 0.1 && \"$0\" $@ & ${GITSMART_POST_REBASE_EXECS_TAG}" \
     >> "${GIT_REBASE_TODO_PATH}"
 }
 
@@ -1425,6 +1439,9 @@ badger_user_rebase_failed () {
   echo
   echo "Uffda! You got work to do ☝ ☝ ☝."
   echo
+  echo "  🚨 $(echo_alert "ALERT") 🚨"
+  echo "  Resolve conflicts and call \`git rebase --continue\`"
+  echo "   — or call \`git put-wise --abort\` to revert changes."
 }
 
 must_await_user_resolve_conflicts () {
@@ -1544,6 +1561,10 @@ pick_which_option_based_on_key_pressed () {
 
 echo_announce () {
   echo "$(fg_lightblue)$(bg_myrtle)${1}$(attr_reset)"
+}
+
+echo_alert () {
+  echo "$(attr_bold)$(fg_black)$(bg_lightorange)${1}$(attr_reset)"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #

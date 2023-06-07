@@ -40,6 +40,9 @@ Specify one:
 
   --sha|sha [<path>]        Print <path> SHA (defaults to project directory)
 
+  --abort|abort             Abort the rebase operation and restore state (Use
+                              this command and do not call \`git rebase --abort\`)
+
 Project or Archive path
 =======================
 
@@ -103,6 +106,7 @@ Environment variables you can use instead of options above:
   -A|--apply-all|...        PW_ACTION_APPLY_ALL=true|false
   -R|--reset                PW_ACTION_RESET=true|false
   --sha|sha [<path>]        PW_ACTION_SHA=true PW_PROJECT_PATH=\"<path>\"
+  --abort|abort             PW_ACTION_REBASE_ABORT=true|false
 
   -J|--project-path <path>  PW_PROJECT_PATH=\"<path>\"
   -O|--patches-repo <repo>  PW_PATCHES_REPO=\"<repo>\"
