@@ -36,6 +36,10 @@ PW_ELEVENSES=11
 
 PW_USER_CANCELED_GOODBYE="Be seeing you"
 
+# This is the known Git rebase todo path.
+# - SPIKE: Can we get this from `git` so it's not hardcoded?
+GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # The prefixes used by sort-by-scope to identify scoped and private commits.
@@ -1402,7 +1406,7 @@ must_await_user_resolve_conflicts () {
 
   # Note the Git rebase won't always remove .git/REBASE_HEAD, not sure
   # why, so use todo as signal instead.
-  while [ -f ".git/rebase-merge/git-rebase-todo" ]; do
+  while [ -f "${GIT_REBASE_TODO_PATH}" ]; do
     # This is just a curiosity:
     [ -f ".git/REBASE_HEAD" ] \
       || >&2 echo "UNEXPECTED: Not found: .git/REBASE_HEAD"
@@ -1416,8 +1420,8 @@ must_await_user_resolve_conflicts () {
     must_await_user_resolve_conflicts_read_input
   done
 
-  [ ! -f ".git/rebase-merge/git-rebase-todo" ] \
-    || >&2 echo "UNEXPECTED: Not not found: .git/rebase-merge/git-rebase-todo"
+  [ ! -f "${GIT_REBASE_TODO_PATH}" ] \
+    || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
 }
 
 must_await_user_resolve_conflicts_read_input () {

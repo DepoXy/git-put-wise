@@ -33,6 +33,12 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# This is the known Git rebase todo path.
+# - SPIKE: Can we get this from `git` so it's not hardcoded?
+GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
+
+# ***
+
 git-rebase-sort-by-scope-protected-private () {
   local starting_ref="$1"
 
@@ -98,7 +104,7 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
   local head_sha_before_rebase="$1"
   local rev_count_before_rebase="$2"
 
-  if [ -f ".git/rebase-merge/git-rebase-todo" ]; then
+  if [ -f "${GIT_REBASE_TODO_PATH}" ]; then
     # git-rebase exited 1.
     echo "Looks like you got work to do!"
   else
