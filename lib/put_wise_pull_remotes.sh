@@ -289,6 +289,8 @@ bind generic E !sh -c \" \\
   if ! ${approved}; then
     >&2 echo "${PW_USER_CANCELED_GOODBYE}"
 
+    maybe_unstash_changes ${pop_after}
+
     exit 1
   fi
 
