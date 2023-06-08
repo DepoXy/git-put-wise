@@ -730,7 +730,9 @@ must_confirm_shares_history_with_head () {
 git_sort_by_scope () {
   local sort_from_commit="$1"
 
-  ${DRY_RUN} git sort-by-scope "${sort_from_commit}"
+  source_dep "bin/git-rebase-sort-by-scope-protected-private"
+
+  ${DRY_RUN} git-rebase-sort-by-scope-protected-private "${sort_from_commit}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
