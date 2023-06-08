@@ -102,28 +102,35 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
 
   if [ -f "${GIT_REBASE_TODO_PATH}" ]; then
     # git-rebase exited 1.
+    echo
     echo "Looks like you got work to do!"
   else
+    local unexpected_changes_detected=false
+
     if [ -n "$(git diff ${head_sha_before_rebase}..HEAD)" ]; then
-      echo "BWARE: The sort-by-scope resulted in changes."
-      echo "- If you had to resolve conflicts, that's probably why."
-      echo "- If not, consider this alert that sort-by-scope finished "\
-        "abnormally, and perhaps you should investigate."
-      echo "Previous HEAD: ${head_sha_before_rebase}"
-      echo "- Try:"
-      echo
-      echo "    git diff ${head_sha_before_rebase}..HEAD"
+      >&2 echo
+      >&2 echo "BWARE: The sort-by-scope resulted in changes."
+
+      unexpected_changes_detected=true
     fi
 
     local rev_count_after_rebase
     rev_count_after_rebase="$(git rev-list HEAD --count)"
 
     if [ ${rev_count_before_rebase} -ne ${rev_count_after_rebase} ]; then
-      echo "BWARE: The number of commits before and after rebase has changed."
-      echo "- Count before: ${rev_count_before_rebase} / Count after: ${rev_count_after_rebase}"
-      echo "- If you had to resolve conflicts, maybe this was you."
-      echo "- If not, perhaps you should investigate."
-      echo "Previous HEAD: ${head_sha_before_rebase}"
+      >&2 echo "BWARE: The number of commits before and after rebase has changed."
+      >&2 echo "- Count before: ${rev_count_before_rebase} / Count after: ${rev_count_after_rebase}"
+
+      unexpected_changes_detected=true
+    fi
+
+    if ${unexpected_changes_detected}; then
+      >&2 echo "- If you had to resolve conflicts, maybe this was you."
+      >&2 echo "- If not, perhaps you should investigate."
+      >&2 echo "Previous HEAD: ${head_sha_before_rebase}"
+      >&2 echo "- Try:"
+      >&2 echo
+      >&2 echo "    git diff ${head_sha_before_rebase}..HEAD"
     fi
   fi
 
