@@ -311,22 +311,22 @@ process_patch_archive () {
   local ret_rec_crypt_path="${gpgf}${PW_RETURN_RECEIPT_CRYPT}"
 
   local retval=0
-  local ret_rec_plain_name
+  local RET_REC_PLAIN_NAME
   # Note the OR-ing disables errexit for nonzero return, but not exit.
   # - (Though `$(subprocess) || retval=$?` would prevent `exit`.)
-  process_unpacked_patchkage "${patch_dir}" || retval=$?
-
-  if [ ${retval} -eq 0 ]; then
-    prepare_return_receipt_encrypt "${ret_rec_crypt_path}" "${ret_rec_plain_name}"
-
-    # This exists on certain errors.
-    remove_archive_from_git "${gpgf}" || retval=$?
-  fi
+  process_unpacked_patchkage "${patch_dir}" "${gpgf}" "${ret_rec_crypt_path}") \
+    || retval=$?
 
   # If process_unpacked_patchkage "failed", it may not have cd'd back.
   cd "${before_cd}"
 
-  remove_plaintext_assets "${patch_dir}" "${ret_rec_plain_name}"
+  # If process_unpacked_patchkage short-circuit returned, ensure plaintext
+  # cleaned up. Otherwise process_unpacked_patchkage succeeded, or it's
+  # stopping so user can resolve conflicts (and then user will call
+  # `put-wise continue` to resume the operation).
+  if [ ! -f "${GIT_REBASE_TODO_PATH}" ]; then
+    remove_plaintext_assets "${patch_dir}" "${RET_REC_PLAIN_NAME}"
+  fi
 
   if [ ${retval} -ne 0 ]; then
     [ ${retval} -ne ${PW_ELEVENSES} ] || return 0
@@ -347,6 +347,8 @@ process_patch_archive () {
 # otherwise keep running.
 process_unpacked_patchkage () {
   local patch_dir="$1"
+  local gpgf="$2"
+  local ret_rec_crypt_path="$3"
 
   local before_cd="$(pwd -L)"
 
@@ -496,35 +498,144 @@ process_unpacked_patchkage () {
   local rev_count
   rev_count="$(git_number_of_commits)"
 
-  rebase_working_atop_ephemeral_branch "${working_branch}" "${ephemeral_branch}"
+  # ***
+
+  local cleanup_func=put_wise_apply_patches_cleanup
+
+  local retcode=0
+
+  # Checkout and rebase working branch.
+  rebase_working_atop_ephemeral_branch "${working_branch}" "${ephemeral_branch}" \
+    || retcode=$?
+
+  if [ ${retcode} -ne 0 ]; then
+    cleanup_func="git_post_rebase_exec_inject_callback ${cleanup_func}"
+
+    badger_user_rebase_failed
+  fi
+
+  GIT_ABORT=false \
+  ${cleanup_func} \
+    "${patch_dir}" \
+    "${gpgf}" \
+    "${ret_rec_crypt_path}" \
+    \
+    "${hostname_sha}" \
+    "${projpath_sha}" \
+    "${starting_sha}" \
+    "${endingat_sha}" \
+    "${timestamp_id}" \
+    "${remoteish_br_encoded}" \
+    "${project_name}" \
+    \
+    "${patch_branch}" \
+    "${ephemeral_branch}" \
+    "${pop_after}" \
+    "${old_head}" \
+    "${pw_tag_applied}" \
+    "${pw_tag_archived}" \
+    "${pw_tag_starting}" \
+    "${patch_base}" \
+    "${last_patch}" \
+    "${rev_count}"
+
+  # Unnecessary, as we're about to exit, but "complete" nonetheless.
+  # - Returns to ${PW_PATCHES_REPO}.
+  cd "${before_cd}"
+
+  return ${retcode}
+}
+
+put_wise_apply_patches_cleanup () {
+  # (lb): I'm so sorry for this unwieldy list!
+  # - SAVVY: Run `getconf ARG_MAX` to see your distro's shell args. limit.
+  #   - On Linux Mint (Bash and dash), it's 2,097,152.
+  #
+  local patch_dir="${1}"
+  local gpgf="${2}"
+  local ret_rec_crypt_path="${3}"
+  #
+  local hostname_sha="${4}"
+  local projpath_sha="${5}"
+  local starting_sha="${6}"
+  local endingat_sha="${7}"
+  local timestamp_id="${8}"
+  local remoteish_br_encoded="${9}"
+  local project_name="${10}"
+  #
+  local patch_branch="${11}"
+  local ephemeral_branch="${12}"
+  local pop_after="${13}"
+  local old_head="${14}"
+  local pw_tag_applied="${15}"
+  local pw_tag_archived="${16}"
+  local pw_tag_starting="${17}"
+  local patch_base="${18}"
+  local last_patch="${19}"
+  local rev_count="${20}"
+
+  # In case running via rebase-todo 'exec', or from `git abort`,
+  # run entry point checks.
+  #
+  # E.g., `PW_OPTION_DRY_RUN=true git put-wise abort`
+  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  #
+  local before_cd="$(pwd -L)"
+  #
+  # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
+  must_cd_project_path_and_verify_repo
+  #
+  must_not_be_patches_repo
 
   cleanup_ephemeral_branch "${ephemeral_branch}"
 
-  maybe_unstash_changes ${pop_after}
+  # Pop WIP and run post-rebase user hook.
+  git_post_rebase_exec_run ${pop_after}
 
-  add_patch_history_tags "${old_head}" "${last_patch}" "${patch_branch}" \
-    "${starting_sha}" "${patch_base}"
+  local retval=0
 
-  manage_pw_tracking_tags "${pw_tag_applied}" "${pw_tag_archived}" \
-    "${last_patch}" "${pw_tag_starting}" "${patch_base}"
+  if ! ${GIT_ABORT:-false}; then
+    add_patch_history_tags "${old_head}" "${last_patch}" "${patch_branch}" \
+      "${starting_sha}" "${patch_base}"
 
-  # NOTE: We don't need ${project_name} to process the return receipt, but
-  #       having a third set of dashes makes `/bin/ls -A1d "${gpgf}"--*`
-  #       more shareable between archives and return receipts processing.
-  # NOTE: Using ${remoteish_br} (what archive says),
-  #       not ${patch_branch} (what user could say using --branch option).
-  #
-  # BWARE: The ${gpgf}-- prefix is how process_returns_receipts_ finds the
-  #   unpacked receipt. CXREF: must_find_path_starting_with_prefix_dash_dash.
-  #   - CXREF: crypt_name=, in --archive's compose_filenames.
-  # - CXREF: See also other `  ret_rec_plain_name=`.
-  ret_rec_plain_name="${hostname_sha}--${projpath_sha}--${starting_sha}--${endingat_sha}--${timestamp_id}${PW_RETURN_RECEIPT_PLAIN}--${remoteish_br_encoded}--${project_name}"
+    manage_pw_tracking_tags "${pw_tag_applied}" "${pw_tag_archived}" \
+      "${last_patch}" "${pw_tag_starting}" "${patch_base}"
 
-  # Just so we end up where we started, so to speak.
+    # ***
+
+    cd "${PW_PATCHES_REPO}"
+
+    # NOTE: We don't need ${project_name} to process the return receipt, but
+    #       having a third set of dashes makes `/bin/ls -A1d "${gpgf}"--*`
+    #       more shareable between archives and return receipts processing.
+    # NOTE: Using ${remoteish_br} (what archive says),
+    #       not ${patch_branch} (what user could say using --branch option).
+    #
+    # BWARE: The ${gpgf}-- prefix is how process_returns_receipts_ finds the
+    #   unpacked receipt. CXREF: must_find_path_starting_with_prefix_dash_dash.
+    #   - CXREF: crypt_name=, in --archive's compose_filenames.
+    # - CXREF: See similar `  ret_rec_plain_name=` in fake_the_return_receipt.
+    #
+    # SAVVY: Using "global" so caller has access.
+    RET_REC_PLAIN_NAME="${hostname_sha}--${projpath_sha}--${starting_sha}--${endingat_sha}--${timestamp_id}${PW_RETURN_RECEIPT_PLAIN}--${remoteish_br_encoded}--${project_name}"
+
+    prepare_return_receipt_hydrate "${rev_count}" "${RET_REC_PLAIN_NAME}" \
+      "${patch_branch}" "${starting_sha}" "${last_patch}"
+
+    prepare_return_receipt_encrypt "${ret_rec_crypt_path}" "${RET_REC_PLAIN_NAME}"
+
+    # This returns nonzero on expected ("unreachable") errors.
+    remove_archive_from_git "${gpgf}" || retval=$?
+  fi
+
+  cd "${PW_PATCHES_REPO}"
+
+  remove_plaintext_assets "${patch_dir}" "${RET_REC_PLAIN_NAME}"
+
+  # Unnecessary, as we're about to exit, but "complete" nonetheless.
   cd "${before_cd}"
 
-  prepare_return_receipt_hydrate "${rev_count}" "${ret_rec_plain_name}" \
-    "${patch_branch}" "${starting_sha}" "${last_patch}"
+  return ${retval}
 }
 
 # ***
@@ -595,7 +706,7 @@ fake_the_return_receipt () {
   # BWARE: The ${gpgf}-- prefix is how process_returns_receipts_ finds the
   #   unpacked receipt. CXREF: must_find_path_starting_with_prefix_dash_dash.
   #   - CXREF: crypt_name=, in --archive's compose_filenames.
-  # - CXREF: See also other `ret_rec_plain_name=`.
+  # - CXREF: See similar `  ret_rec_plain_name=` in put_wise_apply_patches_cleanup.
   ret_rec_plain_name="${gpgf}${PW_RETURN_RECEIPT_PLAIN}--${remoteish_br_encoded}--${project_name}"
   echo "ret_rec_plain_name/1: ${ret_rec_plain_name}"
 
@@ -714,7 +825,7 @@ must_confirm_projpath_sha_identical () {
   >&2 echo "This is likely a very rare error, and probably a DEV issue, i.e.," \
                                                       "it's not you, it's me."
 
-  exit 1
+  return 1
 }
 
 # ***
@@ -873,12 +984,7 @@ rebase_working_atop_ephemeral_branch () {
 
   checkout_branch_quietly "${working_branch}"
 
-  if ! ${DRY_RUN} git rebase "refs/heads/${ephemeral_branch}"; then
-    must_await_user_resolve_conflicts
-  fi
-
-  # Because who knows what the user did.
-  checkout_branch_quietly "${working_branch}"
+  git rebase "refs/heads/${ephemeral_branch}"
 }
 
 # You'll see the starting_sha tag in history visible from HEAD. It represents
