@@ -69,7 +69,7 @@ must_prompt_user_and_await_resolved_uffda () {
   echo
   echo "Come back here when y'all are ready, 👍"
   echo
-  printf "Answer “y” when you're ready, or die [Y/n] "
+  printf "Answer “y” to continue when you're ready, or die [Y/n] "
 
   # exit's 1 on anything but 'y' or 'Y'
   must_await_user_resolve_conflicts_read_input
