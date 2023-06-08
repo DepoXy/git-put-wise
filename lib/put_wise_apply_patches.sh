@@ -992,6 +992,8 @@ apply_patches_unless_dry_run () {
 
     must_await_user_resolve_conflicts
   fi
+
+  return 0
 }
 
 # ***
