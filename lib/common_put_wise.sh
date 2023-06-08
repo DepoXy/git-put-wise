@@ -766,9 +766,7 @@ maybe_stash_changes () {
 
   local pop_after=false
 
-  git_status_porcelain () { git status --porcelain=v1; }
-
-  if [ -n "$(git_status_porcelain)" ]; then
+  if test -n "$(git status --porcelain=v1)"; then
     pop_after=true
 
     git add -A
