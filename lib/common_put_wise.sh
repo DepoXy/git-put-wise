@@ -42,6 +42,9 @@ PW_USER_CANCELED_GOODBYE="Be seeing you"
 # - SPIKE: Can we get this from `git` so it's not hardcoded?
 GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 
+# This is a known git-am path.
+GIT_AM_INFO_PATH=".git/rebase-apply/info"
+
 # This is the special tag at the end of the 'exec' line that
 # you must use if you git-abort to run that 'exec'.
 # - USYNC: This environ is used in git-smart and tig-newtons:

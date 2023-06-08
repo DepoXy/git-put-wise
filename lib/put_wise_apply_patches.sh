@@ -962,9 +962,10 @@ apply_patches_unless_dry_run () {
 
   if ! ${DRY_RUN} git am "${patch_path}"/*.patch; then
     echo
-    echo "cat .git/rebase-apply/info"
+    echo "cat ${GIT_AM_INFO_PATH}"
     echo "--------------------------"
-    cat ".git/rebase-apply/info"
+    # Print ".git/rebase-apply/info".
+    cat "${GIT_AM_INFO_PATH}"
 
     must_await_user_resolve_conflicts
 
