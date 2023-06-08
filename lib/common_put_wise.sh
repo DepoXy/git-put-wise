@@ -730,34 +730,7 @@ must_confirm_shares_history_with_head () {
 git_sort_by_scope () {
   local sort_from_commit="$1"
 
-  local head_sha_before_rebase
-  head_sha_before_rebase="$(git rev-parse HEAD)"
-
-  local rev_count_0
-  rev_count_0="$(git_number_of_commits)"
-
   ${DRY_RUN} git sort-by-scope "${sort_from_commit}"
-
-  local rev_count_1
-  rev_count_1="$(git_number_of_commits)"
-
-  if [ -n "$(git diff ${head_sha_before_rebase}..HEAD)" ] \
-    || [ ${rev_count_0} -ne ${rev_count_1} ] \
-  ; then
-    # The sort-by-scope also prints warnings for these conditions, so
-    # don't re-warn, but give the user the option to stop processing.
-    # - 2023-01-18: Last place this prompt is called (used to be 3 places):
-    prompt_user_to_continue_processing
-  fi
-}
-
-prompt_user_to_continue_processing () {
-  printf "Would you like to continue processing? [y/N] "
-
-  local key_pressed
-  local opt_chosen
-  prompt_read_single_keypress "n" "y"
-  [ "${opt_chosen}" = "y" ] && return 0 || return 1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
