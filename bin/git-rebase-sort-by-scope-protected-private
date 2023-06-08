@@ -42,8 +42,6 @@ GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 git-rebase-sort-by-scope-protected-private () {
   local starting_ref="$1"
 
-  set -e
-
   local seq_editor
   seq_editor="$(must_locate_seq_editor)"
 
@@ -55,18 +53,16 @@ git-rebase-sort-by-scope-protected-private () {
   local rev_count_before_rebase
   rev_count_before_rebase="$(git rev-list HEAD --count)"
 
-  set +e
-
-  local exit_code
+  local retcode=0
 
   GIT_SEQUENCE_EDITOR="${seq_editor}" \
-    git rebase --quiet -i ${starting_ref}
-  exit_code=$?
+    git rebase --quiet -i ${starting_ref} \
+      || retcode=$?
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
     "${head_sha_before_rebase}" "${rev_count_before_rebase}"
 
-  return ${exit_code}
+  return ${retcode}
 }
 
 # ***
@@ -137,6 +133,8 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 main () {
+  set -e
+
   git-rebase-sort-by-scope-protected-private "$@"
 }
 
