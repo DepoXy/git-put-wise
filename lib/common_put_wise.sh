@@ -597,6 +597,8 @@ format_pw_tag_ephemeral_pull () {
 confirm_state_and_resort_to_prepare_branch () {
   local starting_ref="$1"
 
+  echo_announce "Resorting scoped commits"
+
   # Query the upstream SHA and verify its in the
   # current branch history, and not the first commit.
   local starting_sha="$(git rev-parse "${starting_ref}")"
