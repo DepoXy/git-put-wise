@@ -618,10 +618,32 @@ confirm_state_and_resort_to_prepare_branch () {
   local pop_after
   pop_after=$(maybe_stash_changes)
 
-  # Sort commits by "scope" (according to message prefixes).
-  git_sort_by_scope "${starting_sha_or_HEAD}"
+  local retcode=0
 
-  maybe_unstash_changes ${pop_after}
+  # Sort commits by "scope" (according to message prefixes).
+  git_sort_by_scope "${starting_sha_or_HEAD}" > /dev/null \
+    || retcode=$?
+
+  # If git sort-by-scope fails, it's either because of a git-rebase
+  # conflict, or for some other reason. Look for rebase-todo and inject
+  # 'exec' commands to perform cleanup.
+  # - Ignore inject stderr complaint that rebase-todo doesn't exist, which
+  #   means git sort-by-scope failed for another reason (and printed to
+  #   stderr, so no need to print our own).
+  if [ ${retcode} -ne 0 ] && git_post_rebase_exec_inject ${pop_after} 2> /dev/null; then
+    # We set rebase-todo 'exec' to pop WIP, and to call optional user hook,
+    # GIT_POST_REBASE_EXEC. Nag user one last time before nonzero return
+    # tickles errexit.
+    badger_user_rebase_failed
+  else
+    # Either git sort-by-scope succeeded, or it failed for a reason other
+    # than a rebase conflict. Meaning, the rebase is complete (if there
+    # was one). So pop the WIP, and call optional post-rebase user hook.
+    git_post_rebase_exec_run ${pop_after}
+  fi
+
+  # Exit-errexit if sort-by-scope failed.
+  return ${retcode}
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -779,6 +801,8 @@ put_wise_rebase_abort () {
 
 # Set rebase-todo 'exec' to call optional user hook, GIT_POST_REBASE_EXEC.
 git_post_rebase_exec_inject () {
+  local pop_after="${1:-false}"
+
   must_rebase_todo_exist || return 1
 
   # ***
@@ -792,9 +816,19 @@ git_post_rebase_exec_inject () {
     echo "exec ${GIT_POST_REBASE_EXEC} ${GITSMART_POST_REBASE_EXECS_TAG}" \
       >> "${GIT_REBASE_TODO_PATH}"
   fi
+
+  if ${pop_after}; then
+    echo "exec sleep 0.1 && git reset -q --mixed @~1 &" \
+      "${GITSMART_POST_REBASE_EXECS_TAG}" \
+        >> "${GIT_REBASE_TODO_PATH}"
+  fi
 }
 
 git_post_rebase_exec_run () {
+  local pop_after="${1:-false}"
+
+  maybe_unstash_changes ${pop_after}
+
   # Run any post-rebase user hooks.
   if [ -n "${GIT_POST_REBASE_EXEC}" ]; then
     eval ${GIT_POST_REBASE_EXEC}

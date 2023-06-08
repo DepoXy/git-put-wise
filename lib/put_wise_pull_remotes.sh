@@ -431,9 +431,7 @@ put_wise_pull_remotes_cleanup () {
   fi
 
   # Call optional post-rebase user hook immediately.
-  git_post_rebase_exec_run
-
-  maybe_unstash_changes ${pop_after}
+  git_post_rebase_exec_run ${pop_after}
 
   ! ${GIT_ABORT:-false} || return 0
 
