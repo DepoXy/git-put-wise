@@ -739,22 +739,42 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
   maybe_prompt_user_and_change_branch () {
     local to_branch="$1"
 
-    [ "${branch_name}" != "${to_branch}" ] || return 0
+    [ "${branch_name}" != "${to_branch}" ] \
+      || return 0
 
-    echo "ALERT: These patches were not generated from the same-named"
-    echo "branch as the current branch."
+    local will_commit_wip=false
+    test -z "$(git status --porcelain=v1)" 
+      || will_commit_wip=true
+
+    echo "ALERT: These patches were not generated from the"
+    echo "       same-named branch as the current branch."
+    echo
     echo "- Would you like us to checkout the appropriate branch?"
-    echo "- Okay to switch from “${branch_name}”"
+    echo
+    printf "- We will "
+    if ! ${will_commit_wip}; then
+      #  "- We will change from “${branch_name}”"
+      echo "change from “${branch_name}”"
+    else
+      #  "- We will commit untidy changes"
+      #  "      and change from “${branch_name}”"
+      echo "commit untidy changes"
+      echo "      and change from “${branch_name}”"
+    fi
     echo "                   to “${to_branch}”"
     echo "  in project found at “${project_path}”"
-    echo "  from the patches at “${patch_dir}”?"
-    echo "             [Y/n]"
-    printf "               "
+    echo "   because patches at “${patch_dir}”"
+    echo
+    printf "Shall we proceed? [Y/n] "
 
     local key_pressed
     local opt_chosen
     prompt_read_single_keypress "y" "n"
     [ "${opt_chosen}" = "y" ] || return 1
+
+    # Note that we don't pop this WIP. User must do so.
+    # - We told them so above, so it's fine.
+    maybe_stash_changes
 
     git checkout -q "${to_branch}"
   }
@@ -775,16 +795,18 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
       echo "  in the project located at “${project_path}”"
       echo "  from the unpacked archive “${patch_dir}”"
       echo "- Please address this issue and then continue this script."
-      echo "  - It might be as easy as:"
+      echo "  - You might just need to create and checkout the branch:"
       echo "      cd \"${project_path}\""
       echo "      git checkout -b private"
-      echo "  - If you choose not to continue, you'll can try again later:"
+      echo "  - If you choose not to continue, you can try again later:"
       echo "      cd \"$(realpath "${patch_path}/..")\""
       echo "      $(basename "$0") \"${patch_dir}\""
       echo
 
       while [ "$(git_branch_name)" != "${patch_branch}" ]; do
-        # exit's 1 on anything but 'y' or 'Y'
+        # This will exit 1 on anything but 'y' or 'Y'. Otherwise, it'll
+        # loop to check if user created and checked out ${patch_branch},
+        # or it'll prompt again.
         must_prompt_user_and_await_resolved_uffda
       done
     fi
