@@ -315,6 +315,7 @@ bind generic E !sh -c \" \\
   )" || exit $?
 
   echo "git reset --hard \"${reset_ref}\""
+
   ${DRY_RUN} git reset --hard "${reset_ref}"
 
   # The original put-wise-pull ran cherry-pick:

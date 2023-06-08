@@ -759,16 +759,18 @@ git_sort_by_scope () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# Make a WIP commit if we must.
+# - Similar to git-smart's `git wip`.
 maybe_stash_changes () {
-  # Make a WIP commit if we must.
   local wip_commit_message="${PRIVATE_PREFIX}WIP [git-put-wise]"
 
   local pop_after=false
 
   git_status_porcelain () { git status --porcelain=v1; }
+
   if [ -n "$(git_status_porcelain)" ]; then
     pop_after=true
-    # See also `git wip`
+
     git add -A
     git commit -q --no-verify -m "${wip_commit_message}"
   fi

@@ -96,10 +96,12 @@ put_wise_push_remotes_go () {
       if [ -z "${sort_from_commit}" ]; then
         sort_from_commit="${remote_protected}"
       fi
+
       # Always fetch the remote, so that our ref is current,
       # because this function also does a lot of state validating.
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
       echo_announce "Fetch from ‘${SCOPING_REMOTE_NAME}’"
+
       git fetch "${SCOPING_REMOTE_NAME}"
     else
       remote_protected=""
@@ -110,8 +112,10 @@ put_wise_push_remotes_go () {
     # there.
     if git_remote_branch_exists "${remote_release}"; then
       sort_from_commit="${remote_release}"
+
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
       echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
+
       git fetch "${RELEASE_REMOTE_NAME}"
     else
       remote_release=""
@@ -128,8 +132,10 @@ put_wise_push_remotes_go () {
     if [ -n "${remote_release}" ] && [ -n "${local_release}" ]; then
       # Verify 'release/release' is at or behind 'release'.
       local divergent_ok=false
+
       must_confirm_commit_at_or_behind_commit "${remote_release}" "${local_release}" \
         ${divergent_ok} "remote-release" "local-release"
+
       # Resort since 'release', which is guaranteed further along.
       sort_from_commit="${local_release}"
     fi
@@ -193,6 +199,7 @@ put_wise_push_remotes_go () {
     fi
 
     echo_announce "Fetch from ‘${remote_name}’"
+
     # MAYBE/2023-01-18: GIT_FETCH: Use -q?
     git fetch "${remote_name}"
 
@@ -283,6 +290,7 @@ put_wise_push_remotes_go () {
   if [ -n "${local_release}" ] || [ -n "${remote_release}" ]; then
     if [ "$(git_branch_name)" != "${LOCAL_BRANCH_RELEASE}" ]; then
       echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
+
       git_force_branch "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}"
     fi
   fi
