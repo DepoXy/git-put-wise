@@ -142,12 +142,12 @@ put_wise_pull_complicated () {
 
   # ***
 
-  local pop_after=false
-  pop_after=$(maybe_stash_changes)
-
   local tracking_upstream=""
   tracking_upstream="$(must_locate_tracking_upstream "${branch_name}")" || exit $?
   local reset_ref="refs/remotes/${tracking_upstream}"
+
+  local pop_after=false
+  pop_after=$(maybe_stash_changes)
 
   local old_head="$(git_commit_object_name)"
 
