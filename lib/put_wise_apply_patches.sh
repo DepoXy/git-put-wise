@@ -198,7 +198,7 @@ must_find_one_patches_archive_for_project_path_and_print () {
   if [ -z "${repo_matches}" ]; then
     >&2 debug "Nothing found in patches repo matching project “${projpath_sha}”"
     >&2 debug "- For project path: $(pwd -L)"
-    >&2 echo "Nothing to do: No matching archive found for this repo"
+    >&2 echo "Nothing to do: No matching archive found for this repo."
 
     ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
   fi
