@@ -273,8 +273,6 @@ bind generic E !sh -c \" \\
   local pw_tag_least_diffy_ref="pw/🆚/diff-distance/${least_diffy_cnt}/${tracking_upstream}"
   git tag -f "${pw_tag_least_diffy_ref}" "${pick_from}" > /dev/null
 
-  # prompt_user_to_continue_processing || approved=false
-
   local approved=true
 
   print_tig_review_instructions_pull \
