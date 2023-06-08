@@ -312,7 +312,8 @@ process_patch_archive () {
 
   local retval=0
   local ret_rec_plain_name
-  # Note the OR-ing disables errexit, because POSIX. See man bash.
+  # Note the OR-ing disables errexit for nonzero return, but not exit.
+  # - (Though `$(subprocess) || retval=$?` would prevent `exit`.)
   process_unpacked_patchkage "${patch_dir}" || retval=$?
 
   if [ ${retval} -eq 0 ]; then
@@ -331,6 +332,8 @@ process_patch_archive () {
 
     return ${retval}
   fi
+
+  return 0
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -395,28 +398,27 @@ process_unpacked_patchkage () {
 
   git_insist_not_applied "${patch_branch}" "${starting_sha}"
 
-  # DEVs: For you.
-  local untidy_okay=false
-  #  untidy_okay=true
-
-  # Soft-insist that the project is tidy.
-  while ! ${untidy_okay} && ! git_insist_pristine; do
-    must_prompt_user_and_await_resolved_uffda
-  done
-
-  # Soft-insist that the ephemeral branch does not exist.
-  while ! must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"; do
-    must_prompt_user_and_await_resolved_uffda
-  done
+  # Insist that the ephemeral branch does not exist.
+  must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"
 
   local local_projpath_sha="$(print_project_path_ref)"
   must_confirm_projpath_sha_identical "${projpath_sha}" "${local_projpath_sha}"
+
+  # ***
 
   if ! prompt_user_and_change_branch_if_working_branch_different_patches \
     "${patch_dir}" "${patch_branch}" "${project_path}" "${patch_path}"; \
   then
     ${PW_OPTION_FAIL_ELEVENSES:-false} && return ${PW_ELEVENSES} || return 0
   fi
+
+  # ***
+
+  # If we changed branches, we committed changes into the previous branch.
+  # - Otherwise, commit uncommitted changes now, which we pop post-rebase.
+
+  local pop_after=false
+  pop_after=$(maybe_stash_changes)
 
   # Reset to this branch after maybe using ephemeral branch. (We don't
   # set this value before prompting user to change branches, because we
@@ -425,9 +427,6 @@ process_unpacked_patchkage () {
   # to create a local branch if they need, in which case it was the user 
   # who changed the branch, another reason not to set it back.)
   local working_branch="$(git_branch_name)"
-
-  local pop_after
-  pop_after=$(maybe_stash_changes)
 
   # Ah, memories.
   local old_head="$(git_commit_object_name)"
@@ -468,17 +467,24 @@ process_unpacked_patchkage () {
 
   # ***
 
-  ephemeral_branch="$(\
+  # Run some checks, then create and checkout ephemeral branch.
+  if ! ephemeral_branch="$(\
     prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${patch_base}"
-  )" || exit $?
+  )"; then
+    maybe_unstash_changes ${pop_after}
 
-  # Double-check no other stdout slipped through
-  # and tainted our variable capture.
+    return 1
+  fi
+
   # - Remember that errexit not in effect, so dying deliberately.
   #   - Though makes me wonder if convention of relying on errexit to die
   #     is lazy and sloppy. Even how `return 1` can kill the script. It's
   #     definitely not a programming language best practice.
-  git check-ref-format --branch "${ephemeral_branch}" || exit 1
+  if ! git check-ref-format --branch "${ephemeral_branch}"; then
+    maybe_unstash_changes ${pop_after}
+
+    return 1
+  fi
 
   # ***
 
