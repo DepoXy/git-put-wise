@@ -491,7 +491,7 @@ process_unpacked_patchkage () {
 
   # ***
 
-  apply_patches_unless_dry_run "${patch_path}" "${working_branch}"
+  apply_patches_unless_dry_run "${patch_path}"
 
   local last_patch="$(git_commit_object_name)"
 
@@ -929,7 +929,6 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
 
 apply_patches_unless_dry_run () {
   local patch_path="$1"
-  local working_branch="$2"
 
   # Note that we're not `git fetch`'ing. We could fetch 'protected', but if
   # consuming patches, this is likely @personal, which is only machine that
@@ -985,8 +984,6 @@ apply_patches_unless_dry_run () {
     git --no-pager am --show-current-patch=diff
 
     must_await_user_resolve_conflicts
-
-    checkout_branch_quietly "${working_branch}"
   fi
 }
 
