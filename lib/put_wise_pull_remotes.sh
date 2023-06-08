@@ -22,7 +22,6 @@ put_wise_pull_remotes () {
 
   # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
   must_cd_project_path_and_verify_repo
-  local before_co
 
   must_not_be_patches_repo
 
