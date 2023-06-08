@@ -1170,15 +1170,14 @@ remove_archive_from_git () {
   local gpgf="$1"
 
   if [ ! -f "${gpgf}" ]; then
-    >&2 echo "ERROR: Did not find GPG archive named “${gpgf}”"
+    # Unreachable branch: Earlier checks should prevent this.
+    >&2 echo "ERROR: Unexpected error: Did not find GPG archive named “${gpgf}”"
 
-    # Dead branch: Earlier checks should prevent this.
     return 1
   elif ! git_nothing_staged; then
-    # Dead branch: Caller called git_insist_nothing_staged previously.
-    >&2 echo "ERROR: The transport repo already has changes staged."
+    # Unreachable branch: Caller called git_insist_nothing_staged previously.
+    >&2 echo "ERROR: Unexpected error: The transport repo already has changes staged."
 
-    # Dead branch: Earlier checks should prevent this.
     return 1
   else
     ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
