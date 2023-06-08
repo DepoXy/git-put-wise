@@ -319,7 +319,8 @@ process_patch_archive () {
   if [ ${retval} -eq 0 ]; then
     prepare_return_receipt_encrypt "${ret_rec_crypt_path}" "${ret_rec_plain_name}"
 
-    remove_archive_from_git "${gpgf}"
+    # This exists on certain errors.
+    remove_archive_from_git "${gpgf}" || retval=$?
   fi
 
   # If process_unpacked_patchkage "failed", it may not have cd'd back.
@@ -1042,13 +1043,13 @@ remove_archive_from_git () {
     >&2 echo "ERROR: Did not find GPG archive named “${gpgf}”"
 
     # Dead branch: Earlier checks should prevent this.
-    exit 1
+    return 1
   elif ! git_nothing_staged; then
     # Dead branch: Caller called git_insist_nothing_staged previously.
     >&2 echo "ERROR: The transport repo already has changes staged."
 
     # Dead branch: Earlier checks should prevent this.
-    exit 1
+    return 1
   else
     ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
 
