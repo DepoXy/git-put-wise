@@ -21,8 +21,6 @@ put_wise_push_remotes () {
   # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
   must_cd_project_path_and_verify_repo
 
-  git_insist_pristine
-
   must_not_be_patches_repo
 
   put_wise_push_remotes_go
