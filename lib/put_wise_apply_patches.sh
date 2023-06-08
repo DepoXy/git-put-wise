@@ -941,7 +941,15 @@ apply_patches_unless_dry_run () {
   #   all the time (and the commands you might run most, --archive
   #   and --push, can be optimized).
 
-  # Set commit author to, e.g.,  "$(git config user.name) <$(git config user.email)>"
+  # Set commit author to, e.g., "$(git config user.name) <$(git config user.email)>"
+  #
+  # SAVVY: If you preserve the name and email from the patch, and because
+  #        we use --committer-date-is-author-date, then the SHA will match
+  #        the original commit SHA. If you care about that. But all the
+  #        put-wise operations will work regardless of matching SHAs (e.g.,
+  #        you can archive from one machine, apply to another, archive from
+  #        that one, apply back to the first, etc., regardless of matching
+  #        SHAs; because put-wise is just that clever).
   if ! ${PW_OPTION_RESET_AUTHOR_DISABLE}; then
     local author_name=${PW_OPTION_APPLY_AUTHOR_NAME:-$(git config user.name)}
     local author_email=${PW_OPTION_APPLY_AUTHOR_EMAIL:-$(git config user.email)}
@@ -960,13 +968,14 @@ apply_patches_unless_dry_run () {
     done
   fi
 
+  # - Use --committer-date-is-author-date to keep original commit date.
   # - Use --3way so user can resolve conflicts (otherwise git-status
   #   doesn't show file with conflict (nor does file with conflict
   #   contain markings, e.g., "<<<<<<< HEAD"); and if you determine
   #   what's the conflict, edit it (however you want), git-add that
   #   file, and `git am --continue`, whatever you changed is committed
   #   with the patch commit messge, but not the patch changes).
-  if ! ${DRY_RUN} git am --3way "${patch_path}"/*.patch; then
+  if ! ${DRY_RUN} git am --3way --committer-date-is-author-date "${patch_path}"/*.patch; then
     echo
     echo "cat ${GIT_AM_INFO_PATH}"
     echo "--------------------------"
