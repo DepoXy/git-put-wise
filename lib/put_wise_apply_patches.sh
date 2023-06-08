@@ -479,6 +479,8 @@ process_unpacked_patchkage () {
     return 1
   fi
 
+  # Double-check previous command didn't accidentally spew additional
+  # stdout and mess us the ephemeral_branch name variable capture.
   # - Remember that errexit not in effect, so dying deliberately.
   #   - Though makes me wonder if convention of relying on errexit to die
   #     is lazy and sloppy. Even how `return 1` can kill the script. It's
