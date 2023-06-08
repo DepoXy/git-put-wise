@@ -960,7 +960,13 @@ apply_patches_unless_dry_run () {
     done
   fi
 
-  if ! ${DRY_RUN} git am "${patch_path}"/*.patch; then
+  # - Use --3way so user can resolve conflicts (otherwise git-status
+  #   doesn't show file with conflict (nor does file with conflict
+  #   contain markings, e.g., "<<<<<<< HEAD"); and if you determine
+  #   what's the conflict, edit it (however you want), git-add that
+  #   file, and `git am --continue`, whatever you changed is committed
+  #   with the patch commit messge, but not the patch changes).
+  if ! ${DRY_RUN} git am --3way "${patch_path}"/*.patch; then
     echo
     echo "cat ${GIT_AM_INFO_PATH}"
     echo "--------------------------"
