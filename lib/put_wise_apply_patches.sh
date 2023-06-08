@@ -981,6 +981,8 @@ apply_patches_unless_dry_run () {
     echo "--------------------------"
     # Print ".git/rebase-apply/info".
     cat "${GIT_AM_INFO_PATH}"
+    echo
+    git --no-pager am --show-current-patch=diff
 
     must_await_user_resolve_conflicts
 
