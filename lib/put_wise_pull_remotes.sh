@@ -306,9 +306,11 @@ bind generic E !sh -c \" \\
 
   local ephemeral_branch="$(format_pw_tag_ephemeral_pull "${branch_name}")"
 
-  while ! must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"; do
-    must_prompt_user_and_await_resolved_uffda
-  done
+  if ! must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"; then
+    maybe_unstash_changes ${pop_after}
+
+    return 1
+  fi
 
   ephemeral_branch="$(\
     prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${reset_ref}"
