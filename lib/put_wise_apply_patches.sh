@@ -975,6 +975,13 @@ apply_patches_unless_dry_run () {
   #   file, and `git am --continue`, whatever you changed is committed
   #   with the patch commit messge, but not the patch changes).
   if ! ${DRY_RUN} git am --3way --committer-date-is-author-date "${patch_path}"/*.patch; then
+    # This program flow should be extremely rare, perhaps unreachable
+    # if the user is using put-wise how we expect, and not playing with
+    # fire.
+    # - The way put-wise is setup, git-am should not fail, because
+    #   patches are applied to the ephemeral branch, and the ephemeral
+    #   branch matches the same commit (in content, not SHAs) that the
+    #   patches were generated from.
     echo
     echo "cat ${GIT_AM_INFO_PATH}"
     echo "--------------------------"
