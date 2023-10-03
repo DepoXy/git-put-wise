@@ -29,7 +29,7 @@
 GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 
 # This is the special tag at the end of the 'exec' line that
-# you must use if you git-abort to run that 'exec'.
+# you must use if you want git-abort to run that 'exec'.
 # - USYNC: This environ is used in git-smart and tig-newtons.
 GITSMART_POST_REBASE_EXECS_TAG=" #git-abort"
 
