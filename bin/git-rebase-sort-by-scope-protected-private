@@ -60,7 +60,7 @@ git-rebase-sort-by-scope-protected-private () {
       || retcode=$?
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
-    "${head_sha_before_rebase}" "${rev_count_before_rebase}"
+    "${head_sha_before_rebase}" "${rev_count_before_rebase}" "${retcode}"
 
   return ${retcode}
 }
@@ -99,11 +99,17 @@ must_specify_starting_ref () {
 print_hint_if_rebase_incomplete_or_new_state_suspicious () {
   local head_sha_before_rebase="$1"
   local rev_count_before_rebase="$2"
+  local retcode="$3"
 
   if [ -f "${GIT_REBASE_TODO_PATH}" ]; then
     # git-rebase exited 1.
     echo
     echo "Looks like you got work to do!"
+    # git-rebase exited nonzero. If not, our code is wrong.
+    if [ ${retcode} -eq 0 ]; then
+      echo
+      echo "ERROR: rebase-todo found, but git-rebase exited zero"
+    fi
   else
     local unexpected_changes_detected=false
 
@@ -131,6 +137,15 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
       >&2 echo "- Try:"
       >&2 echo
       >&2 echo "    git diff ${head_sha_before_rebase}..HEAD"
+    fi
+
+    # git-rebase exited zero. If not, our code is wrong.
+    # - Or I (lb) assume it is. Obviously, git-rebase can fail for other,
+    #   non-conflict reasons (e.g., bad args), but I assume the way the
+    #   code works that it won't.
+    if [ ${retcode} -ne 0 ]; then
+      echo
+      echo "ERROR: rebase-todo not found, but git-rebase exited nonzero"
     fi
   fi
 
