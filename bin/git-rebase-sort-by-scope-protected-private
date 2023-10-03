@@ -37,7 +37,17 @@
 # - SPIKE: Can we get this from `git` so it's not hardcoded?
 GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 
-# ***
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+source_deps () {
+  local project_root
+  project_root="$(dirname "$(realpath "$0")")/.."
+
+  # Pull in WIP and post-rebase cmds (maybe_stash_changes, git_post_rebase_*).
+  . "${project_root}/bin/git-put-wise"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 git-rebase-sort-by-scope-protected-private () {
   local starting_ref="$1"
@@ -46,6 +56,9 @@ git-rebase-sort-by-scope-protected-private () {
   seq_editor="$(must_locate_seq_editor)"
 
   must_specify_starting_ref "${starting_ref}"
+
+  local pop_after=false
+  pop_after=$(maybe_stash_changes "git-rebase-sort-by-scope-protected-private")
 
   local head_sha_before_rebase
   head_sha_before_rebase="$(git rev-parse HEAD)"
@@ -61,6 +74,15 @@ git-rebase-sort-by-scope-protected-private () {
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
     "${head_sha_before_rebase}" "${rev_count_before_rebase}" "${retcode}"
+
+  # Always run optional user hook (GIT_POST_REBASE_EXEC) and also pop WIP...
+  if [ ${retcode} -ne 0 ]; then
+    # ... after rebase finishes (by appending rebase-todo).
+    git_post_rebase_exec_inject ${pop_after}
+  else
+    # ... now.
+    git_post_rebase_exec_run ${pop_after}
+  fi
 
   return ${retcode}
 }
@@ -156,6 +178,8 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
 
 main () {
   set -e
+
+  source_deps
 
   git-rebase-sort-by-scope-protected-private "$@"
 }
