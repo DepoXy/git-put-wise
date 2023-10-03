@@ -984,6 +984,16 @@ apply_patches_unless_dry_run () {
     #   patches are applied to the ephemeral branch, and the ephemeral
     #   branch matches the same commit (in content, not SHAs) that the
     #   patches were generated from.
+    # - If git-am did stop on conflict, the user could mess things up.
+    #   - If the user resolves a conflict and finishes the git-am with
+    #     either a fewer number or greater number of revisions than
+    #     the number of patches, the caller's rev_count will be
+    #     incorrect. This means the return-receipt will include the
+    #     wrong count, and then when processed on the remote host, the
+    #     pw/out tag won't be moved appropriately. So then 'archive'
+    #     on the remote won't capture the correct revisions, the two
+    #     repos with begin to diverge, and put-wise won't know how to
+    #     resolve it (the user would have to fix pw/out themselves).
     echo
     echo "cat ${GIT_AM_INFO_PATH}"
     echo "--------------------------"
