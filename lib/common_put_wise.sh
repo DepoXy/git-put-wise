@@ -1500,52 +1500,6 @@ badger_user_rebase_failed () {
   echo "   — or call \`git put-wise --abort\` to revert changes."
 }
 
-must_await_user_resolve_conflicts () {
-  >&2 echo "============================================"
-  >&2 echo
-  >&2 echo "Ope! You got conflicts. Resolve them. We'll wait for you..."
-  >&2 echo
-  >&2 echo "Return here where you're ready, and (y)es us. Or (n)ot"
-  >&2 echo
-  >&2 printf "Ready? [Y/n] "
-
-  # MAYBE/2022-11-18: If not "y", maybe print instructions on how to cleanup.
-  must_await_user_resolve_stoppage_read_input
-
-  # Note the Git rebase won't always remove .git/REBASE_HEAD, not sure
-  # why, so use todo as signal instead.
-  while [ -f "${GIT_REBASE_TODO_PATH}" ]; do
-    # This is just a curiosity:
-    [ -f ".git/REBASE_HEAD" ] \
-      || >&2 echo "UNEXPECTED: Not found: .git/REBASE_HEAD"
-
-    >&2 echo "============================================"
-    >&2 echo
-    >&2 echo "Really ready? Git says there's a rebase afoot."
-    >&2 echo
-    >&2 printf "Let me know when you're actually really [Y/n] "
-
-    must_await_user_resolve_stoppage_read_input
-  done
-
-  [ ! -f "${GIT_REBASE_TODO_PATH}" ] \
-    || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
-}
-
-must_await_user_resolve_stoppage_read_input () {
-  read input
-
-  local opt_chosen
-  pick_which_option_based_on_key_pressed "y" "n" "${input}"
-
-  # We'll default 'y' and only exit on explicit no, because all
-  # callers will recheck condition and re-prompt if necessary.
-  [ "${opt_chosen}" != "n" ] || exit 1
-
-  >&2 echo "============================================"
-  >&2 echo
-}
-
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 prompt_read_single_keypress () {

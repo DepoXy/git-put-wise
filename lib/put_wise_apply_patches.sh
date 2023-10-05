@@ -1010,6 +1010,40 @@ apply_patches_unless_dry_run () {
 
 # ***
 
+must_await_user_resolve_conflicts () {
+  >&2 echo "============================================"
+  >&2 echo
+  >&2 echo "Ope! You got conflicts. Resolve them. We'll wait for you..."
+  >&2 echo
+  >&2 echo "Return here where you're ready, and (y)es us. Or (n)ot"
+  >&2 echo
+  >&2 printf "Ready? [Y/n] "
+
+  # MAYBE/2022-11-18: If not "y", maybe print instructions on how to cleanup.
+  must_await_user_resolve_stoppage_read_input
+
+  # Note the Git rebase won't always remove .git/REBASE_HEAD, not sure
+  # why, so use todo as signal instead.
+  while [ -f "${GIT_REBASE_TODO_PATH}" ]; do
+    # This is just a curiosity:
+    [ -f ".git/REBASE_HEAD" ] \
+      || >&2 echo "UNEXPECTED: Not found: .git/REBASE_HEAD"
+
+    >&2 echo "============================================"
+    >&2 echo
+    >&2 echo "Really ready? Git says there's a rebase afoot."
+    >&2 echo
+    >&2 printf "Let me know when you're actually really [Y/n] "
+
+    must_await_user_resolve_stoppage_read_input
+  done
+
+  [ ! -f "${GIT_REBASE_TODO_PATH}" ] \
+    || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 rebase_working_atop_ephemeral_branch () {
   local working_branch="$1"
   local ephemeral_branch="$2"
@@ -1022,6 +1056,8 @@ rebase_working_atop_ephemeral_branch () {
 
   git rebase "refs/heads/${ephemeral_branch}"
 }
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # You'll see the starting_sha tag in history visible from HEAD. It represents
 # the merge-base with the patches that were --apply'ed. The final patch commit
