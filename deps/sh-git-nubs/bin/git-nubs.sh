@@ -724,92 +724,93 @@ git_since_git_init_commit_epoch_ts () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-github_purge_release_and_tags_of_same_name () {
-  # (lb): I pulled this function from landonb/release-ghub-pypi,
-  #       but its environs still assumed:
-  # Mandatory:
-  #   R2G2P_REMOTE
-  #   RELEASE_VERSION
-  #   R2G2P_COMMIT
-  # Optional:
-  #   R2G2P_GHUB_CLOBBER_CERTIFIED    defaults false
-  #   SKIP_PROMPTS                    defaults false
-  #
-  # Side-effects:
-  #   R2G2P_DO_PUSH_TAG               set to false|true.
+# Verifies named tag exists at specified commit on indicated remote.
+# - If tag exists and points at commit, returns GNUBS_TAG_PRESENT (0).
+# - If tag absent from remote, returns GNUBS_TAG_ABSENT (1).
+# - If tag exists but points at other commit, returns GNUBS_TAG_CONFLICT (2),
+#   and assigns the offending commit ID to GNUBS_TAG_COMMIT_OBJECT global.
+#
+# - SAVVY: If the remote is GitHub, and if the tag is a version tag,
+#   GitHub will remove any lightweight release associated with that tag.
+#
+# - WRKLG: Use git-ls-remote to examine existing remote tags.
+#   - At its simplest, use --tags to view all tags for a remote, e.g.,
+#       git ls-remote --tags origin
+#   - To find the tag object ID for a specific tag, specify the tag, e.g.,
+#       git ls-remote ${remote_name} refs/tags/${tag_name}
+#       git ls-remote --tags ${remote_name} ${tag_name}
+#       git ls-remote --tags ${remote_name} refs/tags/${tag_name}#
+#   - You can also reverse two args:
+#       git ls-remote ${remote_name} --tags ${tag_name}
+#       git ls-remote ${remote_name} --tags refs/tags/${tag_name}#
+#     But the same doesn't work without a tag argument, e.g.,
+#       git ls-remote ${remote_name} --tags  # NO_OP: Prints nothing!
+#     - Note the manual shows --tags before <repository>.
+#   - The output is very simple, e.g.,
+#       $ git ls-remote --tags origin 1.0.3
+#       882561bc420497d0791b7dcfeb81c1a3684f65bd	refs/tags/1.0.3
+git_tag_remote_verify_commit () {
+  local tag_name="$1"
+  local remote_name="$2"
+  local tag_commit="$3"
+  local skip_prompt="$4"
 
-  # Reentrant support: If previously tagged and released, remove the
-  # GitHub release if user wants, and remove tag from remote if points
-  # to different commit and user approves.
+  local retcode
+  # retcode: -1: failed
+  # retcode:  0: verified remote tag, caller doesn't need to push
+  # retcode:  1: missing/deleted tag, caller should push
+  # retcode:  2: remote tag exists but does not ref tag_commit 
+  # NOTE: Not using 'local', so caller can (<ahem>) use (which is
+  #       a terrible abuse of scoping, I admit).
+  GNUBS_FAILED=-1
+  GNUBS_TAG_PRESENT=0
+  GNUBS_TAG_ABSENT=1
+  GNUBS_TAG_CONFLICT=2
 
-  # See also, for a list of all tags on a remote, e.g., the one named 'release':
-  #   git ls-remote --tags release
-  # Note that we can restrict to tags with a fuller path, or with an --option.
-  #   git ls-remote ${R2G2P_REMOTE} refs/tags/${RELEASE_VERSION}
-  #   git ls-remote ${R2G2P_REMOTE} --tags ${RELEASE_VERSION}
-  #   git ls-remote ${R2G2P_REMOTE} --tags refs/tags/${RELEASE_VERSION}
-  # NOTE: This is a network call and takes a moment.
-  # NOTE: Use default `cut` delimiter, TAB.
-  printf '%s' \
-    "Send remote request: ‘git ls-remote --tags ${R2G2P_REMOTE} ${RELEASE_VERSION}’... "
-  #
+  # GLOBAL return value, used on GNUBS_TAG_CONFLICT.
+  GNUBS_TAG_COMMIT_OBJECT=""
+
+  # The ls-remote command prints a tag object ID, which we need to resolve
+  # to the commit object.
   local remote_tag_hash
-  remote_tag_hash="$(git ls-remote --tags ${R2G2P_REMOTE} ${RELEASE_VERSION} | cut -f1)"
+
+  local git_cmd="git ls-remote --tags ${remote_name} ${tag_name}"
+
+  printf '%s' "Sending remote request: ‘${git_cmd}’... "
+  #
+  # UWAIT: This is a network call and takes a moment.
+  remote_tag_hash_and_path="$(${git_cmd})"
+  #
+  if [ $? -ne 0 ]; then
+    printf '!\n'
+
+    retcode=${GNUBS_FAILED}
+
+    return ${retcode}
+  fi
+  #
+  # SAVVY: The default `cut` delimiter is <Tab>.
+  remote_tag_hash="$(echo ${remote_tag_hash_and_path} | cut -f1)"
   #
   printf '%s\n' " ${remote_tag_hash}"
 
-  local tag_commit_hash
-  R2G2P_DO_PUSH_TAG=false
   if [ -z "${remote_tag_hash}" ]; then
-    R2G2P_DO_PUSH_TAG=true
+    retcode=${GNUBS_TAG_ABSENT}
   else
+    local tag_commit_hash
     tag_commit_hash="$(git rev-list -n 1 ${remote_tag_hash})"
-    if [ "${tag_commit_hash}" = "${R2G2P_COMMIT}" ]; then
+
+    if [ "${tag_commit_hash}" = "${tag_commit}" ]; then
       # The remote tag has the same commit hash as the current release.
-      # No need to send tag again, unless clobbering GitHub release,
-      # in which case remove the tag, which removes the lightweight (non-annotated)
-      # release from https://github.com/user/repo/releases that's automatically
-      # generated according to tags ((lb): or whatever; I'm not quite sure how
-      # it works, just that deleting the tag clears the entry).
-      ${R2G2P_GHUB_CLOBBER_CERTIFIED:-false} && R2G2P_DO_PUSH_TAG=true
+      retcode=${GNUBS_TAG_PRESENT}
     else
-      echo
-      echo "🚨 ATTENTION 🚨: The tag on ‘${R2G2P_REMOTE}’ refers to a different commit."
-      echo
-      echo "    release tag ref.  ${R2G2P_COMMIT}"
-      echo "    remote tag ref..  ${tag_commit_hash}"
-      echo
+      retcode=${GNUBS_TAG_CONFLICT}
 
-      printf %s "Would you like to delete the old remote tag? [y/N] "
-
-      ${SKIP_PROMPTS:-false} && the_choice='n' || read -e the_choice
-
-      if [ "${the_choice}" = "y" ] || [ "${the_choice}" = "Y" ]; then
-        R2G2P_DO_PUSH_TAG=true
-      else
-        >&2 echo
-        >&2 echo "ERROR: Tag ‘${RELEASE_VERSION}’ mismatch on ‘${R2G2P_REMOTE}’."
-        >&2 echo
-
-        return 1
-      fi
+      GNUBS_TAG_COMMIT_OBJECT="${tag_commit_hash}"
     fi
   fi
 
-  if ${R2G2P_DO_PUSH_TAG} && [ -n "${tag_commit_hash}" ]; then
-    # (lb): I realize there's a less obtuse syntax to delete tags, e.g.,
-    #           git push --delete ${R2G2P_REMOTE} ${RELEASE_VERSION}
-    #       But that syntax might also delete a branch of the same name.
-    #       So be :obtuse, and be specific about what's being deleted.
-    local gpr_args="${R2G2P_REMOTE} :refs/tags/${RELEASE_VERSION}"
-
-    echo "Deleting Remote Tag: ‘${gpr_args}’"
-
-    # Uncomment to debug:
-    #   set -x  # xtrace_beg
-    git push ${gpr_args}
-    #   set +x  # xtrace_end
-  fi
+  return ${retcode}
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
