@@ -62,6 +62,8 @@ cleanup_ephemeral_branch () {
 
 # ***
 
+# Only called by put-wise-apply, and only when there's no local branch
+# that matches the remote branch for which the patches were generated.
 must_prompt_user_and_await_resolved_uffda () {
   echo "============================================"
   echo
