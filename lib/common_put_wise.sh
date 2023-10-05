@@ -765,7 +765,10 @@ git_sort_by_scope () {
 # Make a WIP commit if we must.
 # - Similar to git-smart's `git wip`.
 maybe_stash_changes () {
-  local wip_commit_message="${PRIVATE_PREFIX}WIP [git-put-wise]"
+  local context="${1:-git-put-wise}"
+
+  # E.g., "PRIVATE: WIP [git-put-wise]"
+  local wip_commit_message="${PRIVATE_PREFIX}WIP [${context}]"
 
   local pop_after=false
 
