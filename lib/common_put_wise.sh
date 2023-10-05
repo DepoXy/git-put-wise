@@ -769,6 +769,7 @@ maybe_stash_changes () {
 
   local pop_after=false
 
+  # Note that `git add -A` also fails if nothing changed.
   if test -n "$(git status --porcelain=v1)"; then
     pop_after=true
 
@@ -821,6 +822,7 @@ git_post_rebase_exec_inject () {
   fi
 
   if ${pop_after}; then
+    # Make a delayed `maybe_unstash_changes` call.
     echo "exec sleep 0.1 && git reset -q --mixed @~1 &" \
       "${GITSMART_POST_REBASE_EXECS_TAG}" \
         >> "${GIT_REBASE_TODO_PATH}"
@@ -839,6 +841,13 @@ git_post_rebase_exec_run () {
 }
 
 must_rebase_todo_exist () {
+# Not all rebase operations leave a rebase-todo.
+# - E.g., `git pull --rebase --autostash <remote> <branch>`,
+#   where the remote is one commit ahead, but you've got an
+#   uncommitted local file that would be replaced by the remote
+#   file (just a case I happened to test), will spew an error,
+#   finishing with "Aborting", and doesn't leave user mid-merge.
+
   if [ ! -f "${GIT_REBASE_TODO_PATH}" ]; then
     # Should be unreachable unless Git changes something.
     # - Or if put-wise is in an unknown state, or has a misperception
