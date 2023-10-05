@@ -1510,7 +1510,7 @@ must_await_user_resolve_conflicts () {
   >&2 printf "Ready? [Y/n] "
 
   # MAYBE/2022-11-18: If not "y", maybe print instructions on how to cleanup.
-  must_await_user_resolve_conflicts_read_input
+  must_await_user_resolve_stoppage_read_input
 
   # Note the Git rebase won't always remove .git/REBASE_HEAD, not sure
   # why, so use todo as signal instead.
@@ -1525,14 +1525,14 @@ must_await_user_resolve_conflicts () {
     >&2 echo
     >&2 printf "Let me know when you're actually really [Y/n] "
 
-    must_await_user_resolve_conflicts_read_input
+    must_await_user_resolve_stoppage_read_input
   done
 
   [ ! -f "${GIT_REBASE_TODO_PATH}" ] \
     || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
 }
 
-must_await_user_resolve_conflicts_read_input () {
+must_await_user_resolve_stoppage_read_input () {
   read input
 
   local opt_chosen

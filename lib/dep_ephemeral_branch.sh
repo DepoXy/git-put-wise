@@ -72,7 +72,7 @@ must_prompt_user_and_await_resolved_uffda () {
   printf "Answer “y” to continue when you're ready, or die [Y/n] "
 
   # exit's 1 on anything but 'y' or 'Y'
-  must_await_user_resolve_conflicts_read_input
+  must_await_user_resolve_stoppage_read_input
 }
 
 # ***
