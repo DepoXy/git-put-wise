@@ -137,6 +137,13 @@ git_tag_object_name () {
   [ $? -ne 0 ] || echo "${says_git}"
 }
 
+git_tag_commit_object () {
+  local gitref="$1"
+  local opts="$2"
+
+  git_tag_object_name "${gitref}^{commit}" "${opts}"
+}
+
 git_tag_exists () {
   local tag_name="$1"
 
@@ -460,7 +467,7 @@ git_insist_nothing_staged () {
 #
 #     Or you could suppress both outputs and just pass along the exit code:
 #
-#       git rev-parse --verify --quiet "${gitref}^{commit} > /dev/null 2>&1 
+#       git rev-parse --verify --quiet "${gitref}^{commit} > /dev/null 2>&1
 #
 # - show-ref
 #
@@ -569,7 +576,7 @@ git_versions_tagged_for_commit_object () {
 #   - But this fine. This regex is meant to be more inclusive, so that
 #     it finds with more version tags, or what look like version tags.
 #   - This regex is very useful when used in tandem with the SemVer
-#     regex, defined after. E.g., you could verify a version tag is 
+#     regex, defined after. E.g., you could verify a version tag is
 #     valid with the SemVer regex; then you could use our regex to pull
 #     apart the components so you can bump any part, including the
 #     pre-release (assuming the pre-release part ends in a number).
@@ -582,7 +589,7 @@ git_versions_tagged_for_commit_object () {
 #     NubsVer: v 1 2 3 -1alpha 1
 #   But sed will be too greedy (and what should be \7 will be gobbled by \6):
 #     $ echo "v1.2.3-1alpha1" | sed -E "s/${GITSMART_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/"
-#     NubsVer: v 1 2 3 -1alpha1 
+#     NubsVer: v 1 2 3 -1alpha1
 
 GITSMART_RE_VERSPARTS__INCLUSIVE='(v)?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?'
 GITSMART_RE_VERSPARTS="^${GITSMART_RE_VERSPARTS__INCLUSIVE}$"
@@ -639,7 +646,7 @@ git_latest_version_basetag () {
 # - We use our version regex to sort first by lexicographical order,
 #   then by trailing number... which should be SemVer-compatible-enough
 #   for our usage, as we explain.
-# 
+#
 #   Here's the SemVer procedure:  https://semver.org/#spec-item-11
 #
 #     1.) Identifiers consisting of only digits are compared numerically.
@@ -809,7 +816,7 @@ git_tag_remote_verify_commit () {
   # retcode: -1: failed
   # retcode:  0: verified remote tag, caller doesn't need to push
   # retcode:  1: missing/deleted tag, caller should push
-  # retcode:  2: remote tag exists but does not ref tag_commit 
+  # retcode:  2: remote tag exists but does not ref tag_commit
   # NOTE: Not using 'local', so caller can (<ahem>) use (which is
   #       a terrible abuse of scoping, I admit).
   GNUBS_FAILED=-1
@@ -840,7 +847,7 @@ git_tag_remote_verify_commit () {
   fi
   #
   # SAVVY: The default `cut` delimiter is <Tab>.
-  remote_tag_hash="$(echo ${remote_tag_hash_and_path} | cut -f1)"
+  remote_tag_hash="$(echo "${remote_tag_hash_and_path}" | cut -f1)"
   #
   printf '%s\n' " ${remote_tag_hash}"
 
