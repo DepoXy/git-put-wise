@@ -32,7 +32,7 @@ choose_patch_base_or_ask_user () {
     describe_patch="We found your ‘${pw_ontime_tag_name}’ tag"
     do_confirm=true
   # The starting SHA from the GPG filename.
-  elif git_object_is_commit "${starting_sha}"; then
+  elif git_is_commit "${starting_sha}"; then
     info "Confirmed starting ref (${starting_sha}) is a known object."
     patch_base="${starting_sha}"
     describe_patch="The given starting ref (${starting_sha}) is valid"
