@@ -52,8 +52,14 @@ git_branch_name_full () {
   git rev-parse --symbolic-full-name HEAD
 }
 
-git_check_branch_name () {
-  git check-ref-format --branch "$1"
+git_branch_name_check_format () {
+  local branch_name="$1"
+
+  # Use --branch, which is stricter than the more basic:
+  #   git check-ref-format "refs/heads/${branch_name}"
+  # - It's not documented, but echoes valid branch name
+  #   (unlike without --branch, then nothing output).
+  git check-ref-format --branch "${branch_name}" > /dev/null 2>&1
 }
 
 # ***
@@ -82,7 +88,8 @@ git_tracking_branch_safe () {
 # ***
 
 # BWARE: If the arg. is a valid SHA format, git-rev-parse echoes
-# it without checking if object actually exists.
+#        it without checking if object actually exists.
+#        - See git_is_commit for checking if commit object.
 git_commit_object_name () {
   local gitref="${1:-HEAD}"
   local opts="$2"
@@ -134,6 +141,12 @@ git_tag_exists () {
   local tag_name="$1"
 
   git rev-parse --verify refs/tags/${tag_name} > /dev/null 2>&1
+}
+
+git_tag_name_check_format () {
+  local tag_name="$1"
+
+  git check-ref-format "refs/tags/${tag_name}"
 }
 
 # ***
@@ -416,38 +429,75 @@ git_insist_nothing_staged () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# A few ideas to check for valid SHA1 object.
+# A few ideas to check for valid SHA1 object:
 #
-#   # Check that reference resolves to a commit.
-#   test "$(git cat-file -t "${ref_name}")" == commit
+# - cat-file:
 #
-#   # Check that a reference is valid, printing on error only, e.g.,
-#   #   fatal: Not a valid object name {}
-#   git cat-file -e "${ref_name}^{commit}" > /dev/null
+#   - At its most basic, cat-file tells us the type of object,
+#     so we could do a simple string comparison:
 #
-#   # Check valid ref, printing on success only (the resolved SHA1).
-#   [ -z "$(git rev-parse -q --verify "${ref_name}^{commit}")" ]
+#       test "$(git cat-file -t "${gitref}")" == commit
 #
-# https://stackoverflow.com/questions/18515488/
-#   how-to-check-if-the-commit-exists-in-a-git-repository-by-its-sha-1
+#   - Getting a little more tricky, we can use the recursive deference
+#     syntax ^{commit} combined with the -e option, so cat-file only
+#     prints on error, e.g.,
+#       fatal: Not a valid object name {}
+#     Or, on success, if {gitref} exists and is a value commit, outputs
+#     nothing and returns zero:
 #
-# This is similar to checking a ref name by type of object, e.g.,
+#       git cat-file -e "${gitref}^{commit}" > /dev/null
 #
-#   git show-ref --verify --quiet refs/heads/${ref_name}
-#   git show-ref --verify --quiet refs/remotes/${ref_name}
-#   git show-ref --verify --quiet refs/tags/${ref_name}
+#     - REFER: See `man gitrevisions` for deference syntax.
 #
-# except that it works on a SHA1, and this check won't tell us the
-# object type. It only validates if the object name is valid or not.
+# - rev-parse
+#
+#   - Prints SHA1 to stdout on success. Otherwise prints an error, e.g.,
+#       error: acbd1234^{commit}: expected commit type, but the object dereferences to tree type
+#     And despite whatever you think `--quiet` means, still prints to
+#     stdout on success, so you might test for nonzero length stdout:
+#
+#       [ -n "$(git rev-parse --verify --quiet "${gitref}^{commit}" 2> /dev/null)" ]
+#
+#     Or you could suppress both outputs and just pass along the exit code:
+#
+#       git rev-parse --verify --quiet "${gitref}^{commit} > /dev/null 2>&1 
+#
+# - show-ref
+#
+#   - Cannot be used with SHA1, but works if you have a name, e.g.,
+#
+#       git show-ref --verify --quiet refs/heads/${ref_name}
+#       git show-ref --verify --quiet refs/remotes/${ref_name}
+#       git show-ref --verify --quiet refs/tags/${ref_name}
+#
+# - REFER:
+#
+#     https://stackoverflow.com/questions/18515488/
+#       how-to-check-if-the-commit-exists-in-a-git-repository-by-its-sha-1
+#
+# - CHOSE:
+#
+#   - Considering previous discussion, `cat-file -e` seems like the most clear
+#     (and concise) approach.
+#     - From its man: "Provide content or type and size information for repository objects"
+#       Which is what we're looking for: *type* information.
+#     - `man git-rev-parse` has a more broad scope, "Pick out and massage parameters."
 
-git_is_valid_ref () {
+# ***
+
+# git_is_commit tests whether specified ref exists and is a valid commit object.
+# - See also git_commit_object_name, which uses git-rev-parse to resolve a name
+#   to an object ID. But if you pass rev-parse an object ID, it just echoes that
+#   ID back without validating it.
+#   - So you might want to call git_is_commit afterwards to verify a SHA.
+# - Note that cat-file also works with branch names, so user could skip
+#   git_commit_object_name if you just want to verify something is a commit but
+#   don't need the SHA.
+
+git_is_commit () {
   local gitref="$1"
 
-  [ -n "$(git rev-parse --verify --quiet "${gitref}^{commit}")" ]
-}
-
-git_object_is_commit () {
-  [ "$(git cat-file -t "$1" 2> /dev/null)" = "commit" ]
+  git cat-file -e "${gitref}^{commit}" 2> /dev/null
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
