@@ -597,24 +597,33 @@ format_pw_tag_ephemeral_pull () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# - Returns zero if the git ref. is in the current branch history,
+#   and that it's not the first commit.
+#   - If git ref. ancestor of HEAD (not diverged), resorts scoped commits.
+# - Exits 0 (or elevenses) if the git ref. is HEAD, because caller
+#   (push or archive) passed us the last commit they pushed/archived,
+#   so if it's HEAD, there's nothing to push/archive.
+# - Exits nonzero (non-elevenses) if git ref. ahead of HEAD, somehow.
 confirm_state_and_resort_to_prepare_branch () {
   local starting_ref="$1"
 
-  echo_announce "Resorting scoped commits"
+  # The callee will emit "HEAD" if starting_ref diverged from HEAD and --force.
+  local starting_sha_or_HEAD
+  starting_sha_or_HEAD="$(must_confirm_shares_history_with_head "${starting_ref}")" || exit $?
 
-  # Query the upstream SHA and verify its in the
-  # current branch history, and not the first commit.
-  local starting_sha="$(git rev-parse "${starting_ref}")"
+  if [ "${starting_sha_or_HEAD}" = "HEAD" ]; then
+    echo_announce "Not resorting! Divergent"
 
-  if [ -z "${starting_sha}" ]; then
-    >&2 echo "ERROR: Unexpected: No SHA found for gitref “${starting_ref}”"
-
-    exit 1
+    return 0
   fi
 
-  # The callee will emit "HEAD" if starting_sha diverged from HEAD and --force.
-  local starting_sha_or_HEAD
-  starting_sha_or_HEAD="$(must_confirm_shares_history_with_head "${starting_sha}")"
+  echo_announce "Scoped resort (${starting_sha_or_HEAD})"
+
+  confirmed_state_resort_from_sha "${starting_sha_or_HEAD}"
+}
+
+confirmed_state_resort_from_sha () {
+  local starting_sha="$1"
 
   # "Stash" (WIP-commit) untidy changes, marked as PRIVATE, so rebase will
   # leave as most recent commit (and won't resort below other commits).
@@ -624,7 +633,7 @@ confirm_state_and_resort_to_prepare_branch () {
   local retcode=0
 
   # Sort commits by "scope" (according to message prefixes).
-  git_sort_by_scope "${starting_sha_or_HEAD}" > /dev/null \
+  git_sort_by_scope "${starting_sha}" > /dev/null \
     || retcode=$?
 
   # If git sort-by-scope fails, it's either because of a git-rebase
@@ -656,99 +665,73 @@ confirm_state_and_resort_to_prepare_branch () {
 #  needs to sort-by-scope manually, and then pass us a starting gitref).
 # CXREF: must_confirm_commit_at_or_behind_commit
 must_confirm_shares_history_with_head () {
-  local ref_sha="$1"
-  local ref_name="$2"
+  local gitref="$1"
 
-  # Note the name won't include the refs/ prefix.
-  #   $ git name-rev 9912e198f7bb52e746cb9cbd93a57379e5553eca
-  #   9912e198f7bb52e746cb9cbd93a57379e5553eca remotes/publish/foo/bar
-  [ -n "${ref_name}" ] || ref_name=$(git name-rev "${ref_sha}" | awk '{ print $2 }')
+  if git merge-base --is-ancestor "${gitref}" "HEAD"; then
+    # The common ancestor is ${ref_sha} and/or HEAD.
+    if git merge-base --is-ancestor "HEAD" "${gitref}"; then
+      # gitref *is* HEAD.
 
-  # I don't think this would ever happen. Just being double-checky.
-  if [ -z "${ref_name}" ]; then
-    >&2 echo "ERROR: Unexpected: No name found from SHA “${ref_sha}”"
+      # Check that this isn't just a one-commit pony.
+      if [ $(git_number_of_commits) -eq 1 ]; then
+        # It is just a one-commit pony!
+        #
+        # Return happily, so caller can finish the push/archive.
+        echo "HEAD"
+
+        return 0
+      fi
+      # else  nope, more than one commit, so caller's starting-ref is at
+      #       HEAD, which means nothing to push/archive.
+
+      # We finish the app here:
+      # - This function is called when pulling changes for a single project,
+      #   or when pushing changes or archiving patches for a single project.
+      # - This function is not called to work on more than one project, so
+      #   exiting here is fine (albeit a little short-circuity, I admit).
+      >&2 echo "Nothing to do: Already up-to-date with “${gitref}”"
+
+      ${PW_OPTION_FAIL_ELEVENSES:-false} \
+        && exit ${PW_ELEVENSES} \
+        || exit 0
+    else
+      # gitref def behind HEAD.
+      #
+      # Print gitref's SHA.
+      git merge-base "${gitref}" "HEAD"
+
+      return 0
+    fi
+  elif git merge-base --is-ancestor "HEAD" "${gitref}"; then
+    # gitref ahead of HEAD. *How *did* we get here?*
+    #
+    # The gitref might be a local or remote branch name, or a tag name.
+    # But it's very unlikely a local branch or tag would be ahead of the
+    # current branch, unless the user is outside the normal workflow. So
+    # we'll assume the gitref is a remote branch and print related hint.
+    >&2 echo "ERROR: The object “${gitref}” is ahead of the current branch."
+    >&2 echo "- HINT: Pull or rebase upstream changes, and then try again."
 
     exit 1
-  fi
-
-  local head_sha
-  head_sha="$(git rev-parse HEAD)"
-
-  # Check if starting-from also at HEAD.
-  if [ "${ref_sha}" = "${head_sha}" ]; then
-    >&2 echo "Nothing to do: Already up-to-date with “${ref_name}”"
-
-    # This function is called when pulling changes for a single project,
-    # or when pushing changes or archiving patches for a single project.
-    # This function is not called to work on more than one project, so
-    # returning here is fine (albeit a little short-circuity, I admit).
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
-  fi
-
-  local ancestor_sha
-  ancestor_sha="$(git merge-base "${ref_sha}" "HEAD")"
-
-  # If the common ancestor is at HEAD, the starting-from ref must be ahead.
-  # - But since common ancestor is HEAD, there must not be
-  #   any new commits, hence no patches to output.
-  if [ "${ancestor_sha}" = "${head_sha}" ]; then
-    >&2 echo "Nothing to do: The reference commit (“${ref_name}”) is ahead of the " \
-      "current branch (“$(git_branch_name)”), but there's nothing new locally"
-
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
-  fi
-
-  # We expect that the common ancestor is the upstream's HEAD,
-  # otherwise something's amiss.
-  if [ "${ancestor_sha}" != "${ref_sha}" ]; then
-    # Check if revision shares history with HEAD.
-    local first_commit_sha
-    first_commit_sha="$(git_first_commit_sha)"
-
-    local is_ancestor=true
-    if [ "${ancestor_sha}" = "${first_commit_sha}" ]; then
-      is_ancestor=false
-    fi
-
-    # 2023-01-16: Did I not know about --is-ancestor when I developed this code?
-    # - Contract-by-design: Let's check that both approaches work.
-    if ! git merge-base --is-ancestor "${ref_sha}" "HEAD"; then
-      if ${is_ancestor} && ! ${PW_OPTION_FORCE_PUSH}; then
-        # This is a DEV error (if this path is reachable).
-        >&2 echo "ERROR: DEV: Unexpected: --is-ancestor signaled false, but merge-base compare was true"
-      fi
-      is_ancestor=false
-    elif ! ${is_ancestor}; then
-      # This is a DEV error (if this path is reachable).
-      >&2 echo "ERROR: DEV: Unexpected: --is-ancestor signaled true, but merge-base compare was false"
-    fi
-
-    if ! ${is_ancestor}; then
-      if ! ${PW_OPTION_FORCE_PUSH}; then
-        >&2 echo "ERROR: The “${ref_name}” branch does not share history with HEAD."
-        >&2 echo "- HINT: You probably rebased one of them."
-        >&2 echo "  - You may need to call sort-by-scope with a specific SHA."
-        >&2 echo "  - Then you probably need to force-push changes."
-        >&2 echo "    ... unless you want to try rebasing atop upstream,"
-        >&2 echo "    and then you could try running this command again."
-
-        exit 1
-      else
-        >&2 info "FORCE: The divergent “${ref_name}” branch is being reset to HEAD"
-
-        ref_sha="HEAD"
-      fi
-    else
-      >&2 echo "ERROR: The upstream “${ref_name}” branch is ahead of the current branch."
-      >&2 echo "- HINT: Pull or rebase upstream changes, and then try again."
+  else
+    # Diverged!
+    if ! ${PW_OPTION_FORCE_PUSH}; then
+      >&2 echo "ERROR: The object “${gitref}” does not share history with HEAD."
+      >&2 echo "- HINT: You probably rebased one of them."
+      >&2 echo "  - You may need to call sort-by-scope with a specific SHA."
+      >&2 echo "  - Then you probably need to force-push changes."
+      >&2 echo "    ... unless you want to try rebasing atop upstream,"
+      >&2 echo "    and then you could try running this command again."
 
       exit 1
+    else
+      >&2 info "FORCE: The object “${gitref}” is divergent!"
+
+      echo "HEAD"
+
+      return 0
     fi
   fi
-
-  printf "%s" "${ref_sha}"
-
-  return 0
 }
 
 # Reorder commits in prep. to diff.
