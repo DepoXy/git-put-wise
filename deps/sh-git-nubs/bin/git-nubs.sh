@@ -212,8 +212,9 @@ git_parent_of () {
 # print counts per author.
 git_number_of_commits () {
   local gitref="${1:-HEAD}"
+  [ -z "$1" ] || shift
 
-  git rev-list --count "${gitref}"
+  git rev-list --count "${gitref}" "$@"
 }
 
 # ***
@@ -416,7 +417,13 @@ git_insist_tidy () {
 }
 
 git_nothing_staged () {
-  git diff --cached --quiet
+  local filepath="$1"
+
+  if [ -z "${filepath}" ]; then
+    git diff --cached --quiet
+  else
+    git diff --cached --quiet -- "${filepath}"
+  fi
 }
 
 git_insist_nothing_staged () {
