@@ -65,7 +65,9 @@ source_dep () {
 
   # DEV: This is for testing individual functions, by sourcing this script.
   # - Notice you'll need to source the apply/archive/pull/push script, too.
+  local is_sourced=false
   if [ "$(basename "$0")" = "bash" ]; then
+    is_sourced=true
     project_root="$(pwd -L)"
   fi
 
@@ -73,8 +75,14 @@ source_dep () {
 
   if [ ! -f "${dep_path}" ]; then
     >&2 echo "ERROR: Could not identify git-put-wise dependency path."
-    >&2 echo "- Hint: Did you *copy* bin/git-put-wise somewhere on PATH?"
-    >&2 echo "  - Please use a symlink instead."
+
+    if ! ${is_sourced}; then
+      >&2 echo "- Hint: Did you *copy* bin/git-put-wise somewhere on PATH?"
+      >&2 echo "  - Please use a symlink instead."
+    else
+      >&2 echo "- Hint: Try sourcing this script from the project root instead."
+    fi
+
     >&2 echo "- Our incorrect dependency path guess: “${dep_path}”"
 
     exit 1
