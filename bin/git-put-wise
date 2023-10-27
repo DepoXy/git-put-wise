@@ -60,15 +60,22 @@ source_deps () {
 source_dep () {
   local dep_path="$1"
 
+  # This file at bin/git-put-wise, so project root is one level up.
   local project_root
   project_root="$(dirname "$(realpath "$0")")/.."
 
-  # DEV: This is for testing individual functions, by sourcing this script.
-  # - Notice you'll need to source the apply/archive/pull/push script, too.
+  # DEV: Source this script from project root to test individual functions.
+  # - Source apply/archive/pull/push script(s) afterwards to test them, too.
   local is_sourced=false
-  if [ "$(basename "$0")" = "bash" ]; then
+  if $(printf %s "$0" | grep -q -E '(^-?|\/)(ba|da|fi|z)?sh$' -); then
     is_sourced=true
-    project_root="$(pwd -L)"
+    if [ -n "${BASH_SOURCE[0]}" ]; then
+      # I.e.,
+      #   if [ "$(basename "$0")" = "bash" ]; then
+      project_root="$(dirname -- "${BASH_SOURCE[0]}")/.."
+    else
+      project_root="$(pwd -L)"
+    fi
   fi
 
   local dep_path="${project_root}/${dep_path}"
