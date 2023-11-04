@@ -492,6 +492,8 @@ print_project_path_normalized () {
   printf "%s" "${project_path}"
 }
 
+# ***
+
 print_sha () {
   local key="$1"
 
@@ -507,6 +509,8 @@ shorten_sha () {
 
   git_sha_shorten "${string}" "${maxlen}"
 }
+
+# ***
 
 substitute_home_tilde () {
   echo "$1" | sed -E "s#^${HOME}(/|$)#~\1#"
