@@ -502,7 +502,10 @@ print_sha () {
 }
 
 shorten_sha () {
-  printf "$1" | sed -E 's/^(.{'${PW_SHA1SUM_LENGTH}'}).*/\1/g'
+  local string="$1"
+  local maxlen="${2:-${PW_SHA1SUM_LENGTH}}"
+
+  git_sha_shorten "${string}" "${maxlen}"
 }
 
 substitute_home_tilde () {
