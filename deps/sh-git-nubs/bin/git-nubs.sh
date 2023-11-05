@@ -656,7 +656,7 @@ GITSMART_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<pat
 #     git --no-pager tag -l ${GITSMART_VERSION_TAG_PATTERNS}
 GITSMART_VERSION_TAG_PATTERNS="v[0-9]* [0-9]*"
 
-# Get the latest non-pre-release version tag, e.g., 1.2.3.
+# Get the latest non-pre-release aka Normal version tag, e.g., 1.2.3.
 
 git_latest_version_basetag () {
   # Any args are passed to git-tag.
