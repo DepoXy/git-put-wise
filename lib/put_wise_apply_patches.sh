@@ -857,7 +857,7 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
       || return 0
 
     local will_commit_wip=false
-    test -z "$(git status --porcelain=v1)" 
+    test -z "$(git status --porcelain=v1)" \
       || will_commit_wip=true
 
     echo "ALERT: These patches were not generated from the"
