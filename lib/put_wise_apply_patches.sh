@@ -314,7 +314,7 @@ process_patch_archive () {
   local RET_REC_PLAIN_NAME
   # Note the OR-ing disables errexit for nonzero return, but not exit.
   # - (Though `$(subprocess) || retval=$?` would prevent `exit`.)
-  process_unpacked_patchkage "${patch_dir}" "${gpgf}" "${ret_rec_crypt_path}") \
+  process_unpacked_patchkage "${patch_dir}" "${gpgf}" "${ret_rec_crypt_path}" \
     || retval=$?
 
   # If process_unpacked_patchkage "failed", it may not have cd'd back.
