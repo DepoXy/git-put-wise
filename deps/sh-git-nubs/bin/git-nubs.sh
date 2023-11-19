@@ -156,6 +156,14 @@ git_tag_name_check_format () {
   git check-ref-format "refs/tags/${tag_name}"
 }
 
+git_branches_with_tag () {
+  local tag_name="$1"
+  shift
+  # $@: git-branch [<pattern>...] arg(s)
+
+  git branch --list --contains refs/tags/${tag_name} $@
+}
+
 # ***
 
 git_HEAD_commit_sha () {
