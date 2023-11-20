@@ -192,8 +192,8 @@ put_wise_push_remotes_go () {
     fi
 
     if [ -z "${remote_name}" ]; then
-      >&2 echo "ERROR: Cannot determine push remote." \
-        "Either set tracking branch to remote branch, or use --remote."
+      >&2 echo "ERROR: Cannot determine push remote from tracking branch"
+      >&2 echo "- Either \`git branch -u <remote>/<branch>\` or use --remote"
 
       exit 1
     fi
