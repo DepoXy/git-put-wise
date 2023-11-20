@@ -183,7 +183,13 @@ put_wise_push_remotes_go () {
     #     that push uses the same feature branch name that I use locally.
     # - The following effectively mimics 'current'.
     local tracking_branch
-    tracking_branch="$(git_tracking_branch)"
+
+    if ! tracking_branch="$(git_tracking_branch)"; then
+      >&2 echo "ERROR: No tracking branch: Needed to determine push remote"
+      >&2 echo "- Either \`git branch -u <remote>/<branch>\` or use --remote"
+
+      exit 1
+    fi
 
     remote_name="${PW_OPTION_REMOTE}"
 
