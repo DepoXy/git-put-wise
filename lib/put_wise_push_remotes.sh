@@ -327,8 +327,7 @@ put_wise_push_remotes_go () {
 
   local tagged_release=""
   local tagged_scoping=""
-
-  local remote_scoping_branch=""
+  local tagged_current=""
 
   if [ -n "${remote_release}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${release_boundary_or_HEAD}" > /dev/null
@@ -337,12 +336,10 @@ put_wise_push_remotes_go () {
   if [ -n "${remote_protected}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_SCOPING}" "${protected_boundary_or_HEAD}" > /dev/null
     tagged_scoping="${PW_TAG_SCOPE_PUSHES_SCOPING}"
-    remote_scoping_branch="${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
   fi
   if [ -n "${remote_current}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_THEREST}" "${release_boundary_or_HEAD}" > /dev/null
-    tagged_scoping="${PW_TAG_SCOPE_PUSHES_THEREST}"
-    remote_scoping_branch="${remote_name}/${branch_name}"
+    tagged_current="${remote_name}/${branch_name}"
   fi
 
   # ***
@@ -360,9 +357,15 @@ put_wise_push_remotes_go () {
     echo "${ornament}ERROR: Push failed! denied by ‘${remote_branch}’$(attr_reset)"
   }
 
+  # In the prompt_user call, note that we have "<remote>/<branch>" vars.
+  # already, e.g., we could use ${remote_release} instead of the complete
+  #   ${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}
+  # but the latter matches the git-push command, so using that for matchability.
+
   if prompt_user_to_continue_update_remotes \
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
-    "${tagged_scoping}" "${remote_scoping_branch}" \
+    "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
+    "${tagged_current}" "${remote_name}/${branch_name}" \
   ; then
     if ! prompt_user_to_review_action_plan_using_tig; then
       >&2 echo "${PW_USER_CANCELED_GOODBYE}"
