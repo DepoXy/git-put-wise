@@ -460,17 +460,33 @@ git_force_branch () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 prompt_user_to_continue_update_remotes () {
-  local tagged_release="$1"
-  local remote_release_branch="$2"
-  local tagged_scoping="$3"
-  local remote_scoping_branch="$4"
+  local something_tagged=false
 
-  # Contract-by-design assertion that author didn't make a DEV misstep.
-  if [ -z "${tagged_release}" ] && [ -z "${tagged_scoping}" ]; then
-    >&2 echo "ERROR: prompt_user_to_continue_update_remotes: Nothing tagged?"
+  local orig_count="$#"
+
+  while [ $# -gt 0 ]; do
+    local tagged_name="$1"
+    local remote_branch_nickname="$2"
+
+    if ! shift 2; then
+      >&2 echo "ABORT: prompt_user_to_continue_update_remotes:" \
+        "Uneven arg count (${orig_count})"
+
+      exit 1
+    fi
+
+    if [ -n "${tagged_name}" ]; then
+      something_tagged=true
+    fi
+  done
+
+  if ! ${something_tagged}; then
+    >&2 echo "ABORT: prompt_user_to_continue_update_remotes: Nothing tagged?"
 
     exit 1
   fi
+
+  # ***
 
   ! ${PW_OPTION_QUICK_TIG:-false} || return 0
 
@@ -480,16 +496,23 @@ prompt_user_to_continue_update_remotes () {
     echo
     echo "We'll run tig, and you can look for these tag(s) in the revision history:"
     echo
+
     local pushed_to_msg="This revision will be pushed to"
-    if [ -n "${tagged_release}" ]; then
-      echo "  <${tagged_release}> — ${pushed_to_msg} ${remote_release_branch}"
-    fi
-    if [ -n "${tagged_scoping}" ]; then
-      echo "  <${tagged_scoping}> — ${pushed_to_msg} ${remote_scoping_branch}"
-    fi
+
+    local n_args=0
+    for arg in "$@"; do
+      local tagged_name="$1"
+      local remote_branch_nickname="$2"
+
+      if [ -n "${tagged_name}" ]; then
+        echo "  <${tagged_name}> — ${pushed_to_msg} ${remote_branch_nickname}"
+      fi
+    done
+
     echo
     echo "Then press 'w' to confirm the plan and push"
     echo "- Or press 'q' to quit tig and cancel everything"
+
     tig_prompt_print_skip_hint
   }
   print_tig_review_instructions
