@@ -121,7 +121,7 @@ Environment variables you can use instead of options above:
 
   -N|--author-name <name>   PW_OPTION_APPLY_AUTHOR_NAME=\"<name>\"
   -M|--author-email <mail>  PW_OPTION_APPLY_AUTHOR_EMAIL=\"<mail>\"
-  -L|--leave-author         PW_OPTION_RESET_AUTHOR_DISABLE=true
+  -a|--leave-author         PW_OPTION_RESET_AUTHOR_DISABLE=true
   --reset-author            PW_OPTION_RESET_AUTHOR_DISABLE=false
 
   -f|--force/-F|--no-force  PW_OPTION_FORCE_PUSH=true|false

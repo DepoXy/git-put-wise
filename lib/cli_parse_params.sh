@@ -232,7 +232,7 @@ cli_parse_params () {
         shift 2
         ;;
 
-      -L | --leave-author)
+      -a | --leave-author)
         PW_OPTION_RESET_AUTHOR_DISABLE=true
 
         shift
@@ -424,7 +424,7 @@ cli_parse_params () {
 
                 shift
                 ;;
-              L)
+              a)
                 PW_OPTION_RESET_AUTHOR_DISABLE=true
                 ;;
               f)
