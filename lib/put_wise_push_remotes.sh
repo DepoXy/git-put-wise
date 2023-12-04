@@ -306,9 +306,10 @@ put_wise_push_remotes_go () {
   # ***
 
   # Temporary pw-private/pw-protected scoping tags. For user, not for code.
-  # - So sad that `tig` doesn't show these characters:
-  #    PW_TAG_SCOPE_MARKER_PRIVATE="pw-🥷"
-  #    PW_TAG_SCOPE_MARKER_PROTECTED="pw-🧚"
+  # - Note that some characters will not claim their full width in the
+  #   terminal (including tig) such as 🛡 or 🛡️. Odder, some might show up
+  #   in the terminal but appear blank in tig, such as 🥷 (on author's @linux).
+  #   - Just FYI that you should `git tag test-🥷-me` aforehand.
   PW_TAG_SCOPE_MARKER_PRIVATE="pw-🔴"
   PW_TAG_SCOPE_MARKER_PROTECTED="pw-🔵"
   # Here's a test tag to show which characters display properly in @linux tig:
