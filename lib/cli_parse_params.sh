@@ -55,6 +55,7 @@ PW_ACTION_PULL_CLEANUP=${PW_ACTION_PULL_CLEANUP:-false}
 PW_OPTION_NO_CLEANUP=${PW_OPTION_NO_CLEANUP:-false}
 
 PW_OPTION_FORCE_PUSH=${PW_OPTION_FORCE_PUSH:-false}
+PW_OPTION_USE_LIMINAL=${PW_OPTION_USE_LIMINAL:-false}
 
 PW_OPTION_SKIP_SQUASH=${PW_OPTION_SKIP_SQUASH:-false}
 
@@ -93,6 +94,11 @@ cli_parse_params () {
 
       break
     fi
+
+    # Avail  a b c d e f g h i j k l m n o p q r s t u v w x y z
+    # ↓↓↓↓↓  ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
+    # lower:       d       h   j k   m     p q   s t     w x   z
+    # upper:   B   D     G H I   K         P Q         V W X Y Z
 
     case $1 in
       -h | --help | help)
@@ -252,6 +258,18 @@ cli_parse_params () {
 
       -F | --no-force)
         PW_OPTION_FORCE_PUSH=false
+
+        shift
+        ;;
+
+      -l | --liminal)
+        PW_OPTION_USE_LIMINAL=true
+
+        shift
+        ;;
+
+      -L | --no-liminal)
+        PW_OPTION_USE_LIMINAL=false
 
         shift
         ;;
@@ -432,6 +450,12 @@ cli_parse_params () {
                 ;;
               F)
                 PW_OPTION_FORCE_PUSH=false
+                ;;
+              l)
+                PW_OPTION_USE_LIMINAL=true
+                ;;
+              L)
+                PW_OPTION_USE_LIMINAL=false
                 ;;
               E)
                 PW_OPTION_QUICK_TIG=true

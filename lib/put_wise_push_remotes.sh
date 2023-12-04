@@ -34,11 +34,15 @@ put_wise_push_remotes_go () {
   local git_push_force=""
   ! ${PW_OPTION_FORCE_PUSH} || git_push_force="--force-with-lease"
 
+  local include_liminal="${PW_OPTION_USE_LIMINAL:-false}"
+  local force_liminal=false
+
   local sort_from_commit=""
   local sortless_msg=""
 
   local local_release=""
   local remote_release=""
+  local remote_liminal=""
   local remote_protected=""
   local remote_current=""
   local remote_name=""
@@ -50,6 +54,7 @@ put_wise_push_remotes_go () {
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
     local_release="${LOCAL_BRANCH_RELEASE}"
     remote_release="${REMOTE_BRANCH_RELEASE}"
+    remote_liminal="${REMOTE_BRANCH_LIMINAL}"
     remote_protected="${REMOTE_BRANCH_SCOPING}"
 
     # The pw/in tag signifies the final patch from the latest --apply command.
@@ -70,6 +75,15 @@ put_wise_push_remotes_go () {
     # having a 'release' branch.
     if git_tag_exists "${applied_tag}"; then
       sort_from_commit="${applied_tag}"
+    fi
+
+    # User can opt-into 'liminal' usage, or if remote branch exists,
+    # then it's automatic. (User has to manually delete that branch
+    # if you want to disable 'liminal' behavior.)
+    if ${include_liminal} || git_remote_branch_exists "${remote_liminal}"; then
+      force_liminal=true
+    else
+      remote_liminal=""
     fi
 
     if git_remote_branch_exists "${remote_protected}"; then
@@ -138,6 +152,12 @@ put_wise_push_remotes_go () {
 
       # Resort since 'release', which is guaranteed further along.
       sort_from_commit="${local_release}"
+    fi
+
+    # When liminal enabled, we never force-push to 'release'.
+    if ${PW_OPTION_FORCE_PUSH} && ${force_liminal}; then
+      local_release=""
+      remote_release=""
     fi
 
     # NOTE: If resorting since 'release' or 'publish/release', it means
@@ -316,13 +336,15 @@ put_wise_push_remotes_go () {
   #   PW_TAG_SCOPE_MARKER_PROTECTED="pw-🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜"
   #                             @linux: ^^      ^^    ^^^^              ^^^^
 
-  # Use different flags for different branches: release, scoping, therest.
+  # Use different flags for different branches: release, liminal, scoping, therest.
   # - SAVVY: Test new emoji b/c not all visible in tig ... # ↓↓↓↓↓ These all visible in tig @linux
   PW_TAG_PREFIX_RELEASE="${PW_TAG_PREFIX_RELEASE:-pw-📢}"  # 📢🚀
+  PW_TAG_PREFIX_LIMINAL="${PW_TAG_PREFIX_LIMINAL:-pw-💥}"  # 🔥🌀💥🎯🧚
   PW_TAG_PREFIX_SCOPING="${PW_TAG_PREFIX_SCOPING:-pw-💪}"  # 🔰💪🔐🔒🔏🔑🔓⛔🙌🤐🛑👇⛓️
   PW_TAG_PREFIX_THEREST="${PW_TAG_PREFIX_THEREST:-pw-🚩}"  # 🚩🏁🔀
   PW_TAG_SCOPE_PUSHES_RELEASE="${PW_TAG_PREFIX_RELEASE}-${RELEASE_REMOTE_BRANCH}"
   PW_TAG_SCOPE_PUSHES_LIMINAL="${PW_TAG_PREFIX_LIMINAL}-${LIMINAL_REMOTE_BRANCH}"
+  PW_TAG_SCOPE_PUSHES_SCOPING="${PW_TAG_PREFIX_SCOPING}-${SCOPING_REMOTE_NAME}"
   PW_TAG_SCOPE_PUSHES_THEREST="${PW_TAG_PREFIX_THEREST}-${branch_name}"
 
   # Skip ${DRY_RUN}, tags no biggie, and user wants to see in tig.
@@ -330,6 +352,7 @@ put_wise_push_remotes_go () {
   git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${release_boundary_or_HEAD}" > /dev/null
 
   local tagged_release=""
+  local tagged_liminal=""
   local tagged_scoping=""
   local tagged_current=""
 
@@ -337,10 +360,17 @@ put_wise_push_remotes_go () {
     git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${release_boundary_or_HEAD}" > /dev/null
     tagged_release="${PW_TAG_SCOPE_PUSHES_RELEASE}"
   fi
+
+  if [ -n "${remote_liminal}" ]; then
+    git tag -f "${PW_TAG_SCOPE_PUSHES_LIMINAL}" "${release_boundary_or_HEAD}" > /dev/null
+    tagged_liminal="${PW_TAG_SCOPE_PUSHES_LIMINAL}"
+  fi
+
   if [ -n "${remote_protected}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_SCOPING}" "${protected_boundary_or_HEAD}" > /dev/null
     tagged_scoping="${PW_TAG_SCOPE_PUSHES_SCOPING}"
   fi
+
   if [ -n "${remote_current}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_THEREST}" "${release_boundary_or_HEAD}" > /dev/null
     tagged_current="${remote_name}/${branch_name}"
@@ -368,6 +398,7 @@ put_wise_push_remotes_go () {
 
   if prompt_user_to_continue_update_remotes \
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
+    "${tagged_liminal}" "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}" \
     "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
     "${tagged_current}" "${remote_name}/${branch_name}" \
   ; then
@@ -381,6 +412,13 @@ put_wise_push_remotes_go () {
         ${DRY_RUN} git push "${RELEASE_REMOTE_NAME}" \
           "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
+      fi
+
+      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
+        echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
+        ${DRY_RUN} git push "${LIMINAL_REMOTE_NAME}" \
+          "${release_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
+            || handle_push_failed "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}"
       fi
 
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_protected}"; then
@@ -413,6 +451,7 @@ put_wise_push_remotes_go () {
   quietly_delete_tag "${PW_TAG_SCOPE_MARKER_PROTECTED}"
 
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_RELEASE}"
+  quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_LIMINAL}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_SCOPING}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_THEREST}"
 

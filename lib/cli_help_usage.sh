@@ -125,6 +125,8 @@ Environment variables you can use instead of options above:
   --reset-author            PW_OPTION_RESET_AUTHOR_DISABLE=false
 
   -f|--force/-F|--no-force  PW_OPTION_FORCE_PUSH=true|false
+  -l|--liminal/             PW_OPTION_USE_LIMINAL=true
+    -L|--no-liminal         PW_OPTION_USE_LIMINAL=false
   --explain/-E|--no-explain PW_OPTION_QUICK_TIG=false|true
 
   -U|--no-squash            PW_OPTION_SKIP_SQUASH=true
