@@ -320,6 +320,7 @@ put_wise_push_remotes_go () {
       echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
 
       git_force_branch "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}"
+      # MAYBE/2023-12-03: Restore branch pointer if git-push canceled/fails?
     fi
   fi
 
