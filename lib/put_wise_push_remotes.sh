@@ -315,7 +315,7 @@ put_wise_push_remotes_go () {
 
   # It's assumed you control the 'release' branch and that you wouldn't
   # be using this script otherwise, which is why we just move this pointer.
-  if [ -n "${local_release}" ] || [ -n "${remote_release}" ]; then
+  if [ -n "${local_release}" ]; then
     if [ "$(git_branch_name)" != "${LOCAL_BRANCH_RELEASE}" ]; then
       echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
 
