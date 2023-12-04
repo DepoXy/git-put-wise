@@ -157,6 +157,8 @@ put_wise_push_remotes_go () {
       )"
     fi
 
+  # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
+
   elif [ "$(git_branch_name)" = "${LOCAL_BRANCH_RELEASE}" ]; then
     # Because we rebase to reorder scoping commits, we need to identify
     # a starting ref. Without a starting ref, it gets complicated (do
