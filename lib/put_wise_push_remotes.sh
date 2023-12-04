@@ -316,11 +316,14 @@ put_wise_push_remotes_go () {
   #   PW_TAG_SCOPE_MARKER_PROTECTED="pw-🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜"
   #                             @linux: ^^      ^^    ^^^^              ^^^^
 
-  # These all show up in tig @linux: pw-🚩🏁🔀
-  PW_TAG_SCOPE_PUSHES_PREFIX="pw-🚩"
-  PW_TAG_SCOPE_PUSHES_RELEASE="${PW_TAG_SCOPE_PUSHES_PREFIX}-${RELEASE_REMOTE_BRANCH}"
-  PW_TAG_SCOPE_PUSHES_SCOPING="${PW_TAG_SCOPE_PUSHES_PREFIX}-${SCOPING_REMOTE_NAME}"
-  PW_TAG_SCOPE_PUSHES_THEREST="${PW_TAG_SCOPE_PUSHES_PREFIX}-${branch_name}"
+  # Use different flags for different branches: release, scoping, therest.
+  # - SAVVY: Test new emoji b/c not all visible in tig ... # ↓↓↓↓↓ These all visible in tig @linux
+  PW_TAG_PREFIX_RELEASE="${PW_TAG_PREFIX_RELEASE:-pw-📢}"  # 📢🚀
+  PW_TAG_PREFIX_SCOPING="${PW_TAG_PREFIX_SCOPING:-pw-💪}"  # 🔰💪🔐🔒🔏🔑🔓⛔🙌🤐🛑👇⛓️
+  PW_TAG_PREFIX_THEREST="${PW_TAG_PREFIX_THEREST:-pw-🚩}"  # 🚩🏁🔀
+  PW_TAG_SCOPE_PUSHES_RELEASE="${PW_TAG_PREFIX_RELEASE}-${RELEASE_REMOTE_BRANCH}"
+  PW_TAG_SCOPE_PUSHES_LIMINAL="${PW_TAG_PREFIX_LIMINAL}-${LIMINAL_REMOTE_BRANCH}"
+  PW_TAG_SCOPE_PUSHES_THEREST="${PW_TAG_PREFIX_THEREST}-${branch_name}"
 
   # Skip ${DRY_RUN}, tags no biggie, and user wants to see in tig.
   git tag -f "${PW_TAG_SCOPE_MARKER_PRIVATE}" "${protected_boundary_or_HEAD}" > /dev/null
