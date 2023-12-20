@@ -758,23 +758,30 @@ latest_version_fulltag () {
 #   git_largest_version_tag --contains $(git first-commit)
 # would return the largest verstion tag from the current branch.
 
+# This function prints the largest version tag from any commit,
+# and it includes (does not strip) the v-prefix, like some of
+# these git-nubs calls do.
 git_largest_version_tag () {
   # Any args are passed to git-tag.
 
   local basevers="$(git_latest_version_basetag "$@")"
 
+  if [ -z "${basevers}" ]; then
+
+    return 0
+  fi
+
   # See if the basevers tag is an actual tag (e.g., 1.2.3), otherwise
   # git_latest_version_basetag only found pre-release versions.
   # - A basevers version is higher than any pre-release with the same basevers.
-  if git show-ref --tags -- "${basevers}" > /dev/null; then
-    fullvers="${basevers}"
+  if git show-ref --tags -- "${basevers}" "v${basevers}" > /dev/null; then
+    # Print the tag name with the v-prefix, if present.
+    git tag -l -- "${basevers}" "v${basevers}"
   else
     # Latest version is a prerelease tag. Determine which pre-release
     # from that basevers is the largest.
-    fullvers="$(latest_version_fulltag "${basevers}" "$@")"
+    latest_version_fulltag "${basevers}" "$@"
   fi
-
-  [ -z "${fullvers}" ] || echo "${fullvers}"
 }
 
 # ***
