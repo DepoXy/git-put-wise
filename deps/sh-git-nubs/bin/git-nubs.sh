@@ -672,6 +672,7 @@ git_latest_version_basetag () {
   git tag -l "$@" ${GITSMART_VERSION_TAG_PATTERNS} |
     command grep -E -e "${GITSMART_RE_VERSPARTS}" |
     command sed -E "s/${GITSMART_RE_VERSPARTS}/\2.\3.\5/" |
+    command sed -E "s/\.+$//" |
     command sort -r --version-sort |
     command head -n1
 }
