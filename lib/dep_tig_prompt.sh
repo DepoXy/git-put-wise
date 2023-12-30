@@ -30,6 +30,8 @@ PW_PUSH_TIG_REPLY_PATH=".gpw-yes"
 prompt_user_to_review_action_plan_using_tig () {
   local custom_cfg="$1"
 
+  ! ${PW_OPTION_AUTO_CONFIRM:-false} || return 0
+
   local approved=false
 
   # E.g., ".gpw-yes", where tig 'w' command indicates user pressed 'w'.

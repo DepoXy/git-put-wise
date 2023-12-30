@@ -56,6 +56,7 @@ PW_OPTION_NO_CLEANUP=${PW_OPTION_NO_CLEANUP:-false}
 
 PW_OPTION_FORCE_PUSH=${PW_OPTION_FORCE_PUSH:-false}
 PW_OPTION_USE_LIMINAL=${PW_OPTION_USE_LIMINAL:-false}
+PW_OPTION_AUTO_CONFIRM=${PW_OPTION_AUTO_CONFIRM:-false}
 
 PW_OPTION_SKIP_SQUASH=${PW_OPTION_SKIP_SQUASH:-false}
 
@@ -141,7 +142,7 @@ cli_parse_params () {
         shift
         ;;
 
-      -y | --apply | apply)
+      -a | --apply | apply)
         PW_ACTION_APPLY=true
 
         shift
@@ -238,7 +239,7 @@ cli_parse_params () {
         shift 2
         ;;
 
-      -a | --leave-author)
+      -H | --leave-author)
         PW_OPTION_RESET_AUTHOR_DISABLE=true
 
         shift
@@ -282,6 +283,18 @@ cli_parse_params () {
 
       -E | --no-explain)
         PW_OPTION_QUICK_TIG=true
+
+        shift
+        ;;
+
+      -y | --yes)
+        PW_OPTION_AUTO_CONFIRM=true
+
+        shift
+        ;;
+
+      --no-yes)
+        PW_OPTION_AUTO_CONFIRM=false
 
         shift
         ;;
@@ -388,7 +401,7 @@ cli_parse_params () {
               e)
                 PW_ACTION_ARCHIVE=true
                 ;;
-              y)
+              a)
                 PW_ACTION_APPLY=true
                 ;;
               A)
@@ -442,7 +455,7 @@ cli_parse_params () {
 
                 shift
                 ;;
-              a)
+              H)
                 PW_OPTION_RESET_AUTHOR_DISABLE=true
                 ;;
               f)
@@ -459,6 +472,9 @@ cli_parse_params () {
                 ;;
               E)
                 PW_OPTION_QUICK_TIG=true
+                ;;
+              y)
+                PW_OPTION_AUTO_CONFIRM=true
                 ;;
               u)
                 PW_OPTION_SKIP_SQUASH=false

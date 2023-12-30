@@ -83,6 +83,9 @@ Additional options
   --explain                 With --push, explain how tig prompt works [default]
   -E|--no-explain           With --push, don’t explain how tig prompt works
 
+  -y|--yes                  With --push, skip tig dialog push confirmation
+  --no-yes                  With --push, don't skip tig push confirmation
+
   -u|--squash               Fixup commits to the patches repo [default]
   -U|--no-squash            Make new commits to patches repo
 
@@ -128,6 +131,7 @@ Environment variables you can use instead of options above:
   -l|--liminal/             PW_OPTION_USE_LIMINAL=true
     -L|--no-liminal         PW_OPTION_USE_LIMINAL=false
   --explain/-E|--no-explain PW_OPTION_QUICK_TIG=false|true
+  --yes/-y|--no-yes         PW_OPTION_AUTO_CONFIRM=true|false
 
   -U|--no-squash            PW_OPTION_SKIP_SQUASH=true
   -u|--squash               PW_OPTION_SKIP_SQUASH=false
