@@ -286,6 +286,10 @@ git_remote_default_branch () {
 
   [ -n "${remote}" ] || return 1
 
+  # ALTLY/2024-02-18: We could instead use git-symbolic-ref, but we'd still
+  # want to hit the network to fetch any remote changes first:
+  #   git remote set-head ${remote} --auto
+  #   git symbolic-ref refs/remotes/${remote}/HEAD | sed 's@^refs/remotes/${remote}/@@'
   git remote show ${remote} | grep 'HEAD branch' | cut -d' ' -f5
 }
 
@@ -630,6 +634,10 @@ git_versions_tagged_for_commit_object () {
 GITSMART_RE_VERSPARTS__INCLUSIVE='(v)?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?'
 GITSMART_RE_VERSPARTS="^${GITSMART_RE_VERSPARTS__INCLUSIVE}$"
 
+# For culling pre-release versions (to return latest *normal* version tag).
+GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE='(v)?([0-9]+)\.([0-9]+)(\.([0-9]+))?'
+GITSMART_RE_VERSPARTS_NORMAL="^${GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE}$"
+
 # CXREF: SemVer Perl regex, from the source, unaltered.
 #   https://semver.org/
 #   https://regex101.com/r/Ly7O1x/3/
@@ -666,15 +674,24 @@ GITSMART_VERSION_TAG_PATTERNS="v[0-9]* [0-9]*"
 
 # Get the latest non-pre-release aka Normal version tag, e.g., 1.2.3.
 
-git_latest_version_basetag () {
-  # Any args are passed to git-tag.
+git_latest_version_filter () {
+  local re_versparts="$1"
+  # Additional args are passed to git-tag.
 
   git tag -l "$@" ${GITSMART_VERSION_TAG_PATTERNS} |
-    command grep -E -e "${GITSMART_RE_VERSPARTS}" |
-    command sed -E "s/${GITSMART_RE_VERSPARTS}/\2.\3.\5/" |
+    command grep -E -e "${re_versparts}" |
+    command sed -E "s/${re_versparts}/\2.\3.\5/" |
     command sed -E "s/\.+$//" |
     command sort -r --version-sort |
     command head -n1
+}
+
+git_latest_version_basetag () {
+  git_latest_version_filter "${GITSMART_RE_VERSPARTS}" "$@"
+}
+
+git_latest_version_normal () {
+  git_latest_version_filter "${GITSMART_RE_VERSPARTS_NORMAL}" "$@"
 }
 
 # Get the latest pre-release version tag for a given non-pre-release version.
@@ -777,12 +794,26 @@ git_largest_version_tag () {
   # - A basevers version is higher than any pre-release with the same basevers.
   if git show-ref --tags -- "${basevers}" "v${basevers}" > /dev/null; then
     # Print the tag name with the v-prefix, if present.
-    git tag -l -- "${basevers}" "v${basevers}"
+    git --no-pager tag -l -- "${basevers}" "v${basevers}"
   else
     # Latest version is a prerelease tag. Determine which pre-release
     # from that basevers is the largest.
     latest_version_fulltag "${basevers}" "$@"
   fi
+}
+
+git_largest_version_tag_normal () {
+  # Any args are passed to git-tag.
+
+  local normal_vers="$(git_latest_version_normal "$@")"
+
+  if [ -z "${normal_vers}" ]; then
+
+    return 0
+  fi
+
+  # Print the tag name with the v-prefix, if present.
+  git --no-pager tag -l -- "${normal_vers}" "v${normal_vers}"
 }
 
 # ***
