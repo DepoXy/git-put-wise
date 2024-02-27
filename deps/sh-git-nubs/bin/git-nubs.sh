@@ -599,6 +599,10 @@ git_versions_tagged_for_commit_object () {
 
 # Semantic Versioning 2.0.0 and version-ish tag name regex.
 
+# ALTLY/2024-02-26: Some projects use an alternative prefix.
+# - E.g., `tig` uses a "tig-" prefix, such as "tig-2.5.8".
+GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX="${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX:-v}"
+
 # Match groups: \1: 'v'       (optional)
 #               \2: major     (required)
 #               \3: minor     (required)
@@ -631,11 +635,11 @@ git_versions_tagged_for_commit_object () {
 #     $ echo "v1.2.3-1alpha1" | sed -E "s/${GITSMART_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/"
 #     NubsVer: v 1 2 3 -1alpha1
 
-GITSMART_RE_VERSPARTS__INCLUSIVE='(v)?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?'
+GITSMART_RE_VERSPARTS__INCLUSIVE="(${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?"
 GITSMART_RE_VERSPARTS="^${GITSMART_RE_VERSPARTS__INCLUSIVE}$"
 
 # For culling pre-release versions (to return latest *normal* version tag).
-GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE='(v)?([0-9]+)\.([0-9]+)(\.([0-9]+))?'
+GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE="(${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+))?"
 GITSMART_RE_VERSPARTS_NORMAL="^${GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE}$"
 
 # CXREF: SemVer Perl regex, from the source, unaltered.
@@ -670,7 +674,7 @@ GITSMART_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<pat
 #   truly filters the version tags.
 # - CPYST: Copy-paste test snippet:
 #     git --no-pager tag -l ${GITSMART_VERSION_TAG_PATTERNS}
-GITSMART_VERSION_TAG_PATTERNS="v[0-9]* [0-9]*"
+GITSMART_VERSION_TAG_PATTERNS="${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* [0-9]*"
 
 # Get the latest non-pre-release aka Normal version tag, e.g., 1.2.3.
 
@@ -747,7 +751,7 @@ latest_version_fulltag () {
   # Any additional args are passed to git-tag.
 
   # Use Perl, not sed, because of ".*?" non-greedy (so \7 works).
-  git tag -l "$@" "${basevers}*" "v${basevers}*" |
+  git tag -l "$@" "${basevers}*" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}*" |
     command grep -E -e "${GITSMART_RE_VERSPARTS}" |
     command perl -ne "print if s/${GITSMART_RE_VERSPARTS}/\6, \7, \1\2.\3.\5\6\7/" |
     command sort -k1,1 -k2,2n |
@@ -792,9 +796,12 @@ git_largest_version_tag () {
   # See if the basevers tag is an actual tag (e.g., 1.2.3), otherwise
   # git_latest_version_basetag only found pre-release versions.
   # - A basevers version is higher than any pre-release with the same basevers.
-  if git show-ref --tags -- "${basevers}" "v${basevers}" > /dev/null; then
+  if git show-ref --tags -- \
+    "${basevers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" > /dev/null \
+  ; then
     # Print the tag name with the v-prefix, if present.
-    git --no-pager tag -l -- "${basevers}" "v${basevers}"
+    git --no-pager tag -l -- \
+      "${basevers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}"
   else
     # Latest version is a prerelease tag. Determine which pre-release
     # from that basevers is the largest.
@@ -813,7 +820,8 @@ git_largest_version_tag_normal () {
   fi
 
   # Print the tag name with the v-prefix, if present.
-  git --no-pager tag -l -- "${normal_vers}" "v${normal_vers}"
+  git --no-pager tag -l -- \
+    "${normal_vers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}"
 }
 
 # ***
