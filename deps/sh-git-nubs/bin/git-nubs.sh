@@ -18,7 +18,9 @@ git_branch_exists () {
 git_branch_name () {
   local project_root
   project_root="$(git_project_root)"
-  [ $? -eq 0 ] || return
+  [ $? -eq 0 ] || return 1
+
+  local exit_code=0
 
   # Note that $(git rev-parse HEAD) returns the hash, not the name,
   # so we add the option, --abbrev-ref.
@@ -43,9 +45,13 @@ git_branch_name () {
   ); then
     # Unnamed branch, e.g., before first commit after `git init .`.
     branch_name="<?!>"
+
+    exit_code=1
   fi
 
   printf %s "${branch_name}"
+
+  return ${exit_code}
 }
 
 git_branch_name_full () {
@@ -860,6 +866,12 @@ git_since_git_init_commit_epoch_ts () {
     --format=%at \
     "$(git_first_commit_sha)" \
     2> /dev/null
+}
+
+# ***
+
+git_commit_date () {
+  git --no-pager log -1 --format=%cs ${1:-HEAD} 2> /dev/null
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
