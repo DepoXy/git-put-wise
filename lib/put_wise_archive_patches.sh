@@ -606,7 +606,7 @@ must_produce_nonempty_patch () {
   git -c diff.noprefix=false format-patch -q -o "${patch_dir}" \
     ${starting_ref}..${commit_range_end}
 
-  if [ -z "$(/bin/ls -A "${patch_dir}")" ]; then
+  if [ -z "$(command ls -A "${patch_dir}")" ]; then
     >&2 echo -e "Unexpected: Nothing archived! Try:\n" \
       " git diff ${starting_ref}..${commit_range_end}"
 

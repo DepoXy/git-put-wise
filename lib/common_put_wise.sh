@@ -162,7 +162,7 @@ must_ensure_patches_repo_exists () {
 
 maybe_prompt_user_and_prepare_patches_repo () {
   if [ -d "${PW_PATCHES_REPO}" ] && \
-    [ -n "$(/bin/ls -A "${PW_PATCHES_REPO}")" ]; \
+    [ -n "$(command ls -A "${PW_PATCHES_REPO}")" ]; \
   then
     return 0
   fi
@@ -314,7 +314,7 @@ put_wise_reset_patches_repo () {
 
     cd "${PW_PATCHES_REPO}"
 
-    if [ -z "$(/bin/ls -A "${PW_PATCHES_REPO}")" ]; then
+    if [ -z "$(command ls -A "${PW_PATCHES_REPO}")" ]; then
       PW_PATCHES_REPO="$(pwd -L)"
 
       cd "${before_cd}"
@@ -1034,7 +1034,7 @@ git_gc_expire_all_prune_now () {
 
     # At least a few BSD commands don't have --version option.
     # - This guess-test checks if this is GNU coreutils' du.
-    ! du --version > /dev/null 2>&1 || return 0
+    ! command du --version > /dev/null 2>&1 || return 0
 
     >&2 echo "ALERT: No \`du\` output because not coreutils \`du\`."
 
@@ -1051,14 +1051,14 @@ git_gc_expire_all_prune_now () {
 
   tree_size_bytes_include_git () {
     find . -type f -print0 \
-      | du -b --total --files0-from - \
+      | command du -b --total --files0-from - \
       | tail -1 \
       | awk '{ print $1 }'
   }
 
   tree_size_bytes_exclude_git () {
     find . -path ./.git -prune -o -type f -print0 \
-      | du -b --total --files0-from - \
+      | command du -b --total --files0-from - \
       | tail -1 \
       | awk '{ print $1 }'
   }
@@ -1287,7 +1287,7 @@ must_find_path_starting_with_prefix_dash_dash () {
   local gpgf="$1"
 
   local file_guess
-  file_guess="$(/bin/ls -A1d "${gpgf}"--*)"
+  file_guess="$(command ls -A1d "${gpgf}"--*)"
 
   if [ $(printf "${file_guess}" | wc -l) -gt 0 ]; then
     >&2 warn "Found more than one match for “${gpgf}” (and using first one found)."

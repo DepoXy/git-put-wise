@@ -229,7 +229,7 @@ unpack_target_is_not_nonempty_else_info_stderr () {
   # but lets other files be). In any case, we assume that user only
   # uses put-wise to manage patches repo, so we choose to vet less.
   local patch_dirs
-  patch_dirs="$(/bin/ls -A1d "${gpgf}"--* 2> /dev/null)"
+  patch_dirs="$(command ls -A1d "${gpgf}"--* 2> /dev/null)"
 
   if [ -n "${patch_dirs}" ]; then
     nonempty=1
@@ -608,7 +608,7 @@ put_wise_apply_patches_cleanup () {
     cd "${PW_PATCHES_REPO}"
 
     # NOTE: We don't need ${project_name} to process the return receipt, but
-    #       having a third set of dashes makes `/bin/ls -A1d "${gpgf}"--*`
+    #       having a third set of dashes makes `command ls -A1d "${gpgf}"--*`
     #       more shareable between archives and return receipts processing.
     # NOTE: Using ${remoteish_br} (what archive says),
     #       not ${patch_branch} (what user could say using --branch option).
@@ -774,7 +774,7 @@ print_applying_onto_progress () {
   local patch_path="$1"
   local project_path="$2"
 
-  local n_patches=$(/bin/ls -1d "${patch_path}"/*.patch | wc -l)
+  local n_patches=$(command ls -1d "${patch_path}"/*.patch | wc -l)
 
   echo "Applying ${n_patches} patch(es) from:"
   echo "  $(substitute_home_tilde ${patch_path})"

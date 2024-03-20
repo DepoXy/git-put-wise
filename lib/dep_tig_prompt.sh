@@ -66,7 +66,7 @@ prompt_user_to_review_action_plan_using_tig () {
   if [ -f "${PW_PUSH_TIG_REPLY_PATH}" ]; then
     approved=true
 
-    /bin/rm "${PW_PUSH_TIG_REPLY_PATH}"
+    command rm -- "${PW_PUSH_TIG_REPLY_PATH}"
   fi
 
   ${approved}
@@ -82,7 +82,7 @@ prepare_shim_tig_config () {
     # Should mean user killed `tig` prompt and we didn't cleanup.
     old_shim_cfg="${shim_cfg}-$(date +%Y%m%d%H%M%S)"
 
-    command mv -i "${shim_cfg}" "${old_shim_cfg}"
+    command mv -i -- "${shim_cfg}" "${old_shim_cfg}"
   fi
 
   truncate -s 0 -- "${shim_cfg}"
