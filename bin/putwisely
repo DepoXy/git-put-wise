@@ -10,7 +10,7 @@
 
 source_deps () {
   local project_root
-  project_root="$(dirname "$(realpath "$0")")/.."
+  project_root="$(dirname -- "$(realpath -- "$0")")/.."
 
   # *I'll have what they're having.*
   . "${project_root}/bin/git-put-wise"

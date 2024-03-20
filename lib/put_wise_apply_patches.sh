@@ -701,7 +701,7 @@ fake_the_return_receipt () {
   remoteish_br_encoded="$(branch_name_path_encode "${remoteish_br}")"
 
   local project_name
-  project_name="$(basename "$(pwd)")"
+  project_name="$(basename -- "$(pwd)")"
   # echo "project_name: ${project_name}"
 
   local ret_rec_plain_name
@@ -913,8 +913,8 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
       echo "      cd \"${project_path}\""
       echo "      git checkout -b private"
       echo "  - If you choose not to continue, you can try again later:"
-      echo "      cd \"$(realpath "${patch_path}/..")\""
-      echo "      $(basename "$0") \"${patch_dir}\""
+      echo "      cd \"$(realpath -- "${patch_path}/..")\""
+      echo "      $(basename -- "$0") \"${patch_dir}\""
       echo
 
       while [ "$(git_branch_name)" != "${patch_branch}" ]; do

@@ -62,7 +62,7 @@ source_dep () {
 
   # This file at bin/git-put-wise, so project root is one level up.
   local project_root
-  project_root="$(dirname "$(realpath "$0")")/.."
+  project_root="$(dirname -- "$(realpath -- "$0")")/.."
 
   # DEV: Source this script from project root to test individual functions.
   # - Source apply/archive/pull/push script(s) afterwards to test them, too.
@@ -71,7 +71,7 @@ source_dep () {
     is_sourced=true
     if [ -n "${BASH_SOURCE[0]}" ]; then
       # I.e.,
-      #   if [ "$(basename "$0")" = "bash" ]; then
+      #   if [ "$(basename -- "$0")" = "bash" ]; then
       project_root="$(dirname -- "${BASH_SOURCE[0]}")/.."
     else
       project_root="$(pwd -L)"

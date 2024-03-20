@@ -588,9 +588,9 @@ compose_filenames () {
 
   local encoded_br="$(branch_name_path_encode "$(git_branch_name)")"
 
-  patch_name="${crypt_name}--${encoded_br}--$(basename "$(pwd)")"
+  patch_name="${crypt_name}--${encoded_br}--$(basename -- "$(pwd)")"
 
-  temp_dir="$(mktemp -d /tmp/$(basename $0)-XXXXXXX)"
+  temp_dir="$(mktemp -d /tmp/$(basename -- "$0")-XXXXXXX)"
   [ ! -d "${temp_dir}" ] && >&2 echo "ERROR: \`mktemp\` failed" && exit 1 || true
 
   patch_dir="${temp_dir}/${patch_name}"

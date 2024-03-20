@@ -41,7 +41,7 @@ GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 
 source_deps () {
   local project_root
-  project_root="$(dirname "$(realpath "$0")")/.."
+  project_root="$(dirname -- "$(realpath -- "$0")")/.."
 
   # Pull in WIP and post-rebase cmds (maybe_stash_changes, git_post_rebase_*).
   . "${project_root}/bin/git-put-wise"
@@ -91,7 +91,7 @@ git-rebase-sort-by-scope-protected-private () {
 
 must_locate_seq_editor () {
   local real_parent
-  real_parent="$(dirname "$(realpath "$0")")"
+  real_parent="$(dirname -- "$(realpath -- "$0")")"
 
   local seq_editor="${real_parent}/seq-editor-sort-by-scope-protected-private"
 

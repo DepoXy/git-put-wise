@@ -181,7 +181,7 @@ maybe_prompt_user_and_prepare_patches_repo () {
 }
 
 maybe_prompt_user_to_create_parent_path () {
-  local parent_dir="$(dirname "${PW_PATCHES_REPO}")"
+  local parent_dir="$(dirname -- "${PW_PATCHES_REPO}")"
 
   if [ ! -d "${parent_dir}" ]; then
     prompt_user_to_create_parent_path "${parent_dir}" || return 1
@@ -293,8 +293,8 @@ git_init_patches_repo () {
   local emptiness="${PW_PATCHES_REPO_HINT}"
 
   git -c init.defaultBranch="${PATCHES_REPO_BRANCH}" init .
-  touch "${emptiness}"
-  git add "${emptiness}"
+  touch -- "${emptiness}"
+  git add -- "${emptiness}"
   # CXREF: git_first_commit_message
   # CALSO: PW_PATCHES_REPO_MESSAGE_CHCHCHANGES="🥬"
   git commit -q -m "${PW_PATCHES_REPO_MESSAGE_INIT}"
@@ -532,7 +532,7 @@ substitute_home_tilde () {
 # committed to the patches repo. This lets put-wise git-rm the archive
 # after applying it, without first checking if working in patches repo.
 must_verify_patches_repo_archive () {
-  local archive_file="$(basename "$1")"
+  local archive_file="$(basename -- "$1")"
 
   local before_cd="$(pwd -L)"
 
@@ -1356,7 +1356,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
     >&2 echo
     >&2 echo "    # Or remove the receipt."
     >&2 echo "    cd ${before_cd}"
-    >&2 echo "    git rm $(basename "${gpg_rr}")"
+    >&2 echo "    git rm $(basename -- "${gpg_rr}")"
     >&2 echo "    git commit --amend --no-edit"
 
     return 1

@@ -8,7 +8,7 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-cat "$(dirname "$0")/parts.01.header.md"
+cat "$(dirname -- "$0")/parts.01.header.md"
 
 git-put-wise --help |
   awk '
@@ -17,7 +17,7 @@ git-put-wise --help |
       gsub(/>/, "\\&gt;", $0);
       sub(/USAGE: git put-wise/, "<git put-wise>", $0);
       print $0;
-      parts_file = "'"$(dirname "$0")/parts.02.description.md"'";
+      parts_file = "'"$(dirname -- "$0")/parts.02.description.md"'";
       while ((getline < parts_file) > 0) { print; };
       next;
     }
@@ -51,5 +51,5 @@ git-put-wise --about |
     }
   '
 
-cat "$(dirname "$0")/parts.03.footer.md"
+cat "$(dirname -- "$0")/parts.03.footer.md"
 

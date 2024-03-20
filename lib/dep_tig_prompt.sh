@@ -44,7 +44,7 @@ prompt_user_to_review_action_plan_using_tig () {
   # Make path to put-wise source lib/ (e.g., ~/.kit/git/git-put-wise/lib/
   # if you run DepoXy) using $0 process path, which might be, e.g.,
   # ~/.local/bin/git-put-wise, and symlinks git-put-wise/bin/git-put-wise.
-  local pw_lib="$(dirname $(realpath "$0"))/../lib"
+  local pw_lib="$(dirname -- "$(realpath -- "$0")")/../lib"
 
   local old_shim_cfg
   local shim_cfg
@@ -85,7 +85,7 @@ prepare_shim_tig_config () {
     command mv -i "${shim_cfg}" "${old_shim_cfg}"
   fi
 
-  truncate -s 0 "${shim_cfg}"
+  truncate -s 0 -- "${shim_cfg}"
 
   # - Per `man tig`, tig sources first config it finds in order:
   #   $XDG_CONFIG_HOME/tig/config, ~/.config/tig/config, ~/.tigrc.
@@ -130,7 +130,7 @@ tig_prompt_print_skip_hint () {
 
   echo
   echo "HINT: You can skip this prompt. Use an environ or CLI option:"
-  echo "  [PW_OPTION_QUICK_TIG=true] $(basename "$0") [-E/--no-explain]"
+  echo "  [PW_OPTION_QUICK_TIG=true] $(basename -- "$0") [-E/--no-explain]"
 }
 
 tig_prompt_print_launch_confirmation () {

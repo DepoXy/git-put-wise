@@ -11,7 +11,7 @@
 # COPYD: See same-name variable in Makefile.
 DOC_PW="man/git-put-wise.1.md"
 
-cat "$(dirname "$0")/../../${DOC_PW}" |
+cat "$(dirname -- "$0")/../../${DOC_PW}" |
   awk '
     BEGIN { done = 0; }
     /^[^[:space:]]/ {
