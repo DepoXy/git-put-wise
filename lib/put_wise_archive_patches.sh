@@ -666,8 +666,8 @@ encrypt_archive_and_cleanup () {
 remove_temp_files () {
   [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && exit 1 || true
   [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && exit 1 || true
-  ${DRY_RUN} /bin/rm -f "${cleartext_name}"
-  ${DRY_RUN} /bin/rm -rf "${temp_dir}"
+  ${DRY_RUN} command rm -f "${cleartext_name}"
+  ${DRY_RUN} command rm -rf "${temp_dir}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #

@@ -1195,12 +1195,12 @@ prepare_return_receipt_encrypt () {
   tar -cJf "${temp_archive}" "${ret_rec_plain_name}"
 
   if [ -f "${ret_rec_crypt_path}" ]; then
-    /bin/rm -f "${ret_rec_crypt_path}"
+    command rm -f "${ret_rec_crypt_path}"
   fi
 
   encrypt_asset "${ret_rec_crypt_path}" "${temp_archive}"
 
-  /bin/rm -f "${temp_archive}"
+  command rm -f "${temp_archive}"
 
   ${DRY_RUN} git add "${ret_rec_crypt_path}"
 
@@ -1230,8 +1230,8 @@ remove_archive_from_git () {
   else
     ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
 
-    # So that git-rm's output doesn't look like we called /bin/rm (it
-    # doesn't include 'git' in the output), we'll echo, not Git:
+    # So that git-rm's output doesn't look like we called `command rm`
+    # (it doesn't include 'git' in the output), we'll echo, not Git:
     echo "git rm -q \"${gpgf}\""
     ${DRY_RUN} git rm -q "${gpgf}"
 
@@ -1257,8 +1257,8 @@ remove_plaintext_assets_dir () {
   ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
 
   if [ -d "${a_dir}" ]; then
-    echo "/bin/rm -rf \"${a_dir}\""
-    ${DRY_RUN} /bin/rm -rf "${a_dir}"
+    echo "command rm -rf \"${a_dir}\""
+    ${DRY_RUN} command rm -rf "${a_dir}"
   fi
 }
 
@@ -1268,8 +1268,8 @@ remove_plaintext_assets_file () {
   ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
 
   if [ -f "${a_file}" ]; then
-    echo "/bin/rm -f \"${a_file}\""
-    ${DRY_RUN} /bin/rm -f "${a_file}"
+    echo "command rm -f \"${a_file}\""
+    ${DRY_RUN} command rm -f "${a_file}"
   fi
 }
 

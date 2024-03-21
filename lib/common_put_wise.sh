@@ -343,7 +343,7 @@ put_wise_reset_patches_repo () {
       # - Note that running this command from the patches repo results
       #   in user's terminal no longer being in a directory (until they
       #   `cd` somewhere else), but that's beyond our control.
-      /bin/rm -rf "${PW_PATCHES_REPO}"
+      command rm -rf "${PW_PATCHES_REPO}"
     fi
   fi
 
@@ -1271,7 +1271,7 @@ process_return_receipts_read_count_and_destroy () {
 
   cd "${before_cd}"
 
-  ${DRY_RUN} /bin/rm -f "${ret_rec_plain_path}"
+  ${DRY_RUN} command rm -f "${ret_rec_plain_path}"
 
   [ ${failed} -eq 0 ] || exit ${failed}
 

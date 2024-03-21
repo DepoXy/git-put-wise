@@ -53,12 +53,12 @@ prompt_user_to_review_action_plan_using_tig () {
 
   XDG_CONFIG_HOME="${pw_lib}" tig
 
-  /bin/rm "${shim_cfg}"
+  command rm "${shim_cfg}"
 
   if [ -f "${old_shim_cfg}" ] \
     && diff -q "${shim_cfg}" "${old_shim_cfg}" >/dev/null \
   ; then
-    /bin/rm "${old_shim_cfg}"
+    command rm "${old_shim_cfg}"
   elif [ -n "${old_shim_cfg}" ]; then
     >&2 echo "ALERT: Moved old shim cfg: ‘${old_shim_cfg}’ (unrecognized)"
   fi

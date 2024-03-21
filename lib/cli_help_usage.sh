@@ -68,7 +68,7 @@ Additional options
                               will be prompted twice by GPG for each archive)
 
   -c|--cleanup              With --apply*, git-rm each processed archive and
-                              /bin/rm -rf its unpacked directory [default]
+                              \`rm -rf\` its unpacked directory [default]
   -C|--no-cleanup           With --apply*, don’t cleanup (leave both)
 
   -N|--author-name <name>   With --apply, set commit author name to <name>
