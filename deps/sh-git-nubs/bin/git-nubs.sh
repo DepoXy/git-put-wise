@@ -335,7 +335,7 @@ git_upstream_parse_names () {
   local print_branch="${2:-false}"
   local upstream_ref="$3"
 
-  local deprefixed="$(echo "${upstream_ref}" | command sed 's#^refs/remotes/##')"
+  local deprefixed="$(echo "${upstream_ref}" | sed 's#^refs/remotes/##')"
   local remote_name="$(_git_parse_path_rootname "${deprefixed}")"
   local branch_name="$(_git_parse_path_rootless "${deprefixed}")"
 
@@ -366,12 +366,12 @@ git_upstream_parse_names () {
 
 # The other opposite of `dirname`, `rootname`.
 _git_parse_path_rootname () {
-  echo "$1" | command sed 's#/.*$##'
+  echo "$1" | sed 's#/.*$##'
 }
 
 # The other opposite of `basename`, something progenitor? `progname`?
 _git_parse_path_rootless () {
-  echo "$1" | command sed 's#^[^/]*/##'
+  echo "$1" | sed 's#^[^/]*/##'
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -406,7 +406,7 @@ print_parent_path_to_project_root () {
   ( [ "${depth_path}" = "." ] || [ "${depth_path}" = "" ] ) \
     && return 0 || true
 
-  printf "${depth_path}" | command sed 's#\([^/]\+\)#..#g'
+  printf "${depth_path}" | sed 's#\([^/]\+\)#..#g'
 }
 
 # Check that the current directory exists in a Git repo.
@@ -586,7 +586,7 @@ git_versions_tagged_for_commit_object__THE_HARD_WAY () {
   # (assuming that indicates a version tag, to exclude non-version tags).
   git show-ref --tags -d \
     | grep -E -e "^${hash}.* refs/tags/${GITSMART_RE_VERSPARTS__INCLUSIVE}" \
-    | command sed \
+    | sed \
       -e 's#.* refs/tags/v\?##' \
       -e 's/\^{}//'
 }
@@ -598,7 +598,7 @@ git_versions_tagged_for_commit_object () {
 
   git tag --list --points-at ${object} \
     | grep -E -e "${GITSMART_RE_VERSPARTS}" \
-    | command sed -e 's/^v//'
+    | sed -e 's/^v//'
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -689,11 +689,11 @@ git_latest_version_filter () {
   # Additional args are passed to git-tag.
 
   git tag -l "$@" ${GITSMART_VERSION_TAG_PATTERNS} |
-    command grep -E -e "${re_versparts}" |
-    command sed -E "s/${re_versparts}/\2.\3.\5/" |
-    command sed -E "s/\.+$//" |
-    command sort -r --version-sort |
-    command head -n1
+    grep -E -e "${re_versparts}" |
+    sed -E "s/${re_versparts}/\2.\3.\5/" |
+    sed -E "s/\.+$//" |
+    sort -r --version-sort |
+    head -n1
 }
 
 git_latest_version_basetag () {
@@ -758,11 +758,11 @@ latest_version_fulltag () {
 
   # Use Perl, not sed, because of ".*?" non-greedy (so \7 works).
   git tag -l "$@" "${basevers}*" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}*" |
-    command grep -E -e "${GITSMART_RE_VERSPARTS}" |
-    command perl -ne "print if s/${GITSMART_RE_VERSPARTS}/\6, \7, \1\2.\3.\5\6\7/" |
-    command sort -k1,1 -k2,2n |
-    command tail -n1 |
-    command sed -E "s/^[^,]*, [^,]*, //"
+    grep -E -e "${GITSMART_RE_VERSPARTS}" |
+    perl -ne "print if s/${GITSMART_RE_VERSPARTS}/\6, \7, \1\2.\3.\5\6\7/" |
+    sort -k1,1 -k2,2n |
+    tail -n1 |
+    sed -E "s/^[^,]*, [^,]*, //"
 }
 
 # Note that git-tag has a few options which seems like they could be
