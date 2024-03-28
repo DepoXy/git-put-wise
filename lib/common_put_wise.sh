@@ -903,13 +903,19 @@ must_confirm_commit_at_or_behind_commit () {
 
     exit 1
   elif ! git merge-base --is-ancestor "${early_commit}" "${later_commit}"; then
+    # early later than later, or diverged.
+
     local common_ancestor
     common_ancestor="$(git merge-base "${early_commit}" "${later_commit}")"
 
     debug "Common ancestor of ${early} and ${later} is $(shorten_sha "${common_ancestor}")"
 
     if ! git merge-base --is-ancestor "${later_commit}" "HEAD"; then
-      # 2023-01-16: I don't think code is designed otherwise.
+      # E.g., when comparing 'publish/release' (early) vs local 'release'
+      # (later), this would mean local 'release' is diverged from the
+      # local branch (which might be 'private').
+      #
+      # 2023-01-16: I don't think code is designed to flow through here.
       >&2 echo "ERROR?: later_commit (${later}) not --is-ancestor HEAD"
 
       exit 1
