@@ -921,33 +921,29 @@ must_confirm_commit_at_or_behind_commit () {
       exit 1
     fi
 
-    if git merge-base --is-ancestor "${early_commit}" "HEAD"; then
-      # See following comments: I don't think this if-block is reachable.
-      >&2 echo "ERROR: Not expecting early (${early}) --is-ancestor HEAD"
+    if [ "${common_ancestor}" = "$(git_commit_object_name ${later_commit})" ]; then
+      # later behind early.
+      local branch_name="$(git_branch_name)"
 
-      if [ "${common_ancestor}" = "$(git_commit_object_name ${later_commit})" ]; then
-        # later_commit behind early_commit?
-        # 2023-01-16: With --is-ancestor check, this should *now* be unreachable
-        # (or quite odd).
-        >&2 echo "ERROR: Not expecting ${early} ahead of ${later}"
-
-        exit 1
+      >&2 echo "ERROR: Not expecting ${early} ahead of ${later}"
+      # MAYBE/2024-03-28: Add divergent_ok CLI arg?
+      >&2 echo "- Hint: If that's not a big deal to you, just move the pointer:"
+      if [ "${branch_name}" != "${early}" ]; then
+        >&2 echo "    git branch -f ${later_commit} ${early_commit}"
       else
-        # This code should be unreachable: First --is-ancestor says
-        # this is not true: early_commit <= later_commit. Next we
-        # learned that later_commit <= HEAD. Now we know that
-        # early_commit <= HEAD. So both early and later ancestors
-        # of head, but early is after later. Which means the first
-        # part of this if-block, which checks that later is the
-        # common_ancestor, should run, not this else. So it would
-        # really twist my mind if this else code ran (so I'd be
-        # suprised if the out if-block:
-        #   git merge-base --is-ancestor "${early_commit}" "HEAD"
-        # was ever true.
-        >&2 echo "ERROR: Not expecting ${early} ahead of ${later}"
-
-        exit 1
+        >&2 echo "    git merge --ff-only ${early_commit}"
       fi
+
+      exit 1
+    fi
+
+    # Because (later < early OR later <> early) AND (later is not common
+    # ancestor), therefore later <> early (they've diverged).
+
+    if git merge-base --is-ancestor "${early_commit}" "HEAD"; then
+      >&2 echo "ERROR: Impossible: ${early} <> ${later} but each <= HEAD ?? [DEV error]"
+
+      exit 1
     elif ! ${divergent_ok}; then
       >&2 echo "ERROR: These objects have diverged: ${early} and ${later}"
 
