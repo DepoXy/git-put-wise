@@ -908,14 +908,6 @@ must_confirm_commit_at_or_behind_commit () {
 
     debug "Common ancestor of ${early} and ${later} is $(shorten_sha "${common_ancestor}")"
 
-    if [ "${common_ancestor}" = "$(git_commit_object_name ${early_commit})" ]; then
-      # early_commit is at or behind later_commit.
-      # 2023-01-16: Seems unlikely now that we're using --is-ancestor
-      >&2 echo "ERROR: Unexpected: not --is-ancestor, but early_commit (${early}) is common_ancestor?"
-
-      exit 1
-    fi
-
     if ! git merge-base --is-ancestor "${later_commit}" "HEAD"; then
       # 2023-01-16: I don't think code is designed otherwise.
       >&2 echo "ERROR?: later_commit (${later}) not --is-ancestor HEAD"
