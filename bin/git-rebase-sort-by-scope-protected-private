@@ -109,11 +109,13 @@ must_locate_seq_editor () {
 must_verify_starting_ref () {
   local starting_ref="$1"
 
-  [ -z "${starting_ref}" ] || return 0
+  if [ -z "${starting_ref}" ]; then
+    >&2 echo "ERROR: Please specify the rebase starting gitref"
 
-  >&2 echo "ERROR: Please specify the rebase starting gitref."
+    return 1
+  fi
 
-  return 1
+  return 0
 }
 
 # ***
