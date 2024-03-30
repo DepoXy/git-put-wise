@@ -49,7 +49,7 @@ check_dep_with_hint () {
 source_deps () {
   # Sets LOG_LEVEL=${LOG_LEVEL:-40}.
   source_dep "deps/sh-logger/bin/logger.sh"
-  source_dep "deps/sh-git-nubs/bin/git-nubs.sh"
+  source_dep "deps/sh-git-nubs/lib/git-nubs.sh"
   source_dep "lib/cli_parse_params.sh"
   source_dep "lib/common_put_wise.sh"
   source_dep "lib/dep_apply_confirm_patch_base.sh"

@@ -205,7 +205,7 @@ determine_scoping_boundary () {
 # RELATED: determine_scoping_boundary
 #
 # CPYST:
-#   . ~/.kit/git/git-put-wise/deps/sh-git-nubs/bin/git-nubs.sh
+#   . ~/.kit/git/git-put-wise/deps/sh-git-nubs/lib/git-nubs.sh
 #   . ~/.kit/git/git-put-wise/lib/common_put_wise.sh
 #   . ~/.kit/git/git-put-wise/lib/dep_apply_confirm_patch_base.sh
 #   . ~/.kit/git/git-put-wise/lib/put_wise_push_remotes.sh

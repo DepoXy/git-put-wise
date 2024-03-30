@@ -464,7 +464,7 @@ project_path_same_as_patches_repo () {
 # `put-wise --sha`
 #
 # CPYST:
-#   . ~/.kit/git/git-put-wise/deps/sh-git-nubs/bin/git-nubs.sh
+#   . ~/.kit/git/git-put-wise/deps/sh-git-nubs/lib/git-nubs.sh
 #   . ~/.kit/git/git-put-wise/lib/common_put_wise.sh
 #   print_project_path_ref
 
@@ -1085,7 +1085,7 @@ git_gc_expire_all_prune_now () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # CPYST:
-#   . ~/.kit/git/git-put-wise/deps/sh-git-nubs/bin/git-nubs.sh
+#   . ~/.kit/git/git-put-wise/deps/sh-git-nubs/lib/git-nubs.sh
 #   . ~/.kit/git/git-put-wise/lib/common_put_wise.sh
 #   decrypt_asset "path" | tar xvJ
 

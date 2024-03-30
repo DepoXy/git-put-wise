@@ -78,8 +78,13 @@ git_branch_name_check_format () {
 #   https://stackoverflow.com/questions/171550/
 
 # Prints the tracking aka upstream branch.
+# - BWARE: This will silently errexit, if you're not prepared.
 git_tracking_branch () {
-  git rev-parse --abbrev-ref --symbolic-full-name @{u} 2> /dev/null
+  git_tracking_branch_with_error 2> /dev/null
+}
+
+git_tracking_branch_with_error () {
+  git rev-parse --abbrev-ref --symbolic-full-name @{u}
 }
 
 git_upstream () {
@@ -310,7 +315,7 @@ git_remote_default_branch () {
 git_upstream_parse_remote_name () {
   local remote_branch="$1"
 
-  [ -n "${remote_branch}" ] || remote_branch="$(git_tracking_branch)"
+  [ $# -eq 1 ] || remote_branch="$(git_tracking_branch_with_error)"
 
   # echo "$1" | sed 's/\/.*$//'
   # echo "$1" | sed -E 's#^(refs/remotes/)?([^/]+)/.*$#\2#'
@@ -322,7 +327,7 @@ git_upstream_parse_remote_name () {
 git_upstream_parse_branch_name () {
   local remote_branch="$1"
 
-  [ -n "${remote_branch}" ] || remote_branch="$(git_tracking_branch)"
+  [ $# -eq 1 ] || remote_branch="$(git_tracking_branch_with_error)"
 
   # echo "$1" | sed 's/^[^\/]*\///'
   # echo "$1" | sed -E 's#^(refs/remotes/)?[^/]+/##'
@@ -682,14 +687,30 @@ GITSMART_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<pat
 #     git --no-pager tag -l ${GITSMART_VERSION_TAG_PATTERNS}
 GITSMART_VERSION_TAG_PATTERNS="${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* [0-9]*"
 
-# Get the latest non-pre-release aka Normal version tag, e.g., 1.2.3.
+GITNUBS_TAG_PATTERNS_TAGREFS="refs/tags/${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* refs/tags/[0-9]*"
 
-git_latest_version_filter () {
+# Prints all tags that match: v[0-9]* [0-9]*
+_git_tag_list_prefilter () {
+  git tag -l "$@" ${GITSMART_VERSION_TAG_PATTERNS}
+}
+
+# Prints tags for a specific remote that match: refs/tags/[0-9]* refs/tags/v[0-9]*
+# - NOTED: Uses --refs, otherwise needs `| sed '/\^{}$/d'` to remove refs/tags/abcd123^{} refs
+_git_tag_list_prefilter_from_remote () {
+  local remote_name="$1"
+
+  git ls-remote --tags --refs "${remote_name}" ${GITNUBS_TAG_PATTERNS_TAGREFS} \
+    | cut -f 2 \
+    | sed 's#^refs/tags/##'
+}
+
+# Prints largest *basetag* of any tag in the list on stdin.
+# - E.g., if largest tag is either "v2.0.1" or "2.0.1-alpha.1",
+#   prints "2.0.1".
+_pick_largest_basetag () {
   local re_versparts="$1"
-  # Additional args are passed to git-tag.
 
-  git tag -l "$@" ${GITSMART_VERSION_TAG_PATTERNS} |
-    grep -E -e "${re_versparts}" |
+  grep -E -e "${re_versparts}" |
     sed -E "s/${re_versparts}/\2.\3.\5/" |
     sed -E "s/\.+$//" |
     sort -r --version-sort |
@@ -697,12 +718,47 @@ git_latest_version_filter () {
 }
 
 git_latest_version_basetag () {
-  git_latest_version_filter "${GITSMART_RE_VERSPARTS}" "$@"
+  _git_tag_list_prefilter "$@" \
+    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS}"
 }
 
 git_latest_version_normal () {
-  git_latest_version_filter "${GITSMART_RE_VERSPARTS_NORMAL}" "$@"
+  _git_tag_list_prefilter "$@" \
+    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS_NORMAL}"
 }
+
+# ***
+
+git_latest_version_from_remote_basetag () {
+  local remote_name="$1"
+
+  _git_tag_list_prefilter_from_remote "${remote_name}" \
+    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS}"
+}
+
+git_latest_version_from_remote_normal () {
+  local remote_name="$1"
+
+  _git_tag_list_prefilter_from_remote "${remote_name}" \
+    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS_NORMAL}"
+}
+
+# Because `git ls-remote` pings the network, cache the results.
+_generate_tag_list_from_remote () {
+  local remote_name="$1"
+
+  local tag_cache="$(mktemp $(basename -- "$0").XXXXXX)"
+
+  if ! _git_tag_list_prefilter_from_remote "${remote_name}" > "${tag_cache}"; then
+    >&2 echo "ERROR: \`git ls-remote \"${remote_name}\"\` failed"
+
+    return 1
+  fi
+
+  printf "%s" "${tag_cache}"
+}
+
+# ***
 
 # Get the latest pre-release version tag for a given non-pre-release version.
 # - E.g., pass it "1.0.0" and it prints "1.0.0-rc.1" (per the example below).
@@ -754,11 +810,16 @@ git_latest_version_normal () {
 #   no pre-release tags; or nothing if there's no basevers tag).
 latest_version_fulltag () {
   local basevers="$1"
+  shift
   # Any additional args are passed to git-tag.
 
   # Use Perl, not sed, because of ".*?" non-greedy (so \7 works).
   git tag -l "$@" "${basevers}*" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}*" |
-    grep -E -e "${GITSMART_RE_VERSPARTS}" |
+    _pick_largest_fulltag
+}
+
+_pick_largest_fulltag () {
+  grep -E -e "${GITSMART_RE_VERSPARTS}" |
     perl -ne "print if s/${GITSMART_RE_VERSPARTS}/\6, \7, \1\2.\3.\5\6\7/" |
     sort -k1,1 -k2,2n |
     tail -n1 |
@@ -801,9 +862,13 @@ git_largest_version_tag () {
 
   # See if the basevers tag is an actual tag (e.g., 1.2.3), otherwise
   # git_latest_version_basetag only found pre-release versions.
+  # - git show-ref patterns only match are start of the ref name,
+  #   so it's different than using `git tag -l <pattern>`.
   # - A basevers version is higher than any pre-release with the same basevers.
+  # - The grep filters out refs/tags/has/a/path/to/<basevers>
   if git show-ref --tags -- \
-    "${basevers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" > /dev/null \
+    "${basevers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
+    | grep -q ' refs/tags/[^/]\+$' \
   ; then
     # Print the tag name with the v-prefix, if present.
     git --no-pager tag -l -- \
@@ -828,6 +893,88 @@ git_largest_version_tag_normal () {
   # Print the tag name with the v-prefix, if present.
   git --no-pager tag -l -- \
     "${normal_vers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}"
+}
+
+# ***
+
+git_largest_version_tag_from_remote () {
+  local remote_name="$1"
+
+  if [ -z "${remote_name}" ]; then
+    >&2 echo "ERROR: Missing 'remote_name'"
+
+    return 1
+  fi
+
+  # ***
+
+  # Alternatively, without a cache:
+  #   basevers="$(git_latest_version_from_remote_basetag "${remote_name}")"
+  local tag_cache
+  tag_cache="$(_generate_tag_list_from_remote "${remote_name}")" \
+    || return 1
+
+  local basevers
+  basevers="$( \
+    cat "${tag_cache}" | _pick_largest_basetag "${GITSMART_RE_VERSPARTS}"
+  )"
+
+  # ***
+
+  if [ -n "${basevers}" ]; then
+    # Try to print an exact basetag match.
+    if ! cat "${tag_cache}" \
+        | grep \
+          -e "^${basevers}$" \
+          -e "^${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}$" \
+        | head -n1 \
+    ; then
+      # Must be a pre-release tag.
+      cat "${tag_cache}" \
+        | grep \
+          -e "^${basevers}" \
+          -e "^${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
+        | _pick_largest_fulltag
+    fi
+  fi
+
+  command rm "${tag_cache}"
+}
+
+git_largest_version_tag_from_remote_normal () {
+  local remote_name="$1"
+
+  if [ -z "${remote_name}" ]; then
+    >&2 echo "ERROR: Missing 'remote_name'"
+
+    return 1
+  fi
+
+  # ***
+
+  # Alternatively, without a cache:
+  #   normal_vers="$(git_latest_version_from_remote_normal "$@")"
+  local tag_cache
+  tag_cache="$(_generate_tag_list_from_remote "${remote_name}")" \
+    || return 1
+
+  local normal_vers
+  normal_vers="$( \
+    cat "${tag_cache}" | _pick_largest_basetag "${GITSMART_RE_VERSPARTS_NORMAL}"
+  )"
+
+  # ***
+
+  if [ -n "${normal_vers}" ]; then
+    # Print the tag name; include the v-prefix if present.
+    cat "${tag_cache}" \
+      | grep \
+        -e "^${normal_vers}$" \
+        -e "^${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}$" \
+      | head -n1
+  fi
+
+  command rm "${tag_cache}"
 }
 
 # ***
