@@ -69,7 +69,7 @@ git-rebase-sort-by-scope-protected-private () {
   local retcode=0
 
   GIT_SEQUENCE_EDITOR="${seq_editor}" \
-    git rebase -i ${starting_ref} \
+    git rebase -i --rebase-merges ${starting_ref} \
       || retcode=$?
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \

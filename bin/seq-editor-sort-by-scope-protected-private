@@ -76,6 +76,101 @@ DX_SHOW_TODO=${DX_SHOW_TODO:-false}
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# Merge commit support
+#
+# If the scoped commits are trapped in a merge predecessor, a normal
+# `git rebase` will drop the merge commits and flatten history (and
+# you might have to resolve any conflicts if those merge commits had
+# any work in them (though hopefully not, a merge commit with changes
+# *is the worst*)).
+#
+# But we can preserve merge commits with `git rebase --rebase-merges`,
+# albeit the rebase-todo is somewhat more complicated.
+#
+# - REFER: See `man git-rebase` for how "onto", "reset", and "merge" work.
+#
+# For example, consider the following --rebase-merges todo:
+#
+#     label onto
+#
+#     # Branch some-feature-branch
+#     reset onto
+#     pick 1f329ee A commit message
+#     label some-feature-branch
+#
+#     # Branch other-feature-work
+#     reset onto
+#     merge -C 0332d4a some-feature-branch # Merge pull request #84 from ...
+#     label branch-point
+#     pick 8012c54 Another commit message
+#     label other-feature-work
+#
+#     ...
+#
+#     # Branch starter-main
+#     reset branch-point-8 # Merge pull request #96 from ...
+#     merge -C a0f5388 a-label-from-above # Merge pull request #97 from ...
+#     label starter-main
+#
+#     reset branch-point-5 # Merge pull request #91 from ...
+#     pick f54be6a Update: UX: Improve status message
+#     pick ba7bdd8 PRIVATE: WIP
+#     pick 7e9ac7d Linting: Add path quotes
+#     pick f9265cb PRIVATE: Docs: Private ramblings
+#     merge -C 14b1eef starter-main # Merge remote-tracking branch 'starter/main' into release
+#
+#     # Rebase e171b33..14b1eef onto e171b33 (95 commands)
+#     ...
+#
+# (This is my limited understanding, and I'm just guessing here in parts,
+#  just beware:)
+#
+# The example represents the most common use case:
+#
+# - That your PRIVATE commits were the latest commits before the merge,
+#   whether grouped or not (you might have other new work in there, too).
+#
+# Therefore, when merging from upstream, your work will be a predecessor
+# of the *final* merge.
+#
+# - This means the code below that rewrites the rebase-todo isn't that
+#   much more complicated then it was originally, before merge support
+#   was added.
+#
+#   - If there are no merge commits, the code below simplify moves
+#     scoped (PRIVATE and PROTECTED) commits to the bottom of the
+#     todo.
+#
+#   - If there are merge commits, the scoped commits will be moved
+#     *after* the final `merge` command.
+#
+#     - This means that the scoped commits are no longer from a previous
+#       branch. They're back to being linear history. Which is fine,
+#       because one never publishes scoped commits; they keep getting
+#       kicked down the commit road in one's local working project,
+#       never really seeing the light of day.
+#
+# One final thought: "Phew!" I'm relieved we don't have to write a
+# complicated rebase-todo parser, because even looking at the
+# `merge`-filled rebase-todo example above, it's not obvious how it
+# all falls together. (The last reset-pick-pick-merge block makes
+# sense, but trying to visualize the different branch work between
+# the reset-merge-label-pick-label blocks is eye-fatiguing.)
+#
+# - In fact, it's an easy change: before this support was added,
+#   the `awk` below looked for the first blank like to identify
+#   where to put the scoped commits.
+#
+#   But when --rebase-merges is used, there's a blank like between
+#   each of the branch blocks.
+#
+#   And considering the end of the rebase-todo is just a large
+#   comment block, the `awk` can just put the picks are the very
+#   END of the document. Such an easy tweak to support merges!
+#   (Though beware END prints to stdout, not the -i inplace file.)
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 # This is the special tag at the end of the 'exec' line that
 # you must use if you git-abort to run that 'exec'.
 # - USYNC: This environ is used in git-smart and tig-newtons:
@@ -112,21 +207,17 @@ git_rebase_sort_by_scope () {
         next
       }
     }
-    $0 ~ /^$/ && state++
-    state == 0 { print $0 }
-    state == 1 {
+    { print $0 }
+    END {
       # Print PROTECTED commits following release commits.
       for (i_todo = 0; i_todo < i_prot; i_todo++) {
-        print protected[i_todo]
+        print protected[i_todo] >> "'${rebase_todo_path}'"
       }
       # Print PRIVATE commits last, following PROTECTED.
       for (i_todo = 0; i_todo < i_priv; i_todo++) {
-        print private[i_todo]
+        print private[i_todo] >> "'${rebase_todo_path}'"
       }
-      # All done.
-      state = 2;
     }
-    { next }
   ' ${rebase_todo_path}
 
   # ISOFF: The post-rebase exec (optional user hook) is handled
