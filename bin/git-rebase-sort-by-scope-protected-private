@@ -115,6 +115,19 @@ must_verify_starting_ref () {
     return 1
   fi
 
+  if ! git rev-parse "${starting_ref}" >/dev/null 2>&1; then
+    # What git-rebase would print.
+    >&2 echo "ERROR: fatal: invalid upstream '${starting_ref}'"
+
+    return 1
+  fi
+
+  if ! git merge-base --is-ancestor "${starting_ref}" "HEAD"; then
+    >&2 echo "ERROR: The starting ref is not an ancestor: '${starting_ref}'"
+
+    return 1
+  fi
+
   return 0
 }
 
