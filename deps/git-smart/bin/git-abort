@@ -44,7 +44,7 @@ git_abort () {
   gitdir="$(git rev-parse --git-dir)" || exit
 
   local opfound=""
-  local fcnt=""
+  local optally=""
   local plumbing_files=""
 
   local abortable_ops="cherry-pick merge rebase revert"
@@ -58,34 +58,48 @@ git_abort () {
     local plumbing_file="${gitdir}/${normalized}_HEAD"
 
     if [ -f "${plumbing_file}" ]; then
-      fcnt="1${fcnt}"
+      optally="1${optally}"
       opfound="${abortable_op}"
       plumbing_files="${plumbing_files} ${plumbing_file}"
     fi
   done
 
-  git_abort_try "${opfound}" "${fcnt}" "${plumbing_files}"
+  git_abort_try "${opfound}" "${optally}" "${plumbing_files}"
 }
 
 # ***
 
 git_abort_try () {
   local opfound="$1"
-  local fcnt="$2"
+  local optally="$2"
   local plumbing_files="$3"
 
-  # FIXME/2023-01-09 11:31: How better to detect this?:
-  # - If I `git ria! HEAD^` and try a squash, then rebase fails.
-  #   But there's no REBASE_HEAD, just a `.git/rebase-merge` directory.
-  #   - Why is it called `rebase-merge`? I.e., does git-merge use the
-  #     same-named directory?
-  if [ "${fcnt}" = "" ] && [ -d ".git/rebase-merge" ]; then
+  # Run `rebase --abort` whenever the .git/rebase-merge directory exists.
+  #
+  # - There are instances where there's either no REBASE_HEAD,
+  #   or there's also a MERGE_HEAD:
+  #
+  #   - Run `git ria! HEAD^` and try to squash, then rebase fails.
+  #     But there's no REBASE_HEAD, just `.git/rebase-merge`.
+  #
+  #   - Run a "merge" command rebase (via git-rebase-todo), then
+  #     .git/rebase-merge exists, as well as .git/MERGE_HEAD (but
+  #     surprisingly no REBASE_HEAD).
+  #
+  #     (And if you then run `git merge --abort`, it clears MERGE_HEAD,
+  #      but not .git/rebase-merge. You can `git rebase --abort` to
+  #      finish the abort, or you could just `git rebase --abort` in
+  #      the first place).
+  #
+  #   - Run `git rebase --rebase-merges` and you'll see both HEAD
+  #     files: MERGE_HEAD and REBASE_HEAD.
+  if [ -d ".git/rebase-merge" ]; then
     opfound="rebase"
-    fcnt=1
+    optally=1
   fi
 
-  if [ "${fcnt}" != "1" ]; then
-    if [ "${fcnt}" = "" ]; then
+  if [ "${optally}" != "1" ]; then
+    if [ "${optally}" = "" ]; then
       echo "(You're doing fine) Nothing to abort" >&2
     else
       echo "(Something stinks) More than one abortable operation detected:" >&2
@@ -106,6 +120,13 @@ git_abort_try () {
     git_abort_post_rebase_execs_run_maybe
   fi
 
+  # Remove the out-of-band `exec` file regardless of abort success.
+  # - Unless there's a use case for only running cleanup if the
+  #   --abort succeeds, we'll avoid running the execs if --abort
+  #   failed, because, without said use case, we don't know why
+  #   it fails. So let's not run our `execs` if the user tries
+  #   again and it succeeds, because maybe they changed the repo
+  #   state otherwise to get --abort to succeed.
   git_abort_post_rebase_execs_cleanup
 
   return ${retcode}
