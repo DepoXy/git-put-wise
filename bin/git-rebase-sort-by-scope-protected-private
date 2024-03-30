@@ -55,7 +55,7 @@ git-rebase-sort-by-scope-protected-private () {
   local seq_editor
   seq_editor="$(must_locate_seq_editor)"
 
-  must_specify_starting_ref "${starting_ref}"
+  must_verify_starting_ref "${starting_ref}"
 
   local pop_after=false
   pop_after=$(maybe_stash_changes "git-rebase-sort-by-scope-protected-private")
@@ -106,7 +106,7 @@ must_locate_seq_editor () {
 
 # ***
 
-must_specify_starting_ref () {
+must_verify_starting_ref () {
   local starting_ref="$1"
 
   [ -z "${starting_ref}" ] || return 0
