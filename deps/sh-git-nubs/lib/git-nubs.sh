@@ -192,9 +192,9 @@ git_first_commit_sha () {  # aka git_root_commit_sha, perhaps
 
 git_sha_shorten () {
   local string="$1"
-  local maxlen="${2:-${GIT_NUBS_LENGTH_SHORT_SHA:-12}}"
+  local maxlen="${2:-${GITNUBS_LENGTH_SHORT_SHA:-12}}"
 
-  if [ -z "${string}" ]; then
+  if [ $# -eq 0 ]; then
     string="$(git_HEAD_commit_sha)"
   fi
 
@@ -248,7 +248,7 @@ git_parent_of () {
 # print counts per author.
 git_number_of_commits () {
   local gitref="${1:-HEAD}"
-  [ -z "$1" ] || shift
+  [ $# -lt 1 ] || shift
 
   git rev-list --count "${gitref}" "$@"
 }
@@ -271,7 +271,7 @@ git_remote_branch_exists () {
 git_remote_branch_object_name () {
   local remote_branch="$(_git_print_remote_branch_unambiguous "${1}" "${2}")"
 
-  # Prints SHA1.
+  # Prints SHA on success, or repeats input and returns nonzero on failure
   git rev-parse "${remote_branch}" 2> /dev/null
 }
 
@@ -282,7 +282,7 @@ _git_print_remote_branch_unambiguous () {
 
   local remote_branch=""
 
-  if [ -z "${branch}" ]; then
+  if [ $# -lt 2 ]; then
     # Assume caller passed in remote/branch.
     remote_branch="${remote}"
   else
@@ -444,12 +444,12 @@ git_insist_pristine () {
 
   local projpath="${1:-$(pwd)}"
 
-  ${GIT_NUBS_SURROUND_ERROR:-true} && >&2 echo || true
+  ${GITNUBS_SURROUND_ERROR:-true} && >&2 echo || true
   >&2 echo "ERROR: Working directory not tidy."
   >&2 echo "- HINT: Try:"
   >&2 echo
   >&2 echo "   cd \"${projpath}\" && git status"
-  ${GIT_NUBS_SURROUND_ERROR:-true} && >&2 echo || true
+  ${GITNUBS_SURROUND_ERROR:-true} && >&2 echo || true
 
   return 1
 }
@@ -463,7 +463,7 @@ git_insist_tidy () {
 git_nothing_staged () {
   local filepath="$1"
 
-  if [ -z "${filepath}" ]; then
+  if [ $# -eq 0 ]; then
     git diff --cached --quiet
   else
     git diff --cached --quiet -- "${filepath}"
@@ -475,12 +475,12 @@ git_insist_nothing_staged () {
 
   local projpath="${1:-$(pwd)}"
 
-  ${GIT_NUBS_SURROUND_ERROR:-true} && >&2 echo || true
+  ${GITNUBS_SURROUND_ERROR:-true} && >&2 echo || true
   >&2 echo "ERROR: Working directory has staged changes."
   >&2 echo "- HINT: Try:"
   >&2 echo
   >&2 echo "   cd \"${projpath}\" && git status"
-  ${GIT_NUBS_SURROUND_ERROR:-true} && >&2 echo || true
+  ${GITNUBS_SURROUND_ERROR:-true} && >&2 echo || true
 
   return 1
 }
@@ -568,7 +568,7 @@ git_is_commit () {
 git_versions_tagged_for_commit_object__THE_HARD_WAY () {
   local hash="$1"
 
-  if [ -z "${hash}" ]; then
+  if [ $# -eq 0 ]; then
     hash="$(git_HEAD_commit_sha)"
   fi
 
@@ -590,7 +590,7 @@ git_versions_tagged_for_commit_object__THE_HARD_WAY () {
   # then isolate just the tag -- and match only tags with a leading digit
   # (assuming that indicates a version tag, to exclude non-version tags).
   git show-ref --tags -d \
-    | grep -E -e "^${hash}.* refs/tags/${GITSMART_RE_VERSPARTS__INCLUSIVE}" \
+    | grep -E -e "^${hash}.* refs/tags/${GITNUBS_RE_VERSPARTS__INCLUSIVE}" \
     | sed \
       -e 's#.* refs/tags/v\?##' \
       -e 's/\^{}//'
@@ -602,7 +602,7 @@ git_versions_tagged_for_commit_object () {
   local object="$1"
 
   git tag --list --points-at ${object} \
-    | grep -E -e "${GITSMART_RE_VERSPARTS}" \
+    | grep -E -e "${GITNUBS_RE_VERSPARTS}" \
     | sed -e 's/^v//'
 }
 
@@ -612,7 +612,7 @@ git_versions_tagged_for_commit_object () {
 
 # ALTLY/2024-02-26: Some projects use an alternative prefix.
 # - E.g., `tig` uses a "tig-" prefix, such as "tig-2.5.8".
-GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX="${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX:-v}"
+GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX="${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX:-v}"
 
 # Match groups: \1: 'v'       (optional)
 #               \2: major     (required)
@@ -640,37 +640,39 @@ GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX="${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX
 #     is redundant. So you can use this regex for matching with any
 #     command, but you'll want to use Perl for splitting or substitution.
 # - Remember to use Perl for substitution, e.g.,
-#     $ perl -pe "s/${GITSMART_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/" <<<"v1.2.3-1alpha1"
+#     $ perl -pe "s/${GITNUBS_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/" <<<"v1.2.3-1alpha1"
 #     NubsVer: v 1 2 3 -1alpha 1
 #   But sed will be too greedy (and what should be \7 will be gobbled by \6):
-#     $ echo "v1.2.3-1alpha1" | sed -E "s/${GITSMART_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/"
+#     $ echo "v1.2.3-1alpha1" | sed -E "s/${GITNUBS_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/"
 #     NubsVer: v 1 2 3 -1alpha1
 
-GITSMART_RE_VERSPARTS__INCLUSIVE="(${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?"
-GITSMART_RE_VERSPARTS="^${GITSMART_RE_VERSPARTS__INCLUSIVE}$"
+GITNUBS_RE_VERSPARTS__INCLUSIVE="(${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?"
+GITNUBS_RE_VERSPARTS="^${GITNUBS_RE_VERSPARTS__INCLUSIVE}$"
 
 # For culling pre-release versions (to return latest *normal* version tag).
-GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE="(${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+))?"
-GITSMART_RE_VERSPARTS_NORMAL="^${GITSMART_RE_VERSPARTS_NORMAL__INCLUSIVE}$"
+GITNUBS_RE_VERSPARTS_NORMAL__INCLUSIVE="(${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+))?"
+GITNUBS_RE_VERSPARTS_NORMAL="^${GITNUBS_RE_VERSPARTS_NORMAL__INCLUSIVE}$"
 
 # CXREF: SemVer Perl regex, from the source, unaltered.
 #   https://semver.org/
 #   https://regex101.com/r/Ly7O1x/3/
 # - You could try, e.g.,
-#     $ perl -pe "s/${GITSMART_RE_SEMVERSPARTS}/SemVer: \1 \2 \3 \4 \5/" <<<"1.0.0+alpha-a.b-c.1.d"
+#     $ perl -pe "s/${GITNUBS_RE_SEMVERSPARTS}/SemVer: \1 \2 \3 \4 \5/" <<<"1.0.0+alpha-a.b-c.1.d"
 #     SemVer: 1 0 0  alpha-a.b-c.1.d
-#     $ perl -pe "s/${GITSMART_RE_SEMVERSPARTS}/SemVer: \1 \2 \3 \4 \5/" <<<"1.0.0-alpha+a.b-c.1.d"
+#     $ perl -pe "s/${GITNUBS_RE_SEMVERSPARTS}/SemVer: \1 \2 \3 \4 \5/" <<<"1.0.0-alpha+a.b-c.1.d"
 #     SemVer: 1 0 0 alpha a.b-c.1.d
 #   Or
-#     $ echo "1.2.3-a.4" | perl -ne "print if s/${GITSMART_RE_SEMVERSPARTS}/\1 \2 \3 \4 \5/"
+#     $ echo "1.2.3-a.4" | perl -ne "print if s/${GITNUBS_RE_SEMVERSPARTS}/\1 \2 \3 \4 \5/"
 #     1 2 3 a.4
 #   Or
-#     $ echo "1.2.3-a.4" | perl -ne "print if /${GITSMART_RE_SEMVERSPARTS}/"
+#     $ echo "1.2.3-a.4" | perl -ne "print if /${GITNUBS_RE_SEMVERSPARTS}/"
 #     1.2.3-a.4
-#     $ echo "v1.2.3" | perl -ne "print if /${GITSMART_RE_SEMVERSPARTS}/"
+#     $ echo "v1.2.3" | perl -ne "print if /${GITNUBS_RE_SEMVERSPARTS}/"
 #     # OUTPUT: None. Not a valid SemVer.
+#
+# NOTED: This regex not used herein, but provided for end users. 
 
-GITSMART_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+GITNUBS_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
 
 # ***
 
@@ -684,18 +686,20 @@ GITSMART_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<pat
 # - We use it as a git-tag prefilter, but it's really the grep after it
 #   truly filters the version tags.
 # - CPYST: Copy-paste test snippet:
-#     git --no-pager tag -l ${GITSMART_VERSION_TAG_PATTERNS}
-GITSMART_VERSION_TAG_PATTERNS="${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* [0-9]*"
+#     git --no-pager tag -l ${GITNUBS_VERSION_TAG_PATTERNS}
+GITNUBS_VERSION_TAG_PATTERNS="${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* [0-9]*"
 
-GITNUBS_TAG_PATTERNS_TAGREFS="refs/tags/${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* refs/tags/[0-9]*"
+GITNUBS_TAG_PATTERNS_TAGREFS="refs/tags/${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* refs/tags/[0-9]*"
 
 # Prints all tags that match: v[0-9]* [0-9]*
 _git_tag_list_prefilter () {
-  git tag -l "$@" ${GITSMART_VERSION_TAG_PATTERNS}
+  git tag -l "$@" ${GITNUBS_VERSION_TAG_PATTERNS}
 }
 
 # Prints tags for a specific remote that match: refs/tags/[0-9]* refs/tags/v[0-9]*
 # - NOTED: Uses --refs, otherwise needs `| sed '/\^{}$/d'` to remove refs/tags/abcd123^{} refs
+# CPYST:
+#   git ls-remote --tags --refs starter refs/tags/[0-9]* refs/tags/v[0-9]* | cut -f 2 | sed 's#^refs/tags/##'
 _git_tag_list_prefilter_from_remote () {
   local remote_name="$1"
 
@@ -719,12 +723,12 @@ _pick_largest_basetag () {
 
 git_latest_version_basetag () {
   _git_tag_list_prefilter "$@" \
-    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS}"
+    | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS}"
 }
 
 git_latest_version_normal () {
   _git_tag_list_prefilter "$@" \
-    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS_NORMAL}"
+    | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS_NORMAL}"
 }
 
 # ***
@@ -733,14 +737,14 @@ git_latest_version_from_remote_basetag () {
   local remote_name="$1"
 
   _git_tag_list_prefilter_from_remote "${remote_name}" \
-    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS}"
+    | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS}"
 }
 
 git_latest_version_from_remote_normal () {
   local remote_name="$1"
 
   _git_tag_list_prefilter_from_remote "${remote_name}" \
-    | _pick_largest_basetag "${GITSMART_RE_VERSPARTS_NORMAL}"
+    | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS_NORMAL}"
 }
 
 # Because `git ls-remote` pings the network, cache the results.
@@ -808,19 +812,19 @@ _generate_tag_list_from_remote () {
 # - That is to say, this function returns the largest pre-release
 #   tag for a given basevers (or the basevers itself if there are
 #   no pre-release tags; or nothing if there's no basevers tag).
-latest_version_fulltag () {
+_latest_version_fulltag () {
   local basevers="$1"
   shift
   # Any additional args are passed to git-tag.
 
   # Use Perl, not sed, because of ".*?" non-greedy (so \7 works).
-  git tag -l "$@" "${basevers}*" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}*" |
+  git tag -l "$@" "${basevers}*" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}*" |
     _pick_largest_fulltag
 }
 
 _pick_largest_fulltag () {
-  grep -E -e "${GITSMART_RE_VERSPARTS}" |
-    perl -ne "print if s/${GITSMART_RE_VERSPARTS}/\6, \7, \1\2.\3.\5\6\7/" |
+  grep -E -e "${GITNUBS_RE_VERSPARTS}" |
+    perl -ne "print if s/${GITNUBS_RE_VERSPARTS}/\6, \7, \1\2.\3.\5\6\7/" |
     sort -k1,1 -k2,2n |
     tail -n1 |
     sed -E "s/^[^,]*, [^,]*, //"
@@ -867,16 +871,16 @@ git_largest_version_tag () {
   # - A basevers version is higher than any pre-release with the same basevers.
   # - The grep filters out refs/tags/has/a/path/to/<basevers>
   if git show-ref --tags -- \
-    "${basevers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
+    "${basevers}" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
     | grep -q ' refs/tags/[^/]\+$' \
   ; then
     # Print the tag name with the v-prefix, if present.
     git --no-pager tag -l -- \
-      "${basevers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}"
+      "${basevers}" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}"
   else
     # Latest version is a prerelease tag. Determine which pre-release
     # from that basevers is the largest.
-    latest_version_fulltag "${basevers}" "$@"
+    _latest_version_fulltag "${basevers}" "$@"
   fi
 }
 
@@ -892,7 +896,7 @@ git_largest_version_tag_normal () {
 
   # Print the tag name with the v-prefix, if present.
   git --no-pager tag -l -- \
-    "${normal_vers}" "${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}"
+    "${normal_vers}" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}"
 }
 
 # ***
@@ -916,7 +920,7 @@ git_largest_version_tag_from_remote () {
 
   local basevers
   basevers="$( \
-    cat "${tag_cache}" | _pick_largest_basetag "${GITSMART_RE_VERSPARTS}"
+    cat "${tag_cache}" | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS}"
   )"
 
   # ***
@@ -926,14 +930,14 @@ git_largest_version_tag_from_remote () {
     if ! cat "${tag_cache}" \
         | grep \
           -e "^${basevers}$" \
-          -e "^${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}$" \
+          -e "^${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}$" \
         | head -n1 \
     ; then
       # Must be a pre-release tag.
       cat "${tag_cache}" \
         | grep \
           -e "^${basevers}" \
-          -e "^${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
+          -e "^${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
         | _pick_largest_fulltag
     fi
   fi
@@ -960,7 +964,7 @@ git_largest_version_tag_from_remote_normal () {
 
   local normal_vers
   normal_vers="$( \
-    cat "${tag_cache}" | _pick_largest_basetag "${GITSMART_RE_VERSPARTS_NORMAL}"
+    cat "${tag_cache}" | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS_NORMAL}"
   )"
 
   # ***
@@ -970,7 +974,7 @@ git_largest_version_tag_from_remote_normal () {
     cat "${tag_cache}" \
       | grep \
         -e "^${normal_vers}$" \
-        -e "^${GITSMART_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}$" \
+        -e "^${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}$" \
       | head -n1
   fi
 
@@ -1075,7 +1079,9 @@ git_tag_remote_verify_commit () {
 
   local git_cmd="git ls-remote --tags ${remote_name} ${tag_name}"
 
-  printf '%s' "Sending remote request: ‘${git_cmd}’... "
+  printf '%s' "Sending remote request: ‘${git_cmd}’..."
+
+  local remote_tag_hash_and_path=""
 
   # UWAIT: This is a network call and takes a moment.
   if ! remote_tag_hash_and_path="$(${git_cmd})"; then
@@ -1085,11 +1091,14 @@ git_tag_remote_verify_commit () {
 
     return ${retcode}
   fi
-  #
+
   # SAVVY: The default `cut` delimiter is <Tab>.
   remote_tag_hash="$(echo "${remote_tag_hash_and_path}" | cut -f1)"
-  #
-  printf '%s\n' " ${remote_tag_hash}"
+
+  # Finish the output message.
+  printf '%s\n' " $( \
+    git_sha_shorten "${remote_tag_hash}" ${GITNUBS_LENGTH_SHORTER_SHA:-7}
+  )"
 
   if [ -z "${remote_tag_hash}" ]; then
     retcode=${GNUBS_TAG_ABSENT}
