@@ -52,7 +52,7 @@ put_wise_pull_remotes_go () {
   pw_tag_archived="$(format_pw_tag_archived "${branch_name}")"
 
   local pick_from=""
-  pick_from="$(git_tag_object_name "${pw_tag_archived}")"
+  pick_from="$(git_tag_object_name "${pw_tag_archived}")" || true
 
   if [ -z "${pick_from}" ]; then
     put_wise_pull_unspecially "${branch_name}" "${pw_tag_archived}"

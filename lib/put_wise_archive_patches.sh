@@ -509,9 +509,11 @@ must_have_non_empty_rev_range_not_already_tagged () {
   # If pw/<branch>/out tag exists, means --archive was run more recently than
   # --apply or --pull, because --apply/--pull removes the pw/<branch>/out tag.
   # - The pw/in tag, created on --apply, also aka 'from'
-  local in_tag="$(git_tag_object_name "${pw_tag_applied}")"
+  local in_tag
+  in_tag="$(git_tag_object_name "${pw_tag_applied}")" || true
   # - The pw/out tag, created on --archive, also aka 'upto'.
-  local out_tag="$(git_tag_object_name "${pw_tag_archived}")"
+  local out_tag
+  out_tag="$(git_tag_object_name "${pw_tag_archived}")" || true
 
   debug "in_tag ${in_tag:-<empty>} / out_tag ${out_tag:-<empty>}"
 
