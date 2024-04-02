@@ -145,7 +145,7 @@ put_wise_archive_patches_go () {
 #   the --apply method, and we called
 #
 #     choose_patch_base_or_ask_user "${starting_ref}" "${pw_tag_applied}" \
-#       "${PW_TAG_ONTIME_START}"
+#       "${PW_TAG_ONTIME_START}" "${patch_branch}"
 #
 #   If the user used the on-demand PW_TAG_ONTIME_START tag, the chooser
 #   would just pick that. If not, next it checks the starting ref, which

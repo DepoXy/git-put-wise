@@ -466,7 +466,7 @@ process_unpacked_patchkage () {
   # But I want to have the patch_base "passed" back, meaning we cannot call
   # patch_base="$(subprocess)".
   choose_patch_base_or_ask_user "${starting_sha}" "${pw_tag_applied}" \
-    "${PW_TAG_ONTIME_APPLY}"
+    "${PW_TAG_ONTIME_APPLY}" "${patch_branch}"
 
   # ***
 

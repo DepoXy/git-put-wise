@@ -17,6 +17,7 @@ choose_patch_base_or_ask_user () {
   local starting_sha="$1"
   local pw_io_tag_name="$2"
   local pw_ontime_tag_name="$3"
+  local patch_branch="$4"
 
   patch_base=""
 
@@ -62,7 +63,7 @@ choose_patch_base_or_ask_user () {
   fi
 
   local scoping_starts_at=""
-  scoping_starts_at="$(determine_scoping_boundary)"
+  scoping_starts_at="$(determine_scoping_boundary "${patch_branch}")"
 
   # Ensure we don't rebase past published work. Compare the desired patch_base
   # against the upstream scoping remote branch, as well as the release remote
@@ -174,6 +175,8 @@ choose_patch_base_or_ask_user () {
 
 # RELATED: identify_scope_ends_at
 determine_scoping_boundary () {
+  local patch_branch="$1"
+
   local scoping_starts_at=""
 
   local private_scope_starts_at
