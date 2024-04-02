@@ -410,10 +410,11 @@ cli_parse_params () {
               R)
                 PW_ACTION_RESET=true
                 ;;
-              # MAYBE?
-              # X)
+              # These options do not have single-chars option string options:
               #   PW_ACTION_SHA=true
-              #   ;;
+              #   PW_ACTION_REBASE_CONTINUE=true
+              #   PW_ACTION_REBASE_ABORT=true
+              #   PW_ACTION_PULL_CLEANUP=true
               J)
                 option_value_must_be_specified "-J" "$@"
                 PW_PROJECT_PATH="$1"
