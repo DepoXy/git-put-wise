@@ -45,6 +45,7 @@ PW_ACTION_ARCHIVE=${PW_ACTION_ARCHIVE:-false}
 PW_ACTION_APPLY=${PW_ACTION_APPLY:-false}
 PW_ACTION_APPLY_ALL=${PW_ACTION_APPLY_ALL:-false}
 PW_ACTION_RESET=${PW_ACTION_RESET:-false}
+PW_ACTION_SCOPE=${PW_ACTION_SCOPE:-false}
 PW_ACTION_SHA=${PW_ACTION_SHA:-false}
 # - If action does not complete, user must --continue or --abort.
 PW_ACTION_REBASE_CONTINUE=${PW_ACTION_REBASE_CONTINUE:-false}
@@ -156,6 +157,12 @@ cli_parse_params () {
 
       -R | --reset)
         PW_ACTION_RESET=true
+
+        shift
+        ;;
+
+      --scope | scope)
+        PW_ACTION_SCOPE=true
 
         shift
         ;;
@@ -411,6 +418,7 @@ cli_parse_params () {
                 PW_ACTION_RESET=true
                 ;;
               # These options do not have single-chars option string options:
+              #   PW_ACTION_SCOPE=true
               #   PW_ACTION_SHA=true
               #   PW_ACTION_REBASE_CONTINUE=true
               #   PW_ACTION_REBASE_ABORT=true
@@ -601,6 +609,7 @@ cli_must_verify_action_specified () {
     ${PW_ACTION_APPLY} ||
     ${PW_ACTION_APPLY_ALL} ||
     ${PW_ACTION_RESET} ||
+    ${PW_ACTION_SCOPE} ||
     ${PW_ACTION_SHA} ||
     ${PW_ACTION_REBASE_CONTINUE} ||
     ${PW_ACTION_REBASE_ABORT} ||

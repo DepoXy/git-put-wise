@@ -461,6 +461,23 @@ project_path_same_as_patches_repo () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# `put-wise --scope`
+
+put_wise_print_scoping_boundary_sha () {
+  local protected_boundary_or_HEAD
+  protected_boundary_or_HEAD="$( \
+    identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
+  )"
+
+  # identify-scope postfixes '^' parent shortcut, but this fcn derefs.
+
+  printf "%s" "$(
+    git rev-parse --verify --end-of-options "${protected_boundary_or_HEAD}"
+  )"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 # `put-wise --sha`
 #
 # CPYST:

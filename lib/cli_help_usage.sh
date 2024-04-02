@@ -38,6 +38,8 @@ Specify one:
 
   -R|--reset                (Re)create the patches repo
 
+  --scope|scope             Print PRIVATE/PROTECTED boundary SHA
+
   --sha|sha [<path>]        Print <path> SHA (defaults to project directory)
 
   --continue|continue       Restart the rebasing process after having resolved
@@ -110,6 +112,7 @@ Environment variables you can use instead of options above:
   -y|--apply|apply          PW_ACTION_APPLY=true|false
   -A|--apply-all|...        PW_ACTION_APPLY_ALL=true|false
   -R|--reset                PW_ACTION_RESET=true|false
+  --scope|scope             PW_ACTION_SCOPE=true|false
   --sha|sha [<path>]        PW_ACTION_SHA=true PW_PROJECT_PATH=\"<path>\"
   --continue|continue       PW_ACTION_REBASE_CONTINUE=true|false
   --abort|abort             PW_ACTION_REBASE_ABORT=true|false
