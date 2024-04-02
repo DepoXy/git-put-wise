@@ -12,7 +12,7 @@ git_branch_exists () {
   #   git rev-parse --verify --quiet HEAD
   # This works, but technically we should use rev-parse:
   #  git show-ref --verify --quiet refs/heads/${branch_name}
-  git rev-parse --verify refs/heads/${branch_name} > /dev/null 2>&1
+  git rev-parse --verify --end-of-options "refs/heads/${branch_name}" > /dev/null 2>&1
 }
 
 git_branch_name () {
@@ -49,7 +49,7 @@ git_branch_name () {
     exit_code=1
   fi
 
-  printf %s "${branch_name}"
+  printf "%s" "${branch_name}"
 
   return ${exit_code}
 }
@@ -105,7 +105,7 @@ git_commit_object_name () {
   local gitref="${1:-HEAD}"
   local opts="$2"
 
-  git rev-parse ${opts} "${gitref}"
+  git rev-parse ${opts} --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
 }
 
 git_is_same_commit () {
@@ -115,50 +115,111 @@ git_is_same_commit () {
   [ "$(git_commit_object_name "${lhs}")" = "$(git_commit_object_name "${rhs}")" ]
 }
 
-# There are a few ways to find the object name (SHA) for a tag:
+git_object_name_check_format () {
+  local tag_name="$1"
+
+  git check-ref-format "refs/tags/${tag_name}"
+}
+
+# There are a few ways to find the object name (SHA) for a tag, including:
 #
 #   git rev-parse refs/tags/sometag
 #   git rev-parse --tags=*some/tag
 #   git show-ref --tags
 #
-# Per `man git-rev-parse` --tags appends "/*" if search doesn't include glob
-# character (*?[), making it a prefix match -- and also making it *not* match
-# what you're trying to search, which seems like a weird interface choice.
+# Per `man git-rev-parse`, --tags appends "/*" if search doesn't include
+# glob character (*?[), making it a prefix match — and also making it
+# *not* match what you're trying to search, which seems like a weird
+# interface choice.
 # - E.g., searching for some/tag:
 #     git rev-parse --tags=some/tag
-#   won't actually match some/tag. It will match some/tag/name.
-#   - To match some/tag, you have to glob it explicitly, e.g.,
-#       git rev-parse --tags=*some/tag
-#       git rev-parse --tags=some/tag*
-#       git rev-parse --tags=[s]ome/tag
+#   won't actually match some/tag.
+#   - But it will match some/tag/name.
+#   To match some/tag, you have to glob it explicitly, e.g.,
+#      git rev-parse --tags=*some/tag
+#      git rev-parse --tags=some/tag*
+#      git rev-parse --tags=[s]ome/tag
 #   - But there's no way to make an exact tag name match using --tags.
-#     - Which I guess is Git nudging you to use refs/tags/.
-# Note the UX differences between using refs/tags/ vs. --tags:
-# - If not found, refs/tags reprints argument, "ambiguous argument" message,
-#   and exits nonzero. --tags prints nothing and exits zero.
-#   - Here we mimic --tags.
+#     - Which I guess is Git nudging you to use refs/tags/
+#
+# Note the UX differences between using `refs/tags/` vs. `--tags`:
+# - If not found, refs/tags:
+#   - Echoes argument to stdout;
+#     Prints "ambiguous argument" to stderr; and
+#     Exits nonzero.
+# - If not found, --tags:
+#   - Prints nothing to nowhere; and
+#   - Exits zero.
+# Here we mimic --tags behavior.
+
+# BWARE: Returns the tag object ID, not the commit to which it's attached.
 git_tag_object_name () {
   local gitref="$1"
   local opts="$2"
 
-  [ -n "${gitref}" ] || return 0
+  if [ -z "${gitref}" ]; then
 
-  local says_git=""
-  says_git="$(git rev-parse ${opts} refs/tags/${gitref} 2> /dev/null)"
-  [ $? -ne 0 ] || echo "${says_git}"
+    return 1
+  fi
+
+  # rev-parse normally echoes gitref even if it fails (and also prints to
+  # stderr), unless --verify.
+  git rev-parse ${opts} --verify --end-of-options "refs/tags/${gitref}" 2> /dev/null
 }
+
+# There are a few ways to find the commit ID for a tag, including:
+#
+#   git rev-parse <TAG>^{}
+#   git rev-parse <TAG>^{commit}
+#   git rev-list -n 1 <TAG>
+#
+# - AFAIK, either `rev-parse <TAG>^{}` or `rev-list -n 1 <TAG>` should
+#   find all tags.
+#   - BWARE: Not all functions that list/find tags find both annotated
+#     and lightweight tags.
 
 git_tag_commit_object () {
   local gitref="$1"
-  local opts="$2"
 
-  git_tag_object_name "${gitref}^{commit}" "${opts}"
+  local failed_rev_list=false
+
+  # ALTLY:
+  #
+  #   git_tag_object_name "${gitref}^{commit}"
+
+  local id_from_rev_list=""
+  id_from_rev_list="$(git rev-list -n 1 "refs/tags/${gitref}" 2> /dev/null)" \
+    || failed_rev_list=true
+
+  # TRACK/2024-03-31: A curiosity:
+  if ${GITNUBS_DEV:-false}; then
+    local failed_rev_parse=false
+
+    local id_from_rev_parse=""
+    id_from_rev_parse="$(git_tag_object_name "${gitref}^{commit}")" \
+      || failed_rev_parse=true
+
+    if [ "${failed_rev_list}" != "${failed_rev_parse}" ] \
+      || [ "${id_from_rev_list}" != "${id_from_rev_parse}" ] \
+    ; then
+      >&2 echo
+      >&2 echo "GAFFE: Unexpected: \`git rev-list -n 1 ${gitref}\`     " \
+        "→ “${id_from_rev_list}” [failed: ${failed_rev_list}]"
+      >&2 echo "   different than: \`git rev-parse ${gitref}^{commit}\`" \
+        "→ “${id_from_rev_parse}” [failed: ${failed_rev_parse}]"
+      >&2 echo
+    fi
+  fi
+
+  printf "%s" "${id_from_rev_list}"
+
+  ! ${failed_rev_list}
 }
 
 git_tag_exists () {
   local tag_name="$1"
 
-  git rev-parse --verify refs/tags/${tag_name} > /dev/null 2>&1
+  git rev-parse --verify --end-of-options "refs/tags/${tag_name}" > /dev/null 2>&1
 }
 
 git_tag_name_check_format () {
@@ -198,7 +259,7 @@ git_sha_shorten () {
     string="$(git_HEAD_commit_sha)"
   fi
 
-  printf "${string}" | sed -E 's/^(.{'${maxlen}'}).*/\1/g'
+  printf "%s" "${string}" | sed -E 's/^(.{'${maxlen}'}).*/\1/g'
 }
 
 # ***
@@ -253,6 +314,13 @@ git_number_of_commits () {
   git rev-list --count "${gitref}" "$@"
 }
 
+git_distance_between_commits () {
+  local gitref_lhs="${1:-HEAD}"
+  local gitref_rhs="${2:-HEAD}"
+
+  git rev-list --count ${gitref_lhs}..${gitref_rhs}
+}
+
 # ***
 
 git_remote_exists () {
@@ -262,17 +330,20 @@ git_remote_exists () {
 }
 
 git_remote_branch_exists () {
-  local remote_branch="$(_git_print_remote_branch_unambiguous "${1}" "${2}")"
+  local upstream_ref="$(_git_print_remote_branch_unambiguous "${1}" "${2}")"
 
   # SHOWS: [branchname] <most recent commit message>
-  git show-branch "${remote_branch}" &> /dev/null
+  # - Remember upstream_ref formatted refs/remotes/<upstream>
+  git show-branch "${upstream_ref}" &> /dev/null
 }
 
 git_remote_branch_object_name () {
-  local remote_branch="$(_git_print_remote_branch_unambiguous "${1}" "${2}")"
+  local upstream_ref="$(_git_print_remote_branch_unambiguous "${1}" "${2}")"
 
-  # Prints SHA on success, or repeats input and returns nonzero on failure
-  git rev-parse "${remote_branch}" 2> /dev/null
+  # Prints SHA on success, or repeats input and returns nonzero on failure,
+  # unless --verify then doesn't repeat input to stdout.
+  # - Remember upstream_ref formatted refs/remotes/<upstream>
+  git rev-parse --verify --end-of-options "${upstream_ref}" 2> /dev/null
 }
 
 # Prints refs/remotes/<remote>/<branch>.
@@ -282,14 +353,14 @@ _git_print_remote_branch_unambiguous () {
 
   local remote_branch=""
 
-  if [ $# -lt 2 ]; then
+  if [ -z "${branch}" ]; then
     # Assume caller passed in remote/branch.
     remote_branch="${remote}"
   else
     remote_branch="${remote}/${branch}"
   fi
 
-  printf "refs/remotes/$(echo "${remote_branch}" | sed 's#^refs/remotes/##')"
+  printf "%s" "refs/remotes/$(echo "${remote_branch}" | sed 's#^refs/remotes/##')"
 }
 
 git_remote_default_branch () {
@@ -365,8 +436,8 @@ git_upstream_parse_names () {
 
   # ***
 
-  ! ${print_remote} || printf "${remote_name}"
-  ! ${print_branch} || printf "${branch_name}"
+  ! ${print_remote} || printf "%s" "${remote_name}"
+  ! ${print_branch} || printf "%s" "${branch_name}"
 }
 
 # The other opposite of `dirname`, `rootname`.
@@ -411,7 +482,7 @@ print_parent_path_to_project_root () {
   ( [ "${depth_path}" = "." ] || [ "${depth_path}" = "" ] ) \
     && return 0 || true
 
-  printf "${depth_path}" | sed 's#\([^/]\+\)#..#g'
+  printf "%s" "${depth_path}" | sed 's#\([^/]\+\)#..#g'
 }
 
 # Check that the current directory exists in a Git repo.
@@ -568,7 +639,7 @@ git_is_commit () {
 git_versions_tagged_for_commit_object__THE_HARD_WAY () {
   local hash="$1"
 
-  if [ $# -eq 0 ]; then
+  if [ -z "${hash}" ]; then
     hash="$(git_HEAD_commit_sha)"
   fi
 
@@ -612,7 +683,7 @@ git_versions_tagged_for_commit_object () {
 
 # ALTLY/2024-02-26: Some projects use an alternative prefix.
 # - E.g., `tig` uses a "tig-" prefix, such as "tig-2.5.8".
-GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX="${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX:-v}"
+GITNUBS_PREFIX="${GITNUBS_PREFIX:-v}"
 
 # Match groups: \1: 'v'       (optional)
 #               \2: major     (required)
@@ -646,11 +717,11 @@ GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX="${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX:-
 #     $ echo "v1.2.3-1alpha1" | sed -E "s/${GITNUBS_RE_VERSPARTS}/NubsVer: \1 \2 \3 \5 \6 \7/"
 #     NubsVer: v 1 2 3 -1alpha1
 
-GITNUBS_RE_VERSPARTS__INCLUSIVE="(${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?"
+GITNUBS_RE_VERSPARTS__INCLUSIVE="(${GITNUBS_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+)([^0-9].*?)?([0-9]+)?)?"
 GITNUBS_RE_VERSPARTS="^${GITNUBS_RE_VERSPARTS__INCLUSIVE}$"
 
 # For culling pre-release versions (to return latest *normal* version tag).
-GITNUBS_RE_VERSPARTS_NORMAL__INCLUSIVE="(${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+))?"
+GITNUBS_RE_VERSPARTS_NORMAL__INCLUSIVE="(${GITNUBS_PREFIX})?([0-9]+)\.([0-9]+)(\.([0-9]+))?"
 GITNUBS_RE_VERSPARTS_NORMAL="^${GITNUBS_RE_VERSPARTS_NORMAL__INCLUSIVE}$"
 
 # CXREF: SemVer Perl regex, from the source, unaltered.
@@ -687,9 +758,9 @@ GITNUBS_RE_SEMVERSPARTS='^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patc
 #   truly filters the version tags.
 # - CPYST: Copy-paste test snippet:
 #     git --no-pager tag -l ${GITNUBS_VERSION_TAG_PATTERNS}
-GITNUBS_VERSION_TAG_PATTERNS="${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* [0-9]*"
+GITNUBS_VERSION_TAG_PATTERNS="${GITNUBS_PREFIX}[0-9]* [0-9]*"
 
-GITNUBS_TAG_PATTERNS_TAGREFS="refs/tags/${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}[0-9]* refs/tags/[0-9]*"
+GITNUBS_TAG_PATTERNS_TAGREFS="refs/tags/${GITNUBS_PREFIX}[0-9]* refs/tags/[0-9]*"
 
 # Prints all tags that match: v[0-9]* [0-9]*
 _git_tag_list_prefilter () {
@@ -729,6 +800,10 @@ git_latest_version_basetag () {
 git_latest_version_normal () {
   _git_tag_list_prefilter "$@" \
     | _pick_largest_basetag "${GITNUBS_RE_VERSPARTS_NORMAL}"
+}
+
+git_latest_version_basetag_safe () {
+  git_latest_version_basetag || printf "%s" "0.0.0"
 }
 
 # ***
@@ -818,7 +893,7 @@ _latest_version_fulltag () {
   # Any additional args are passed to git-tag.
 
   # Use Perl, not sed, because of ".*?" non-greedy (so \7 works).
-  git tag -l "$@" "${basevers}*" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}*" |
+  git tag -l "$@" "${basevers}*" "${GITNUBS_PREFIX}${basevers}*" |
     _pick_largest_fulltag
 }
 
@@ -871,12 +946,12 @@ git_largest_version_tag () {
   # - A basevers version is higher than any pre-release with the same basevers.
   # - The grep filters out refs/tags/has/a/path/to/<basevers>
   if git show-ref --tags -- \
-    "${basevers}" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
+    "${basevers}" "${GITNUBS_PREFIX}${basevers}" \
     | grep -q ' refs/tags/[^/]\+$' \
   ; then
     # Print the tag name with the v-prefix, if present.
     git --no-pager tag -l -- \
-      "${basevers}" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}"
+      "${basevers}" "${GITNUBS_PREFIX}${basevers}"
   else
     # Latest version is a prerelease tag. Determine which pre-release
     # from that basevers is the largest.
@@ -896,7 +971,7 @@ git_largest_version_tag_normal () {
 
   # Print the tag name with the v-prefix, if present.
   git --no-pager tag -l -- \
-    "${normal_vers}" "${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}"
+    "${normal_vers}" "${GITNUBS_PREFIX}${normal_vers}"
 }
 
 # ***
@@ -930,14 +1005,14 @@ git_largest_version_tag_from_remote () {
     if ! cat "${tag_cache}" \
         | grep \
           -e "^${basevers}$" \
-          -e "^${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}$" \
+          -e "^${GITNUBS_PREFIX}${basevers}$" \
         | head -n1 \
     ; then
       # Must be a pre-release tag.
       cat "${tag_cache}" \
         | grep \
           -e "^${basevers}" \
-          -e "^${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${basevers}" \
+          -e "^${GITNUBS_PREFIX}${basevers}" \
         | _pick_largest_fulltag
     fi
   fi
@@ -974,18 +1049,14 @@ git_largest_version_tag_from_remote_normal () {
     cat "${tag_cache}" \
       | grep \
         -e "^${normal_vers}$" \
-        -e "^${GITNUBS_RE_VERSPARTS__OPTIONAL_PREFIX}${normal_vers}$" \
+        -e "^${GITNUBS_PREFIX}${normal_vers}$" \
       | head -n1
   fi
 
   command rm "${tag_cache}"
 }
 
-# ***
-
-git_latest_version_basetag_safe () {
-  git_latest_version_basetag || printf '0.0.0'
-}
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 git_since_most_recent_commit_epoch_ts () {
   git --no-pager log -1 --format=%at HEAD 2> /dev/null
@@ -1079,7 +1150,7 @@ git_tag_remote_verify_commit () {
 
   local git_cmd="git ls-remote --tags ${remote_name} ${tag_name}"
 
-  printf '%s' "Sending remote request: ‘${git_cmd}’..."
+  printf "%s" "Sending remote request: ‘${git_cmd}’..."
 
   local remote_tag_hash_and_path=""
 
