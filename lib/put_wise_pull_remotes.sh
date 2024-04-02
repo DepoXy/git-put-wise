@@ -508,8 +508,9 @@ must_ensure_protected_remote_branch_exists () {
   # MAYBE/2023-01-18: GIT_FETCH: Use -q?
   ${DRY_RUN} git fetch -q "${SCOPING_REMOTE_NAME}"
 
-  local remote_sha
-  remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_SCOPING}")" || remote_sha=""
+  local remote_sha=""
+  remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_SCOPING}")" \
+    || true
 
   if [ -z "${remote_sha}" ]; then
     # Has 'entrust' remote, and definitely no upstream 'entrust/scoping'.
@@ -549,8 +550,9 @@ must_ensure_ready_to_rebase_onto_remote_release_branch () {
   # MAYBE/2023-01-18: GIT_FETCH: Use -q?
   ${DRY_RUN} git fetch -q "${RELEASE_REMOTE_NAME}"
 
-  local remote_sha
-  remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_RELEASE}")" || remote_sha=""
+  local remote_sha=""
+  remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_RELEASE}")" \
+    || true
 
   if [ -z "${remote_sha}" ]; then
     >&2 echo "ERROR: Please setup an appropriate remote branch for '${LOCAL_BRANCH_PRIVATE}':" \
@@ -731,8 +733,9 @@ maybe_move_branch_forward () {
 
   local local_sha="$(git_commit_object_name "${local_ref}")"
 
-  local remote_sha
-  remote_sha="$(git_remote_branch_object_name "${remote_ref}")" || remote_sha=""
+  local remote_sha=""
+  remote_sha="$(git_remote_branch_object_name "${remote_ref}")" \
+    || true
 
   # Only advance 'release' if it's strictly behind the remote.
   local ancestor_sha
