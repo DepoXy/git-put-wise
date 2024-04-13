@@ -403,18 +403,47 @@ put_wise_push_remotes_go () {
     "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
     "${tagged_current}" "${remote_name}/${branch_name}" \
   ; then
-    if ! prompt_user_to_review_action_plan_using_tig; then
-      >&2 echo "${PW_USER_CANCELED_GOODBYE}"
-    else
+    # Add 'r' command to restrict push just to 'release'.
+    # - Useful when 'liminal' or 'entrust' diverged, and
+    #   user didn't use <Ctrl-f> force-push.
+    local restrict_release=false
+    # - SAVVY: Override tig's built-in `r` — 'view-refs'
+    # - COPYD: Similar to lib/tig/config-put-wise
+    #   - CXREF: ~/.kit/git/git-put-wise/lib/tig/config-put-wise
+    # - SAVVY: The `echo > ${REPLY_PATH}` is reingested as GPW_TIG_PROMPT_CONTENT.
+    local restrict_release_binding="\
+bind generic r +<sh -c \" \\
+ git_put_wise__prompt__r_for_release_branch () { \\
+    REPLY_PATH=\\\"\${PW_PUSH_TIG_REPLY_PATH:-.gpw-yes}\\\"; \\
+    if [ ! -e \\\"\${REPLY_PATH}\\\" ]; then \\
+      echo \\\"${remote_release}\\\" > \\\"\${REPLY_PATH}\\\"; \\
+    else \\
+      >&2 echo \\\"ERROR: Already exists: \${REPLY_PATH}\\\"; \\
+    fi; \\
+  }; git_put_wise__prompt__r_for_release_branch\"
+    "
+
+    # Side-effect: Caller sets GPW_TIG_PROMPT_CONTENT.
+    if prompt_user_to_review_action_plan_using_tig "${restrict_release_binding}"; then
       keep_going=true
 
+      if [ "${GPW_TIG_PROMPT_CONTENT}" = "${remote_release}" ]; then
+        restrict_release=true
+      fi
+    else
+      >&2 echo "${PW_USER_CANCELED_GOODBYE}"
+    fi
+
+    if ${keep_going}; then
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
         echo_announce_push "${RELEASE_REMOTE_BRANCH}"
         ${DRY_RUN} git push "${RELEASE_REMOTE_NAME}" \
           "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
+    fi
 
+    if ${keep_going} && ! ${restrict_release}; then
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
         echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
         ${DRY_RUN} git push "${LIMINAL_REMOTE_NAME}" \

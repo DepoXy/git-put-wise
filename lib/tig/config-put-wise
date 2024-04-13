@@ -21,6 +21,9 @@
 #   - Fortunately, `ps -ocommand= -p <PID>` returns original
 #     call, including executable path and parameters, e.g.,
 #       bash /home/user/.local/bin/git-put-wise push
+
+# From `man tigrc`: + Run synchronously; < Exit tag after.
+
 bind generic w +<sh -c " \
  git_put_wise__prompt__w_for_yes__q_for_no_ () { \
     REPLY_PATH=\"${PW_PUSH_TIG_REPLY_PATH:-.gpw-yes}\"; \

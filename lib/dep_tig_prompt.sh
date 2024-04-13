@@ -27,6 +27,7 @@ PW_PUSH_TIG_REPLY_PATH=".gpw-yes"
 #     to see what commits will be pushed, and then then can 'q' to quit
 #     tig like normal and cancel the push, or the user can use temp. 'w'
 #     command to complete the push.
+# Side-effect: Sets GPW_TIG_PROMPT_CONTENT
 prompt_user_to_review_action_plan_using_tig () {
   local custom_cfg="$1"
 
@@ -66,7 +67,11 @@ prompt_user_to_review_action_plan_using_tig () {
   if [ -f "${PW_PUSH_TIG_REPLY_PATH}" ]; then
     approved=true
 
+    GPW_TIG_PROMPT_CONTENT="$(cat "${PW_PUSH_TIG_REPLY_PATH}")"
+
     command rm -- "${PW_PUSH_TIG_REPLY_PATH}"
+  else
+    unset -v GPW_TIG_PROMPT_CONTENT
   fi
 
   ${approved}
