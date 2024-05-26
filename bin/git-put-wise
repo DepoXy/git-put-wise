@@ -182,7 +182,7 @@ main () {
 check_deps
 source_deps
 
-if [ "$0" = "${BASH_SOURCE}" ]; then
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   if [ ${BASH_VERSINFO[0]} -le 3 ] && [ -n "${HOMEBREW_PREFIX}" ]; then
     # Sneakily switch to Bash 5+.
     # - Currently only necessary for `read -N` support.

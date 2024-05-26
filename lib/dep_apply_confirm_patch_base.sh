@@ -417,7 +417,7 @@ print_tig_review_instructions_apply () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-if [ "$0" = "${BASH_SOURCE}" ]; then
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
 

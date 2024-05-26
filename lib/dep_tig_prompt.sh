@@ -167,7 +167,7 @@ tig_prompt_confirm_launching_tig () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-if [ "$0" = "${BASH_SOURCE}" ]; then
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
 

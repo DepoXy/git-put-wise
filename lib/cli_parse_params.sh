@@ -656,7 +656,7 @@ cli_setup_log_level () {
 source_deps
 
 # "Complain" if executed.
-if [ "$0" = "${BASH_SOURCE}" ]; then
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
 
