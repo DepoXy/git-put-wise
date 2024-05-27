@@ -1587,8 +1587,16 @@ echo_alert () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# Complain if executed.
-if [ "$0" = "${BASH_SOURCE[0]}" ]; then
-  >&2 echo "😶"
-fi
+insist_sourced_in_bash () {
+  local prog_name="$(basename -- "$0")"
+
+  # Alert if not being sourced in Bash, or if being executed.
+  if [ -z "${BASH_SOURCE}" ] || [ "$0" = "${BASH_SOURCE[0]}" ]; then
+    >&2 echo "ERROR: Source this script with Bash [${prog_name}]"
+
+    return 1
+  fi
+}
+
+insist_sourced_in_bash
 
