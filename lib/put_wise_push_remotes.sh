@@ -336,9 +336,26 @@ put_wise_push_remotes_go () {
   # Here's a test tag to show which characters display properly in @linux tig:
   #   PW_TAG_SCOPE_MARKER_PROTECTED="pw-🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜"
   #                             @linux: ^^      ^^    ^^^^              ^^^^
+  #                             @macOS: ^^      ^^
+  # NOTED/2024-06-23: @macOS tig doesn't render these all, either, even
+  # with ncusrsw support.
+  # - The terminal shows these characters, though. E.g., echo the line above
+  #   to iTerm2 or Kitty and it looks good, and echoed to Alacritty it looks
+  #   mostly good, but Alacritty uses the simpler black and white VS15 variation
+  #   selector for some symbols, e.g., ⚫ and ⚪ print as ⚫︎and ⚪︎ (though when
+  #   you copy-paste from Alacritty to another app, they appear VS16 again).
+  #   - REFER: https://en.wikipedia.org/wiki/Variation_Selectors_(Unicode_block)
+  #            https://en.wikipedia.org/wiki/Miscellaneous_Symbols
+  # - But when you commit these symbols to Git and view in tig, many of them
+  #   are simply absent/blank. And if you copy from the text from tig and
+  #   paste elsewhere, you'll see the symbols have been replaced with spaces.
+  # - See OMR tig build, which supports wide-char:
+  #     ~/.depoxy/ambers/home/.kit/git/_mrconfig-git-core
+  #   - But only 🔴 and 🔵 are visible.
 
   # Use different flags for different branches: release, liminal, scoping, therest.
   # - SAVVY: Test new emoji b/c not all visible in tig ... # ↓↓↓↓↓ These all visible in tig @linux
+  #   - On @macOS, below are all visible in tig except: 🧚⛔⛓️
   PW_TAG_PREFIX_RELEASE="${PW_TAG_PREFIX_RELEASE:-pw-📢}"  # 📢🚀
   PW_TAG_PREFIX_LIMINAL="${PW_TAG_PREFIX_LIMINAL:-pw-💥}"  # 🔥🌀💥🎯🧚
   PW_TAG_PREFIX_SCOPING="${PW_TAG_PREFIX_SCOPING:-pw-💪}"  # 🔰💪🔐🔒🔏🔑🔓⛔🙌🤐🛑👇⛓️
