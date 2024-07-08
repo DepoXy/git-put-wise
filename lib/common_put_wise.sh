@@ -637,6 +637,7 @@ format_pw_tag_ephemeral_pull () {
 # - Exits nonzero (non-elevenses) if git ref. ahead of HEAD, somehow.
 confirm_state_and_resort_to_prepare_branch () {
   local starting_ref="$1"
+  local enable_gpg_sign="$2"
 
   # The callee will emit "HEAD" if starting_ref diverged from HEAD and --force.
   local starting_sha_or_HEAD
@@ -652,11 +653,12 @@ confirm_state_and_resort_to_prepare_branch () {
 
   echo_announce "Scoped resort (${starting_sha_or_HEAD})"
 
-  confirmed_state_resort_from_sha "${starting_sha_or_HEAD}"
+  confirmed_state_resort_from_sha "${starting_sha_or_HEAD}" "${enable_gpg_sign}"
 }
 
 confirmed_state_resort_from_sha () {
   local starting_sha="$1"
+  local enable_gpg_sign="$2"
 
   # "Stash" (WIP-commit) untidy changes, marked as PRIVATE, so rebase will
   # leave as most recent commit (and won't resort below other commits).
@@ -666,7 +668,7 @@ confirmed_state_resort_from_sha () {
   local retcode=0
 
   # Sort commits by "scope" (according to message prefixes).
-  git_sort_by_scope "${starting_sha}" > /dev/null \
+  git_sort_by_scope "${starting_sha}" "${enable_gpg_sign}" \
     || retcode=$?
 
   # If git sort-by-scope fails, it's either because of a git-rebase
@@ -770,10 +772,12 @@ must_confirm_shares_history_with_head () {
 # Reorder commits in prep. to diff.
 git_sort_by_scope () {
   local sort_from_commit="$1"
+  local enable_gpg_sign="$2"
 
   source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
-  ${DRY_RUN} git-rebase-sort-by-scope-protected-private "${sort_from_commit}"
+  ${DRY_RUN} git-rebase-sort-by-scope-protected-private "${sort_from_commit}" \
+    "${enable_gpg_sign}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
