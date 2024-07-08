@@ -640,7 +640,9 @@ confirm_state_and_resort_to_prepare_branch () {
 
   # The callee will emit "HEAD" if starting_ref diverged from HEAD and --force.
   local starting_sha_or_HEAD
-  starting_sha_or_HEAD="$(must_confirm_shares_history_with_head "${starting_ref}")" || exit $?
+  starting_sha_or_HEAD="$( \
+    must_confirm_shares_history_with_head "${starting_ref}"
+  )" || exit $?
 
   if [ "${starting_sha_or_HEAD}" = "HEAD" ]; then
     echo_announce "Not resorting! Divergent"
