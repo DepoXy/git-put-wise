@@ -510,6 +510,23 @@ git_insist_git_repo () {
   return 1
 }
 
+git_is_git_repo_root () {
+  local proj_path="${1:-$(pwd)}"
+
+  local repo_root
+  if ! repo_root="$(git rev-parse --show-toplevel 2> /dev/null)"; then
+
+    return 1
+  fi
+
+  if [ "$(realpath -- "${proj_path}")" != "$(realpath -- "${repo_root}")" ]; then
+
+    return 1
+  fi
+
+  return 0
+}
+
 git_insist_pristine () {
   test -n "$(git status --porcelain=v1)" || return 0
 
