@@ -250,6 +250,13 @@ must_canonicalize_path_and_verify_nothing_staged () {
   #     "remote".
   local before_cd="$(pwd -L)"
 
+  # Is user hasn't setup the patches repo, there's nothing to *insist*.
+  # - E.g., ~/.depoxy/patchr does not exist (yet).
+  if [ ! -d "${PW_PATCHES_REPO}" ]; then
+
+    return 0
+  fi
+
   cd "${PW_PATCHES_REPO}"
 
   git_insist_git_repo
@@ -440,6 +447,13 @@ project_path_same_as_patches_repo () {
   # But neither resolves symlinks.
   local project_path_abs
   local patches_repo_abs
+
+  # Is user hasn't setup the patches repo, then the answer is *no*.
+  # - E.g., ~/.depoxy/patchr does not exist (yet).
+  if [ ! -d "${PW_PATCHES_REPO}" ]; then
+
+    return 1
+  fi
 
   # "The extra echo . takes care of the rare case where one of the targets has
   #  a file name ending with a newline: if the newline was the last character
