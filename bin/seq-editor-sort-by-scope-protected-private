@@ -194,7 +194,7 @@ git_rebase_sort_by_scope () {
   fi
 
   # Sort the rebase-todo commits and check for errors along the way.
-  awk -i inplace '
+  $(gnu_awk) -i inplace '
     BEGIN {
       lnum = 0;
       i_priv = 0;
@@ -269,6 +269,12 @@ print_todo_maybe () {
   >&2 echo "rebase-todo ${context}:"
   >&2 echo "$(cat "${rebase_todo_path}" | grep -v "^#")"
   >&2 echo
+}
+
+# ***
+
+gnu_awk () {
+  command -v gawk || command -v awk
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
