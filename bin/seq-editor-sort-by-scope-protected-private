@@ -196,7 +196,6 @@ git_rebase_sort_by_scope () {
   # Sort the rebase-todo commits and check for errors along the way.
   $(gnu_awk) -i inplace '
     BEGIN {
-      lnum = 0;
       i_priv = 0;
       i_prot = 0;
       n_extra_any = 0;
