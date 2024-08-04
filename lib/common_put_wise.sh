@@ -820,10 +820,14 @@ maybe_stash_changes () {
 maybe_unstash_changes () {
   local pop_after="$1"
 
-  if ${pop_after}; then
+  if ${pop_after} && is_latest_commit_wip_commit; then
     # Aka `git pop1`.
     git reset --quiet --mixed @~1
   fi
+}
+
+is_latest_commit_wip_commit () {
+  git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX}WIP "
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -860,7 +864,10 @@ git_post_rebase_exec_inject () {
 
   if ${pop_after}; then
     # Make a delayed `maybe_unstash_changes` call.
-    echo "exec sleep 0.1 && git reset -q --mixed @~1 &" \
+    echo "exec sleep 0.1 \
+      && git log -1 --format=%s \
+        | grep -q -e \"^${PRIVATE_PREFIX}WIP \\\\[\" \
+      && git reset -q --mixed @~1 &" \
       "${GITSMART_POST_REBASE_EXECS_TAG}" \
         >> "${GIT_REBASE_TODO_PATH}"
   fi
