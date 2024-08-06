@@ -1136,32 +1136,61 @@ encrypt_asset () {
   local crypt_path="$1"
   local cleartext_name="$2"
 
-  >&2 debug "Encrypt ${cleartext_name} → ${crypt_path}"
+  >&2 debug "Encrypt ${cleartext_name:-stdin} → ${crypt_path}"
 
-  if [ -n "${PW_OPTION_PASS_NAME}" ]; then
-    # Warm the GPG cache.
-    pass "${PW_OPTION_PASS_NAME}" > /dev/null
+  if [ -n "${cleartext_name}" ]; then
+    if [ -n "${PW_OPTION_PASS_NAME}" ]; then
+      # Warm the GPG cache.
+      pass "${PW_OPTION_PASS_NAME}" > /dev/null
 
-    # Note that --passphrase-fd ignored unless --batch.
-    pass "${PW_OPTION_PASS_NAME}" | head -1 |
-      gpg --batch --passphrase-fd 0 -o "${crypt_path}" --cipher-algo AES256 -c "${cleartext_name}"
+      # Note that --passphrase-fd ignored unless --batch.
+      pass "${PW_OPTION_PASS_NAME}" | head -1 |
+        gpg --batch --passphrase-fd 0 -o "${crypt_path}" --cipher-algo AES256 -c "${cleartext_name}"
+    else
+      gpg -o "${crypt_path}" --cipher-algo AES256 -c "${cleartext_name}"
+    fi
   else
-    gpg -o "${crypt_path}" --cipher-algo AES256 -c "${cleartext_name}"
+    # Assume on stdin. Only used when PW_OPTION_PASS_NAME unset, e.g.,
+    #   echo "Encrypt this data" | PW_OPTION_PASS_NAME="" encrypt_asset encrypted.out
+    # because the PW_OPTION_PASS_NAME path above uses stdin to pipe the passphrase.
+    if [ -n "${PW_OPTION_PASS_NAME}" ]; then
+      >&2 echo "ERROR: Please specify encrypt_asset input file, or unset PW_OPTION_PASS_NAME"
+
+      return 1
+    fi
+
+    if [ -n "${crypt_path}" ]; then
+      gpg -o "${crypt_path}" --cipher-algo AES256 -c
+    else
+      # To stdout.
+      gpg --cipher-algo AES256 -c
+    fi
   fi
 }
 
 decrypt_asset () {
   local crypt_path="$1"
 
-  if [ -n "${PW_OPTION_PASS_NAME}" ]; then
-    # Warm the GPG cache.
-    pass "${PW_OPTION_PASS_NAME}" > /dev/null
+  if [ -n "${crypt_path}" ]; then
+    if [ -n "${PW_OPTION_PASS_NAME}" ]; then
+      # Warm the GPG cache.
+      pass "${PW_OPTION_PASS_NAME}" > /dev/null
 
-    pass "${PW_OPTION_PASS_NAME}" | head -1 |
-      gpg --batch --passphrase-fd 0 \
-        -q -d "${crypt_path}"
+      pass "${PW_OPTION_PASS_NAME}" | head -1 |
+        gpg --batch --passphrase-fd 0 \
+          -q -d "${crypt_path}"
+    else
+      gpg -q -d "${crypt_path}"
+    fi
   else
-    gpg -q -d "${crypt_path}"
+    # Assume on stdin.
+    if [ -n "${PW_OPTION_PASS_NAME}" ]; then
+      >&2 echo "ERROR: Please specify decrypt_asset input file, or unset PW_OPTION_PASS_NAME"
+
+      return 1
+    fi
+
+    gpg -q -d
   fi
 }
 
