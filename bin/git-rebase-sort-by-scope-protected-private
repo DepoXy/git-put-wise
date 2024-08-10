@@ -44,6 +44,7 @@ source_deps () {
   project_root="$(dirname -- "$(realpath -- "$0")")/.."
 
   # Pull in WIP and post-rebase cmds (maybe_stash_changes, git_post_rebase_*).
+  # - Also deps/logger.sh, deps/git-nubs.sh, lib/common_*, lib/dep_*.
   . "${project_root}/bin/git-put-wise"
 }
 

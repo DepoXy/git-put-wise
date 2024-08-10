@@ -1558,7 +1558,8 @@ badger_user_rebase_failed () {
   echo
   echo "Uffda! You got work to do ☝ ☝ ☝."
   echo
-  # Note that `git rebase --continue` also works, but not `git rebase --abort`.
+  # Note that `git put-wise --continue` just calls `git rebase --continue`.
+  # - But `git rebase --abort` calls `git abort`, to run `exec` callbacks.  #git-abort
   echo "  🚨 $(echo_alert "ALERT") 🚨"
   echo "  Resolve conflicts and call \`git put-wise --continue\`"
   echo "   — or call \`git put-wise --abort\` to revert changes."
