@@ -60,6 +60,9 @@ git-rebase-sort-by-scope-protected-private () {
 
   must_verify_starting_ref "${starting_ref}"
 
+  local gpg_sign
+  gpg_sign="$(print_gpg_sign_arg "${enable_gpg_sign}" ${insist_signing_key})"
+
   local pop_after=false
   pop_after=$(maybe_stash_changes "git-rebase-sort-by-scope-protected-private")
 
@@ -68,9 +71,6 @@ git-rebase-sort-by-scope-protected-private () {
 
   local rev_count_before_rebase
   rev_count_before_rebase="$(git rev-list HEAD --count)"
-
-  local gpg_sign
-  gpg_sign="$(print_gpg_sign_arg "${enable_gpg_sign}" ${insist_signing_key})"
 
   local retcode=0
 
