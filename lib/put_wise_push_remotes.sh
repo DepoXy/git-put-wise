@@ -30,24 +30,47 @@ put_wise_push_remotes () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-put_wise_push_remotes_go () {
-  local git_push_force=""
-  ! ${PW_OPTION_FORCE_PUSH} || git_push_force="--force-with-lease"
+# Reusable fcn. to determine oldest sort-by-scope commit automatically.
+# - E.g., if you have a local 'release' (or 'private') branch, and the
+#   upstream remote is 'publish/release', sets
+#     sort_from_commit='publish/release'
+# - Also used by put-wise-push to suss other remote and branch vars.
+#
+# SORRY: I don't generally like to "abuse" `local` like this. It seems
+# like a weird side-effect to have a fcn. set its caller's vars.
+# - But this is shell script, and passing data is not always so simple.
+#   And I want to reuse the sort_from_commit susser without refactoring
+#   complex code that's been working for years.
+#
+# REFER:
+# - This fcn will set the following vars (its "return" values):
+#     local_release=""
+#     remote_release=""
+#     remote_liminal=""
+#     remote_protected=""
+#     remote_current=""
+#     remote_name=""
+#     branch_name=""
+#     sort_from_commit=""
+# - Other side effects:
+#   - Calls `git fetch` as appropriate to ensure remote branch
+#     ref is accurate/up to date.
+#   - Fails if bad state detected (e.g., diverged branches).
+
+put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
+  branch_name="$(git_branch_name)"
+  local_release=""
+  remote_release=""
+  remote_liminal=""
+  remote_protected=""
+  remote_current=""
+  remote_name=""
+  sort_from_commit=""
 
   local include_liminal="${PW_OPTION_USE_LIMINAL:-false}"
   local force_liminal=false
 
-  local sort_from_commit=""
   local sortless_msg=""
-
-  local local_release=""
-  local remote_release=""
-  local remote_liminal=""
-  local remote_protected=""
-  local remote_current=""
-  local remote_name=""
-
-  local branch_name="$(git_branch_name)"
 
   local applied_tag="$(format_pw_tag_applied "${branch_name}")"
 
@@ -289,10 +312,31 @@ put_wise_push_remotes_go () {
       fi
     fi
   done
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+put_wise_push_remotes_go () {
+  local git_push_force=""
+  ! ${PW_OPTION_FORCE_PUSH} || git_push_force="--force-with-lease"
 
   # ***
 
-  # Note that confirm_state checks sort-from shares history with HEAD:
+  # The following vars are set by the sort_from_commit, etc., susser:
+  local branch_name=""
+  local local_release=""
+  local remote_release=""
+  local remote_liminal=""
+  local remote_protected=""
+  local remote_current=""
+  local remote_name=""
+  local sort_from_commit=""
+  put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic
+
+  # ***
+
+  # Note that confirm_state_and_resort_to_prepare_branch checks that
+  # sort-from shares history with HEAD:
   #   must_confirm_commit_at_or_behind_commit "${sort_from_commit}" "HEAD"
 
   >&2 debug "sort_from_commit: ${sort_from_commit}"
