@@ -62,7 +62,7 @@ git-rebase-sort-by-scope-protected-private () {
   must_verify_starting_ref "${starting_ref}"
 
   local gpg_sign
-  gpg_sign="$(print_gpg_sign_arg "${enable_gpg_sign}" ${insist_signing_key})"
+  gpg_sign="$(insist_print_gpg_sign_arg "${enable_gpg_sign}" ${insist_signing_key})"
 
   local pop_after=false
   pop_after=$(maybe_stash_changes "git-rebase-sort-by-scope-protected-private")
@@ -218,7 +218,7 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
 #     error: gpg failed to sign the data
 #     ...
 
-print_gpg_sign_arg () {
+insist_print_gpg_sign_arg () {
   local enable_gpg_sign="$1"
   local insist_signing_key="$2"
 
