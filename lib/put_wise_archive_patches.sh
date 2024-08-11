@@ -338,7 +338,7 @@ identify_first_upstream_branch () {
     if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
       checked_remotes_named="'${REMOTE_BRANCH_SCOPING}'"
       if must_identify_upstream_ref "${REMOTE_BRANCH_SCOPING}"; then
-        >&2 info "Expected remote upstream verified: '${upstream_ref}'."
+        >&2 info "Expected remote upstream verified: '${upstream_ref}'"
       else
         checked_remotes_named="${checked_remotes_named} and "
       fi
@@ -351,10 +351,10 @@ identify_first_upstream_branch () {
     then
       checked_remotes_named="${checked_remotes_named}'${REMOTE_BRANCH_RELEASE}'"
       if must_identify_upstream_ref "${REMOTE_BRANCH_RELEASE}"; then
-        >&2 info "Expected remote upstream verified: '${upstream_ref}'."
+        >&2 info "Expected remote upstream verified: '${upstream_ref}'"
       elif git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
         upstream_ref="${LOCAL_BRANCH_RELEASE}"
-        >&2 info "Default local remote upstream verified: '${upstream_ref}'."
+        >&2 info "Default local remote upstream verified: '${upstream_ref}'"
       fi
     fi
   fi
@@ -364,14 +364,14 @@ identify_first_upstream_branch () {
     # Determine the upstream branch name.
     upstream_ref="$(git_tracking_branch_safe)"
     if [ -n "${upstream_ref}" ]; then
-      >&2 info "Upstream identified via config: '${upstream_ref}'."
+      >&2 info "Upstream identified via config: '${upstream_ref}'"
     else
       local remote_name="${PW_OPTION_REMOTE:-origin}"
       if git_remote_exists "${remote_name}"; then
         local remote_default
         remote_default="$(git_remote_default_branch "${remote_name}")"
         upstream_ref="${remote_name}/${remote_default}"
-        >&2 info "Upstream guessed from remote/HEAD: '${upstream_ref}'."
+        >&2 info "Upstream guessed from remote/HEAD: '${upstream_ref}'"
         >&2 warn "You should configure an upstream tracking branch for this branch."
       fi
     fi
