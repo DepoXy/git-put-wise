@@ -360,7 +360,7 @@ process_unpacked_patchkage () {
   #   As such, a simple `sed` is inadequate, e.g.,
   #     set -- $(echo "${patch_dir}" | sed 's/\-\-/ /g')
   #   So we'll use Python to limit the substitution count.
-  # set -- $(python -c "
+  # set -- $(python3 -c "
   #   import re;
   #   print(
   #     re.sub(
@@ -369,6 +369,7 @@ process_unpacked_patchkage () {
   #       '${patch_dir}',
   #       count=5
   # ))")
+  check_dep_python3 || exit 1
   set -- $(split_on_double_dash "${patch_dir}" 6)
   local hostname_sha="$1"
   local projpath_sha="$2"

@@ -1381,7 +1381,7 @@ split_on_double_dash () {
   local text="$1"
   local count="$2"
 
-  python -c \
+  python3 -c \
     "import re ; print(
       re.sub(
         '\-\-',
@@ -1389,6 +1389,13 @@ split_on_double_dash () {
         '${text}',
         count=${count}
   ))"
+}
+
+check_dep_python3 () {
+  hint_install_deb () { >&2 echo "  sudo apt-get install python3"; }
+  hint_install_brew () { >&2 echo "  brew install python@3.12"; }
+
+  check_dep_with_hint 'python3' || exit 1
 }
 
 # ***
