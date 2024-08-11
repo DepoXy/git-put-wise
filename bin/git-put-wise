@@ -21,7 +21,7 @@ check_dep_realpath () {
   hint_install_deb () { >&2 echo "  sudo apt-get install coreutils"; }
   hint_install_brew () { >&2 echo "  brew install realpath"; }
 
-  check_dep_with_hint 'realpath' 'realpath (from coreutils)' true
+  check_dep_with_hint 'realpath' 'realpath (from coreutils)' ${_assume_failed:-true}
 
   return 1
 }
