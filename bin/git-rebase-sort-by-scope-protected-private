@@ -40,20 +40,22 @@ GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 source_deps () {
-  local project_root
-  project_root="$(dirname -- "$(realpath -- "$0")")/.."
-
   # Pull in WIP and post-rebase cmds (maybe_stash_changes, git_post_rebase_*).
   # - Also deps/logger.sh, deps/git-nubs.sh, lib/common_*, lib/dep_*.
-  . "${project_root}/bin/git-put-wise"
+  . "$(print_project_root)/bin/git-put-wise"
+}
+
+print_project_root () {
+  printf "%s" "$(dirname -- "$(realpath -- "$0")")/.."
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 git-rebase-sort-by-scope-protected-private () {
   local starting_ref="$1"
-  local enable_gpg_sign="${2:-false}"
-  local insist_signing_key="${3:-false}"
+  local use_magic_starting_ref="${2:-false}"
+  local enable_gpg_sign="${3:-false}"
+  local insist_signing_key="${4:-false}"
 
   # CXREF: ~/.kit/git/git-put-wise/bin/seq-editor-sort-by-scope-protected-private
   local seq_editor
@@ -73,10 +75,14 @@ git-rebase-sort-by-scope-protected-private () {
   local rev_count_before_rebase
   rev_count_before_rebase="$(git rev-list HEAD --count)"
 
+  local sort_from_commit=""
+  sort_from_commit="$(print_sort_from_commit "${starting_ref}" \
+    "${use_magic_starting_ref}" "${head_sha_before_rebase}")"
+
   local retcode=0
 
   GIT_SEQUENCE_EDITOR="${seq_editor}" \
-    git rebase -i --rebase-merges ${gpg_sign} ${starting_ref} \
+    git rebase -i --rebase-merges ${gpg_sign} ${sort_from_commit} \
       || retcode=$?
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
@@ -91,7 +97,7 @@ git-rebase-sort-by-scope-protected-private () {
 
     if [ ${retcode} -eq 0 ]; then
       force_rebase_and_resign_maybe "${gpg_sign}" "${head_sha_before_rebase}" \
-        "${starting_ref}" \
+        "${sort_from_commit}" \
         || retcode=$?
     fi
 
@@ -150,6 +156,47 @@ must_verify_starting_ref () {
   fi
 
   return 0
+}
+
+# If 'starting_ref' is the latest commit, do the user a solid and replace
+# with the upstream branch or pw/in commit.
+# - Makes it easy to resort unpublished commits without having to specify
+#   the commit, e.g., `git sort-by-scope HEAD true`. (Though more so
+#   intended for automation (see '%' `tig` binding in DepoXy project)).
+print_sort_from_commit () {
+  local starting_ref="$1"
+  local use_magic_starting_ref="$2"
+  local head_sha_before_rebase="$3"
+
+  if ! ${use_magic_starting_ref:-false}; then
+    printf "%s" "${starting_ref}"
+
+    return 0
+  fi
+
+  # Uses: git rev-parse --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
+  if ! git_is_same_commit "${starting_ref}" "${head_sha_before_rebase}"; then
+    printf "%s" "${starting_ref}"
+
+    return 0
+  fi
+
+  # Load: put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic
+  . "$(print_project_root)/lib/put_wise_push_remotes.sh"
+
+  # The following vars are set by the sort_from_commit, etc., susser:
+  local branch_name=""
+  local local_release=""
+  local remote_release=""
+  local remote_liminal=""
+  local remote_protected=""
+  local remote_current=""
+  local remote_name=""
+  local sort_from_commit=""
+  # BWARE: Calls git-fetch, so not the quickest command.
+  >&2 put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic
+
+  printf "%s" "${sort_from_commit}"
 }
 
 # ***

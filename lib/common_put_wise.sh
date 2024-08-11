@@ -791,7 +791,9 @@ git_sort_by_scope () {
   source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
   ${DRY_RUN} git-rebase-sort-by-scope-protected-private "${sort_from_commit}" \
-    "${enable_gpg_sign}"
+    "${_magic_starting_ref:-false}" \
+    "${enable_gpg_sign}" \
+    "${_insist_signing_key:-false}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
