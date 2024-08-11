@@ -55,6 +55,7 @@ source_deps () {
   source_dep "lib/dep_apply_confirm_patch_base.sh"
   source_dep "lib/dep_ephemeral_branch.sh"
   source_dep "lib/dep_scoped_commits.sh"
+  source_dep "lib/dep_rebase_boundary.sh"
   source_dep "lib/dep_tig_prompt.sh"
 }
 
