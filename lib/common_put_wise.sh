@@ -659,6 +659,13 @@ confirm_state_and_resort_to_prepare_branch () {
     must_confirm_shares_history_with_head "${starting_ref}"
   )" || exit $?
 
+  if [ -z "${starting_sha_or_HEAD}" ]; then
+    # The called fcn. emitted stderr to alert that starting_ref is HEAD.
+    # - Short-circuit “See ya!”
+
+    exit 0
+  fi
+
   if [ "${starting_sha_or_HEAD}" = "HEAD" ]; then
     echo_announce "Not resorting! Divergent"
 
