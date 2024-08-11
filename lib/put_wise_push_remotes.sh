@@ -607,7 +607,7 @@ prompt_user_to_continue_update_remotes () {
     local remote_branch_nickname="$2"
 
     if ! shift 2; then
-      >&2 echo "ABORT: prompt_user_to_continue_update_remotes:" \
+      >&2 echo "GAFFE: prompt_user_to_continue_update_remotes:" \
         "Uneven arg count (${orig_count})"
 
       exit 1

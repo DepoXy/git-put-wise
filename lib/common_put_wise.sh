@@ -944,7 +944,7 @@ must_confirm_commit_at_or_behind_commit () {
 
   if [ -z "${early_commit}" ]; then
     # Somewhat overzealous check, because callers also check.
-    >&2 echo "ERROR: Missing early_commit [DEV error]"
+    >&2 echo "GAFFE: Missing early_commit [DEV error]"
 
     exit 1
   elif ! git merge-base --is-ancestor "${early_commit}" "${later_commit}"; then
