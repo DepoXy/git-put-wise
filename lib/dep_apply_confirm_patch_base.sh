@@ -339,6 +339,7 @@ print_prompt_user_explainer_using_starting_sha_tag () {
   echo "- If you want to specify a different revision,"
   echo "  cancel this prompt (Ctrl-c), and set a tag:"
   echo
+  echo "    cd \"$(pwd -L)\""
   echo "    git tag ${pw_ontime_tag_name} <gitref>"
   echo
 }
