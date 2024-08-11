@@ -371,7 +371,7 @@ identify_first_upstream_branch () {
         local remote_default
         remote_default="$(git_remote_default_branch "${remote_name}")"
         upstream_ref="${remote_name}/${remote_default}"
-        >&2 info "Upstream guessed from remote/HEAD: '${upstream_ref}'"
+        >&2 info "Upstream guessed from remotes/${remote_name}/HEAD: '${upstream_ref}'"
         >&2 warn "You should configure an upstream tracking branch for this branch."
       fi
     fi
