@@ -271,29 +271,29 @@ print_starting_ref_or_upstream_branch () {
   else
     local remote_check=""
     [ -z "${checked_remotes_named}" ] ||
-      remote_check="no put-wise remote(s) (${checked_remotes_named}), "
-    remote_check="${remote_check}no upstream branch set, "
-    remote_check="${remote_check}and no 'origin' remote default branch"
+      remote_check="- no special remote(s) (${checked_remotes_named})\n"
+    remote_check="${remote_check}- no upstream branch set (git branch -u <upstream>)\n"
+    remote_check="${remote_check}- no '${PW_OPTION_REMOTE:-origin}' remote (PW_OPTION_REMOTE) default branch"
 
     if [ -n "${pw_tag_ref}" ]; then
-      >&2 echo "Start identified by '${pw_tag_applied}' tag (also, ${remote_check})."
+      >&2 echo "Start identified by '${pw_tag_applied}' tag"
 
       starting_ref="${pw_tag_ref}"
     elif [ -n "${upstream_ref_ref}" ]; then
-      >&2 echo "Start identified by upstream '${upstream_ref}' branch" \
-        "(no '${pw_tag_applied}' tag)."
-
+      >&2 echo "Start identified by upstream '${upstream_ref}' branch"
+      remote_check="- no '${pw_tag_applied}' tag"
       starting_ref="${upstream_ref_ref}"
     else
       # Most likely, this is a new private-private project (like DepoXy Client),
       # and this is the first time the user is running this command.
       # - Unless this issue happens for other reasons, shouldn't need to
       #   exit confirm with user if okay to continue.
-      >&2 echo "NOTICE: Archiving from very first revision (root commit)" \
-        "because no tag '${pw_tag_applied}', ${remote_check}."
-
+      >&2 echo "ALERT: Archiving from very first revision (root commit)"
+      remote_check="- no '${pw_tag_applied}' tag\n${remote_check}"
       starting_ref="$(git_first_commit_sha)"
     fi
+
+    >&2 info "Start identified because:\n${remote_check}"
   fi
 
   echo "${starting_ref}"
