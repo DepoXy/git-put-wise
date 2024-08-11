@@ -463,7 +463,8 @@ put_wise_push_remotes_go () {
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
     "${tagged_liminal}" "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}" \
     "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
-    "${tagged_current}" "${remote_name}/${branch_name}" \
+    $(test -z "${remote_name}" || printf "%s" "${tagged_current}") \
+      $(test -z "${remote_name}" || printf "%s" "${remote_name}/${branch_name}") \
   ; then
     # Add 'r' command to restrict push just to 'release'.
     # - Useful when 'liminal' or 'entrust' diverged, and
@@ -602,6 +603,8 @@ prompt_user_to_continue_update_remotes () {
 
   local orig_count="$#"
 
+  local remote_names=""
+
   while [ $# -gt 0 ]; do
     local tagged_name="$1"
     local remote_branch_nickname="$2"
@@ -616,10 +619,17 @@ prompt_user_to_continue_update_remotes () {
     if [ -n "${tagged_name}" ]; then
       something_tagged=true
     fi
+
+    [ -z "${remote_names}" ] || remote_names="${remote_names}\n"
+    remote_names="${remote_names}    ${remote_branch_nickname}"
   done
 
   if ! ${something_tagged}; then
-    >&2 echo "ABORT: prompt_user_to_continue_update_remotes: Nothing tagged?"
+    >&2 echo "ABORT: Cannot push, because no remote branch identified from candidates:"
+    >&2 echo -e "${remote_names}"
+    >&2 echo "- Hint: If you have not pushed yet, do so manually the first time"
+    >&2 echo "  - Or, if this is a private repo without a push remote,"
+    >&2 echo "    try the ‘archive’ command"
 
     exit 1
   fi
