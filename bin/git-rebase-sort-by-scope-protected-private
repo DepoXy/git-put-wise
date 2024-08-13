@@ -194,7 +194,8 @@ print_sort_from_commit () {
   local remote_name=""
   local sort_from_commit=""
   # BWARE: Calls git-fetch, so not the quickest command.
-  >&2 put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic
+  >&2 put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic \
+    "rebase automatically"
 
   printf "%s" "${sort_from_commit}"
 }

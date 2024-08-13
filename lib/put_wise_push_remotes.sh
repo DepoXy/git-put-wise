@@ -58,6 +58,8 @@ put_wise_push_remotes () {
 #   - Fails if bad state detected (e.g., diverged branches).
 
 put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
+  local action_desc="$1"
+
   # Caller vars set below:
   branch_name="$(git_branch_name)"
   local_release=""
@@ -197,7 +199,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
         "\n- Push upstream to '${REMOTE_BRANCH_SCOPING}' branch." \
         "\n- Push upstream to '${REMOTE_BRANCH_RELEASE}' branch." \
         "\n- Create local '${LOCAL_BRANCH_RELEASE}' branch." \
-        "\nComplete any one of these activities and then you may --push." \
+        "\nComplete any one of these activities and then you may ${action_desc}" \
       )"
     fi
 
@@ -332,7 +334,7 @@ put_wise_push_remotes_go () {
   local remote_current=""
   local remote_name=""
   local sort_from_commit=""
-  put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic
+  put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic "push"
 
   # ***
 
