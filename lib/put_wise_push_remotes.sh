@@ -196,9 +196,9 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
       sortless_msg="$(echo -e \
         "Options:" \
         "\n- Use --apply command, so '${applied_tag}' tag gets set." \
-        "\n- Push upstream to '${REMOTE_BRANCH_SCOPING}' branch." \
-        "\n- Push upstream to '${REMOTE_BRANCH_RELEASE}' branch." \
-        "\n- Create local '${LOCAL_BRANCH_RELEASE}' branch." \
+        "\n- Push upstream to '${REMOTE_BRANCH_SCOPING}' branch" \
+        "\n- Push upstream to '${REMOTE_BRANCH_RELEASE}' branch" \
+        "\n- Create local '${LOCAL_BRANCH_RELEASE}' branch" \
         "\nComplete any one of these activities and then you may ${action_desc}" \
       )"
     fi
