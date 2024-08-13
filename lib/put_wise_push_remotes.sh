@@ -195,7 +195,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
     if [ -z "${sort_from_commit}" ]; then
       sortless_msg="$(echo -e \
         "Options:" \
-        "\n- Use --apply command, so '${applied_tag}' tag gets set." \
+        "\n- Use --apply command, or set '${applied_tag}' tag manually" \
         "\n- Push upstream to '${REMOTE_BRANCH_SCOPING}' branch" \
         "\n- Push upstream to '${REMOTE_BRANCH_RELEASE}' branch" \
         "\n- Create local '${LOCAL_BRANCH_RELEASE}' branch" \
