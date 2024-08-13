@@ -58,6 +58,7 @@ put_wise_push_remotes () {
 #   - Fails if bad state detected (e.g., diverged branches).
 
 put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
+  # Caller vars set below:
   branch_name="$(git_branch_name)"
   local_release=""
   remote_release=""
