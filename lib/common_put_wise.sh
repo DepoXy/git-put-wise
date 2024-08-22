@@ -1008,6 +1008,17 @@ must_confirm_commit_at_or_behind_commit () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# NOTED: Per `man gitrevisions` the regex approach won't work, e.g.,
+#   git --no-pager log -1 --format="%H" ":/${matchstr}"
+# b/c regex "returns the youngest matching commit which is reachable
+# from any ref". git-log also lists ancestor refs down to root.
+#
+# NOTED: Also note that --reverse doesn't work with -1, e.g.,
+#   git --no-pager log --pretty=%H --grep '^PROTECTED: ' -1
+# and
+#   git --no-pager log --pretty=%H --grep '^PROTECTED: ' -1 --reverse
+# both return the same, youngest match.
+
 # CXREF/2022-10-27: must_find_matching_commit from git-smart:
 #   ~/.kit/git/git-smart/bin/git-rebase-bubble-commit
 find_oldest_commit_by_message () {
