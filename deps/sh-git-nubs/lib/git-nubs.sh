@@ -653,6 +653,20 @@ git_is_commit () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# Check if already signed.
+# - %G? : "G" for good/valid sig, "B" for bad, "U" for good w/ unknown validity,
+#         "X" for good but expired, "Y" for good made by expired key,
+#         "R" for good made by revoked key, "E" if sig cannot be checked
+#         (e.g. missing key) and "N" for no signature
+git_is_gpg_signed_since_commit () {
+  local gitref="$1"
+  local endref="${2:-HEAD}"
+
+  ! git log --format="%G?" ${gitref}..${endref} | grep -q -e 'N'
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 # LATER/2023-05-28: Leaving __THE_HARD_WAY variant: I want to add
 # tests, and I want to verify the 2 approaches produce same results.
 
