@@ -112,5 +112,86 @@ verify_scope_boundary_not_older_than () {
   return 0
 }
 
+# ***
+
+is_sorted_by_scope () {
+  local starting_ref="$1"
+
+  local private_grep="^${PRIVATE_PREFIX}"
+  local protected_grep="^${SCOPING_PREFIX}"
+
+  # ***
+
+  local private_scope_starts_at
+  private_scope_starts_at="$( \
+    find_boundary_constrained "${private_grep}" "${starting_ref}"
+  )"
+
+  local protected_scope_starts_at
+  protected_scope_starts_at="$( \
+    find_boundary_constrained "${protected_grep}" "${starting_ref}"
+  )"
+
+  verify_scope_boundary_not_older_than \
+    "${private_scope_starts_at}" \
+    "${protected_scope_starts_at}" \
+    || return 1
+
+  # ***
+
+  local scoping_starts_at="${protected_scope_starts_at}"
+
+  if [ -z "${scoping_starts_at}" ]; then
+    scoping_starts_at="${private_scope_starts_at}"
+  fi
+
+  if [ -z "${scoping_starts_at}" ]; then
+
+    return 0
+  fi
+
+  local commit_count
+  commit_count="$( \
+    git rev-list --count ${scoping_starts_at}^..HEAD
+  )"
+
+  local scoped_count
+  scoped_count="$( \
+    git rev-list --count --grep "${private_grep}" --grep "${protected_grep}" ${starting_ref}..HEAD
+  )"
+
+  local expected_private
+  expected_private="$( \
+    git rev-list --count ${private_scope_starts_at}^..HEAD
+  )"
+
+  local private_count
+  private_count="$( \
+    git rev-list --count --grep "${private_grep}" ${private_scope_starts_at}^..HEAD
+  )"
+
+  printf "%s" "${scoped_count}"
+
+  [ ${scoped_count} -eq ${commit_count} ] && [ ${private_count} -eq ${expected_private} ]
+}
+
+find_boundary_constrained () {
+  local msg_pattern="$1"
+  local ref_constrain="$2"
+
+  local oldest_commit
+  oldest_commit="$(find_oldest_commit_by_message "${msg_pattern}")"
+
+  # Because ref_constrain is not part of the rebase, if the oldest_commit
+  # is ref_constrain or older, change to the child of ref_constrain.
+  if [ -n "${oldest_commit}" ] \
+    && git merge-base --is-ancestor "${oldest_commit}" "${ref_constrain}" \
+  ; then
+    oldest_commit="$(git rev-list "${ref_constrain}"..HEAD | tail -n 1)"
+  fi
+
+  printf "%s" "${oldest_commit}"
+}
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 

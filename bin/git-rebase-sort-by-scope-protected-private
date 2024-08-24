@@ -82,6 +82,14 @@ git-rebase-sort-by-scope-protected-private () {
   sort_from_commit="$(print_sort_from_commit "${starting_ref}" \
     "${use_magic_starting_ref}" "${head_sha_before_rebase}")"
 
+  # ***
+
+  local already_sorted=false
+
+  # Sets already_sorted=true and returns 0 if sorted;
+  # Or sets already_sorted=false and returns 1 if not sorted.
+  ! is_already_sorted "${sort_from_commit}" \
+    || return 0
 
   # ***
 
@@ -271,6 +279,38 @@ print_sort_from_commit () {
     "rebase automatically"
 
   printf "%s" "${sort_from_commit}"
+}
+
+# ***
+
+# If already sorted by scope,
+# return true, and caller will return without running rebase.
+#
+# - Running the rebase anyway is generally fast, and the final HEAD SHA
+#   remains unchanged. But this way we can also skip the user's
+#   post-rebase exec, which might not be so fast (e.g., DepoXy uses the
+#   post-rebase exec to call `mr` to repair hard links, and `mr` is slow
+#   to load (at least author's is, will uses lots of mrconfig files)).
+#
+# Side-effect: Sets already_sorted=true|false
+
+is_already_sorted () {
+  local sort_from_commit="$1"
+  local enable_gpg_sign="$2"
+
+  already_sorted=false
+
+  local scoped_count
+
+  if scoped_count="$(is_sorted_by_scope "${sort_from_commit}")"; then
+    already_sorted=true
+
+    echo "✓ Verified ${scoped_count} scoped commit(s)"
+
+    return 0
+  fi
+
+  return 1
 }
 
 # ***
