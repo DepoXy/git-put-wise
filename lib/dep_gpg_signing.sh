@@ -67,13 +67,15 @@ force_rebase_and_resign_maybe () {
     return 0
   fi
 
-  local head_sha_after_rebase
-  head_sha_after_rebase="$(git rev-parse HEAD)"
+  if [ -n "${head_sha_before_rebase}" ]; then
+    local head_sha_after_rebase
+    head_sha_after_rebase="$(git rev-parse HEAD)"
 
-  if [ "${head_sha_after_rebase}" != "${head_sha_before_rebase}" ]; then
-    # The rebase that just ran signed the commits.
+    if [ "${head_sha_after_rebase}" != "${head_sha_before_rebase}" ]; then
+      # The rebase that just ran signed the commits.
 
-    return 0
+      return 0
+    fi
   fi
 
   # Else, the git-rebase that was previously called didn't change anything,
