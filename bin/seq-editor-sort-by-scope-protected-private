@@ -229,7 +229,8 @@ git_rebase_sort_by_scope () {
     \$0 ~ /^\$/ { next; }
     \$0 ~ /^#/ { next; }
 
-    { print \$0 }
+    # ALTLY: { print \$0; }
+    1
 
     ENDFILE {
       if (n_extra_any) {
