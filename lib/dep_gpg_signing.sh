@@ -90,7 +90,7 @@ force_rebase_and_resign_maybe () {
   #         "R" for good made by revoked key, "E" if sig cannot be checked
   #         (e.g. missing key) and "N" for no signature
   if ! git log --format="%G?" ${starting_ref}..HEAD | grep -q -e 'N'; then
-    echo "Verified ${n_commits} commit(s) already signed."
+    echo "✓ Verified ${n_commits} signed commit(s)"
 
     return 0
   fi
@@ -162,7 +162,7 @@ rebase_and_resign () {
     return 1
   else
     printf "\r%s" "$(echo "${orig_progress}" | sed 's/./ /g')"
-    printf "\r%s\n" "Signed ${n_commits} commit(s)."
+    printf "\r%s\n" "Signed ${n_commits} commit(s)"
   fi
 
   command rm -- "${countdown_f}"
