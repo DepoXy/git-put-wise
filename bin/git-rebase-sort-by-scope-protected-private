@@ -46,7 +46,7 @@ source_deps () {
 }
 
 print_project_root () {
-  printf "%s" "$(dirname -- "$(realpath -- "$0")")/.."
+  printf "%s" "$(dirname -- "$(realpath -- "${BASH_SOURCE[0]}")")/.."
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -117,10 +117,7 @@ git-rebase-sort-by-scope-protected-private () {
 # ***
 
 must_locate_seq_editor () {
-  local real_parent
-  real_parent="$(dirname -- "$(realpath -- "$0")")"
-
-  local seq_editor="${real_parent}/seq-editor-sort-by-scope-protected-private"
+  local seq_editor="$(print_project_root)/bin/seq-editor-sort-by-scope-protected-private"
 
   if [ ! -e "${seq_editor}" ]; then
     >&2 echo "ERROR: Sequence editor missing or not executable: ${seq_editor}"
