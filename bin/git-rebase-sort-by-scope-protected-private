@@ -279,12 +279,12 @@ is_already_sorted_and_signed () {
         msg_postfix=" sorted & signed"
       fi
       print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-        "${n_commits}" "${scoped_count}"
+        "${n_commits}" "${_scoped_count_arg+}"
 
       return 0
     else
       print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-        "${n_commits}" "${scoped_count}"
+        "${n_commits}" "${_scoped_count_arg+}"
     fi
   fi
 
