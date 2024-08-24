@@ -257,6 +257,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
     # MAYBE/2023-01-18: GIT_FETCH: Use -q?
     git fetch "${remote_name}"
 
+    # Note we don't use PW_OPTION_BRANCH here, but the current branch.
     remote_current="${remote_name}/${branch_name}"
 
     if ! ${PW_OPTION_FORCE_PUSH} && git_remote_branch_exists "${remote_current}"; then
