@@ -339,14 +339,14 @@ put_wise_push_remotes_go () {
 
   # ***
 
-  # Note that confirm_state_and_resort_to_prepare_branch checks that
+  # Note that resort_and_sign_commits_before_push checks that
   # sort-from shares history with HEAD:
   #   must_confirm_commit_at_or_behind_commit "${sort_from_commit}" "HEAD"
 
   >&2 debug "sort_from_commit: ${sort_from_commit}"
 
   if ! git_is_same_commit "${sort_from_commit}" "HEAD"; then
-    confirm_state_and_resort_to_prepare_branch "${sort_from_commit}" \
+    resort_and_sign_commits_before_push "${sort_from_commit}" \
       ${_enable_gpg_sign:-true}
   fi
 

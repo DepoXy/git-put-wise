@@ -649,7 +649,7 @@ format_pw_tag_ephemeral_pull () {
 #   (push or archive) passed us the last commit they pushed/archived,
 #   so if it's HEAD, there's nothing to push/archive.
 # - Exits nonzero (non-elevenses) if git ref. ahead of HEAD, somehow.
-confirm_state_and_resort_to_prepare_branch () {
+resort_and_sign_commits_before_push () {
   local starting_ref="$1"
   local enable_gpg_sign="${2:-false}"
 
