@@ -681,33 +681,17 @@ confirmed_state_resort_from_sha () {
   local starting_sha="$1"
   local enable_gpg_sign="${2:-false}"
 
-  # "Stash" (WIP-commit) untidy changes, marked as PRIVATE, so rebase will
-  # leave as most recent commit (and won't resort below other commits).
-  local pop_after
-  pop_after=$(maybe_stash_changes)
-
   local retcode=0
 
   # Sort commits by "scope" (according to message prefixes).
   git_sort_by_scope "${starting_sha}" "${enable_gpg_sign}" \
     || retcode=$?
 
-  # If git sort-by-scope fails, it's either because of a git-rebase
-  # conflict, or for some other reason. Look for rebase-todo and inject
-  # 'exec' commands to perform cleanup.
-  # - Ignore inject stderr complaint that rebase-todo doesn't exist, which
-  #   means git sort-by-scope failed for another reason (and printed to
-  #   stderr, so no need to print our own).
-  if [ ${retcode} -ne 0 ] && git_post_rebase_exec_inject ${pop_after} 2> /dev/null; then
-    # We set rebase-todo 'exec' to pop WIP, and to call optional user hook,
+  if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
+    # Callee set rebase-todo 'exec' to pop WIP, and to call optional user hook,
     # GIT_POST_REBASE_EXEC. Nag user one last time before nonzero return
     # tickles errexit.
     badger_user_rebase_failed
-  else
-    # Either git sort-by-scope succeeded, or it failed for a reason other
-    # than a rebase conflict. Meaning, the rebase is complete (if there
-    # was one). So pop the WIP, and call optional post-rebase user hook.
-    git_post_rebase_exec_run ${pop_after}
   fi
 
   # Exit-errexit if sort-by-scope failed.
