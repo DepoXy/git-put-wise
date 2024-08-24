@@ -117,14 +117,18 @@ rebase_and_resign () {
   local orig_progress="${prog_prefix}${n_commits}..."
   printf "%s" "${orig_progress}"
 
-  # Note this runs without errexit still enabled.
   resign_ci () {
+    # Run from git --exec callback, so errexit no longer enabled.
     set -e
+
     local countdown_f=".git/${PW_REBASE_COUNTDOWN:-put-wise-countdown}"
+
     local cur_count="$(cat ${countdown_f})"
     local prog_prefix="Signing commits: "
     printf "\r%s%s..." "${prog_prefix}" "${cur_count}"
+
     git commit --amend --no-edit --allow-empty --no-verify -S -q
+
     printf "%s" "$((${cur_count} - 1))" > "${countdown_f}"
   }
 
