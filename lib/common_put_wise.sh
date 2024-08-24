@@ -643,7 +643,7 @@ format_pw_tag_ephemeral_pull () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # - Returns zero if the git ref. is in the current branch history,
-#   and that it's not the first commit.
+#   and if it's not HEAD.
 #   - If git ref. ancestor of HEAD (not diverged), resorts scoped commits.
 # - Exits 0 (or elevenses) if the git ref. is HEAD, because caller
 #   (push or archive) passed us the last commit they pushed/archived,
@@ -667,7 +667,7 @@ confirm_state_and_resort_to_prepare_branch () {
   fi
 
   if [ "${starting_sha_or_HEAD}" = "HEAD" ]; then
-    echo_announce "Not resorting! Divergent"
+    echo_announce "Not resorting! Divergent, or first commit"
 
     return 0
   fi
