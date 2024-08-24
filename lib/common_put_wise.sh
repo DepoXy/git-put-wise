@@ -674,10 +674,11 @@ resort_and_sign_commits_before_push () {
 
   echo_announce "Scoped resort (${starting_sha_or_HEAD})"
 
-  confirmed_state_resort_from_sha "${starting_sha_or_HEAD}" "${enable_gpg_sign}"
+  resort_and_sign_commits_before_push_unless_unnecessary \
+    "${starting_sha_or_HEAD}" "${enable_gpg_sign}"
 }
 
-confirmed_state_resort_from_sha () {
+resort_and_sign_commits_before_push_unless_unnecessary () {
   local starting_sha="$1"
   local enable_gpg_sign="${2:-false}"
 
