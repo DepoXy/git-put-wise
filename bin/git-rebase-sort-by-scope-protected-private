@@ -82,10 +82,11 @@ git-rebase-sort-by-scope-protected-private () {
   sort_from_commit="$(print_sort_from_commit "${starting_ref}" \
     "${use_magic_starting_ref}" "${head_sha_before_rebase}")"
 
-  local n_commits
-  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
 
   # ***
+
+  local n_commits
+  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
 
   . "${seq_editor}"
 
