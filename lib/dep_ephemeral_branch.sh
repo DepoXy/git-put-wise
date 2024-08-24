@@ -45,7 +45,7 @@ prepare_ephemeral_branch_if_commit_scoping () {
 
   # E.g., git co -b pw-patches-<branch_name> abcd1234
   >&2 echo "git checkout -b \"${ephemeral_branch}\" \"${patch_base}\" --no-track"
-  ${DRY_RUN} git checkout -b "${ephemeral_branch}" "${patch_base}" --no-track
+  ${DRY_ECHO} git checkout -b "${ephemeral_branch}" "${patch_base}" --no-track
 
   echo "${ephemeral_branch}"
 }
@@ -57,7 +57,7 @@ cleanup_ephemeral_branch () {
 
   [ -n "${ephemeral_branch}" ] || return 0
 
-  ${DRY_RUN} git branch -q -d "${ephemeral_branch}"
+  ${DRY_ECHO} git branch -q -d "${ephemeral_branch}"
 }
 
 # ***

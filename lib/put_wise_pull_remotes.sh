@@ -8,15 +8,15 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-DRY_RUN=""
-# DRY_RUN=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
+DRY_ECHO=""
+# DRY_ECHO=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # The user called us on a specific project, and not the transport repo,
 # so we'll update just the current project's active branch.
 put_wise_pull_remotes () {
-  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -317,7 +317,7 @@ bind generic E !sh -c \" \\
 
   echo "git reset --hard \"${reset_ref}\""
 
-  ${DRY_RUN} git reset --hard "${reset_ref}"
+  ${DRY_ECHO} git reset --hard "${reset_ref}"
 
   # The original put-wise-pull ran cherry-pick:
   #     git cherry-pick "${pick_from}..${old_head}"
@@ -351,9 +351,9 @@ bind generic E !sh -c \" \\
       done; \
     }; f \"\$1\""
 
-    [ -z "${DRY_RUN}" ] || __DRYRUN "GIT_SEQUENCE_EDITOR=${GIT_SEQUENCE_EDITOR}"
+    [ -z "${DRY_ECHO}" ] || __DRYRUN "GIT_SEQUENCE_EDITOR=${GIT_SEQUENCE_EDITOR}"
 
-    ${DRY_RUN} git rebase -i HEAD || retcode=$?
+    ${DRY_ECHO} git rebase -i HEAD || retcode=$?
 
     unset -v GIT_SEQUENCE_EDITOR
 
@@ -392,7 +392,7 @@ put_wise_pull_remotes_cleanup () {
   # run entry point checks.
   #
   # E.g., `PW_OPTION_DRY_RUN=true git put-wise abort`
-  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
   #
   local before_cd="$(pwd -L)"
   #
@@ -493,7 +493,7 @@ must_locate_tracking_upstream () {
     tracking_upstream="$(must_have_git_tracking_branch_or_exit)" || exit $?
 
     # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    ${DRY_RUN} git fetch -q "$(git_upstream_parse_remote_name "${tracking_upstream}")"
+    ${DRY_ECHO} git fetch -q "$(git_upstream_parse_remote_name "${tracking_upstream}")"
   fi
 
   printf "${tracking_upstream}"
@@ -506,7 +506,7 @@ must_locate_tracking_upstream () {
 # We run this command once or twice, a second time to fetch then retest.
 must_ensure_protected_remote_branch_exists () {
   # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-  ${DRY_RUN} git fetch -q "${SCOPING_REMOTE_NAME}"
+  ${DRY_ECHO} git fetch -q "${SCOPING_REMOTE_NAME}"
 
   local remote_sha=""
   remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_SCOPING}")" \
@@ -548,7 +548,7 @@ must_have_git_tracking_branch_or_exit () {
 
 must_ensure_ready_to_rebase_onto_remote_release_branch () {
   # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-  ${DRY_RUN} git fetch -q "${RELEASE_REMOTE_NAME}"
+  ${DRY_ECHO} git fetch -q "${RELEASE_REMOTE_NAME}"
 
   local remote_sha=""
   remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_RELEASE}")" \
@@ -686,16 +686,16 @@ add_patch_history_tags () {
   local pw_tag_patch_tag
 
   pw_tag_patch_tag="${tag_prefix}/old_head"
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${old_head}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${old_head}"
 
   pw_tag_patch_tag="${tag_prefix}/pick_from"
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${pick_from}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${pick_from}"
 
   pw_tag_patch_tag="${tag_prefix}/merge_base"
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${merge_base}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${merge_base}"
 
   pw_tag_patch_tag="${tag_prefix}/reset_ref"
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${reset_ref}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${reset_ref}"
 }
 
 # ***
@@ -711,13 +711,13 @@ manage_pw_tracking_tags () {
   # Set pw/in.
   ! ${GIT_ABORT:-false} \
     || echo "  git tag -f \"${pw_tag_applied}\" \"${reset_ref}\""
-  ${DRY_RUN} git tag -f "${pw_tag_applied}" "${reset_ref}" > /dev/null
+  ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${reset_ref}" > /dev/null
 
   # Remove pw/out. Confirms user has consolidated with remote.
   # - If they run put-wise --pull again, calls normal git-pull.
   ! ${GIT_ABORT:-false} \
     || echo "  git tag -d \"${pw_tag_archived}\""
-  ${DRY_RUN} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
+  ${DRY_ECHO} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -748,7 +748,7 @@ maybe_move_branch_forward () {
     ! ${GIT_ABORT:-false} \
       || echo "git branch -f --no-track \"${local_ref}\" \"${remote_ref}\""
 
-    ${DRY_RUN} git branch -f --no-track "${local_ref}" "${remote_ref}"
+    ${DRY_ECHO} git branch -f --no-track "${local_ref}" "${remote_ref}"
   fi
 }
 

@@ -797,7 +797,8 @@ git_sort_by_scope () {
 
   source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
-  ${DRY_RUN} git-rebase-sort-by-scope-protected-private "${sort_from_commit}" \
+  ${DRY_ECHO} git-rebase-sort-by-scope-protected-private \
+    "${sort_from_commit}" \
     "${_magic_starting_ref:-false}" \
     "${enable_gpg_sign}" \
     "${_insist_signing_key:-false}"
@@ -1033,7 +1034,7 @@ commit_changes_and_counting () {
   if [ $(git_number_of_commits) -eq 1 ]; then
     # Very first --archive!
     # See also: PW_PATCHES_REPO_MESSAGE_INIT="🥨"
-    ${DRY_RUN} git commit -q -m "1${PW_PATCHES_REPO_MESSAGE_CHCHCHANGES}"
+    ${DRY_ECHO} git commit -q -m "1${PW_PATCHES_REPO_MESSAGE_CHCHCHANGES}"
   else
     local amend=""
 
@@ -1066,7 +1067,7 @@ commit_changes_and_counting () {
     fi
 
     # We're brutal like this. Fix-up. There can be only 1 post-first commit.
-    ${DRY_RUN} git commit -q ${amend} --no-verify \
+    ${DRY_ECHO} git commit -q ${amend} --no-verify \
       -m "${latest_cnt}${PW_PATCHES_REPO_MESSAGE_CHCHCHANGES}"
 
     # Note that garbage collection won't really do any good until you
@@ -1138,11 +1139,11 @@ git_gc_expire_all_prune_now () {
 
   du-h-d-0-I-.git-. "  " "prior"
 
-  ${DRY_RUN} git reflog expire --expire=now --all
+  ${DRY_ECHO} git reflog expire --expire=now --all
 
-  ${DRY_RUN} git gc --prune=now --quiet
+  ${DRY_ECHO} git gc --prune=now --quiet
 
-  ${DRY_RUN} du-h-d-0-I-.git-. "  " "after"
+  ${DRY_ECHO} du-h-d-0-I-.git-. "  " "after"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -1357,12 +1358,12 @@ process_return_receipts_read_count_and_destroy () {
 
   cd "${before_cd}"
 
-  ${DRY_RUN} command rm -f "${ret_rec_plain_path}"
+  ${DRY_ECHO} command rm -f "${ret_rec_plain_path}"
 
   [ ${failed} -eq 0 ] || exit ${failed}
 
   debug "git rm -q \"${gpg_rr}\""
-  ${DRY_RUN} git rm -q "${gpg_rr}"
+  ${DRY_ECHO} git rm -q "${gpg_rr}"
 
   commit_changes_and_counting
 }
@@ -1492,7 +1493,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
     let "new_commits = ${remote_rev_tot} - ${previous_cnt}" || true
     echo "Advancing count ${new_commits} rev(s):"
     echo "  git tag -f ${pw_tag_applied} $(shorten_sha ${commit_hash})${prev_tag_sha}"
-    ${DRY_RUN} git tag -f "${pw_tag_applied}" "${commit_hash}" > /dev/null
+    ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${commit_hash}" > /dev/null
   else
     echo "Disregarding count:"
     echo "  local count ${previous_cnt} [${pw_tag_applied}] >= receipt count ${remote_rev_tot}"
@@ -1553,7 +1554,7 @@ checkout_branch_quietly () {
 
   [ -n "${branch_name}" ] || return 0
 
-  ${DRY_RUN} git checkout -q "${branch_name}"
+  ${DRY_ECHO} git checkout -q "${branch_name}"
 }
 
 # ***

@@ -8,13 +8,13 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-DRY_RUN=""
-# DRY_RUN=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
+DRY_ECHO=""
+# DRY_ECHO=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 put_wise_archive_patches () {
-  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -669,8 +669,8 @@ encrypt_archive_and_cleanup () {
 remove_temp_files () {
   [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && exit 1 || true
   [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && exit 1 || true
-  ${DRY_RUN} command rm -f "${cleartext_name}"
-  ${DRY_RUN} command rm -rf "${temp_dir}"
+  ${DRY_ECHO} command rm -f "${cleartext_name}"
+  ${DRY_ECHO} command rm -rf "${temp_dir}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -753,7 +753,7 @@ remove_outdated_archives () {
     [ -z "${archive}" ] && >&2 echo "ERROR: 'archive' unset!" && exit 1 || true
 
     echo "${ux_prefix}git rm -q \"${archive}\""
-    ${DRY_RUN} git rm -q "${archive}"
+    ${DRY_ECHO} git rm -q "${archive}"
 
     ux_prefix="  "
   done <<< "${outdated}"
@@ -771,7 +771,7 @@ add_archive_to_repo () {
 
   cd "${PW_PATCHES_REPO}"
 
-  ${DRY_RUN} git add "${crypt_name}"
+  ${DRY_ECHO} git add "${crypt_name}"
 
   commit_changes_and_counting
 

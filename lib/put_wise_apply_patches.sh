@@ -8,8 +8,8 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-DRY_RUN=""
-# DRY_RUN=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
+DRY_ECHO=""
+# DRY_ECHO=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
@@ -43,7 +43,7 @@ DRY_RUN=""
 #   or it might be a path to an archive file in PW_PATCHES_REPO;
 #   or it might be empty if --apply-all.
 put_wise_apply_patches () {
-  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -581,7 +581,7 @@ put_wise_apply_patches_cleanup () {
   # run entry point checks.
   #
   # E.g., `PW_OPTION_DRY_RUN=true git put-wise abort`
-  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
   #
   local before_cd="$(pwd -L)"
   #
@@ -977,7 +977,7 @@ apply_patches_unless_dry_run () {
   #   what's the conflict, edit it (however you want), git-add that
   #   file, and `git am --continue`, whatever you changed is committed
   #   with the patch commit messge, but not the patch changes).
-  if ! ${DRY_RUN} git am --3way --committer-date-is-author-date "${patch_path}"/*.patch; then
+  if ! ${DRY_ECHO} git am --3way --committer-date-is-author-date "${patch_path}"/*.patch; then
     # This program flow should be extremely rare, perhaps unreachable
     # if the user is using put-wise how we expect, and not playing with
     # fire.
@@ -1091,7 +1091,7 @@ add_patch_history_tags () {
 
   pw_tag_patch_tag="${tag_prefix}/old_head"
   echo "git tag \"${pw_tag_patch_tag}\" \"${old_head}\""
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${old_head}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${old_head}"
 
   # The starting_sha tag is used as a pre-apply check, to check that
   # the archive has not previously been applied.
@@ -1103,11 +1103,11 @@ add_patch_history_tags () {
   # applied to the equivalent but meaningful patch_base.
   pw_tag_patch_tag="${tag_prefix}/starting/${starting_sha}"
   echo "git tag \"${pw_tag_patch_tag}\" \"${patch_base}\""
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${patch_base}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${patch_base}"
 
   pw_tag_patch_tag="${tag_prefix}/last_patch"
   echo "git tag \"${pw_tag_patch_tag}\" \"${last_patch}\""
-  ${DRY_RUN} git tag "${pw_tag_patch_tag}" "${last_patch}"
+  ${DRY_ECHO} git tag "${pw_tag_patch_tag}" "${last_patch}"
 }
 
 # LOGIC: Advance the --archive and --apply tracking tags, which are used thusly:
@@ -1131,20 +1131,20 @@ manage_pw_tracking_tags () {
 
   # Move pw/in.
   echo "git tag -f \"${pw_tag_applied}\" \"${last_patch}\""
-  ${DRY_RUN} git tag -f "${pw_tag_applied}" "${last_patch}" > /dev/null
+  ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${last_patch}" > /dev/null
 
   # Delete pw/out.
   echo "git tag -d \"${pw_tag_archived}\""
   # Don't show not-found output, e.g., "error: tag 'foo' not found."
-  ${DRY_RUN} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
+  ${DRY_ECHO} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 
   # Move pw/work.
   echo "git tag -f \"${pw_tag_starting}\" \"${patch_base}\""
-  ${DRY_RUN} git tag -f "${pw_tag_starting}" "${patch_base}" > /dev/null
+  ${DRY_ECHO} git tag -f "${pw_tag_starting}" "${patch_base}" > /dev/null
 
   # Delete user's pw-apply-here.
   echo "git tag -d \"${PW_TAG_ONTIME_APPLY}\""
-  ${DRY_RUN} git tag -d "${PW_TAG_ONTIME_APPLY}" > /dev/null 2>&1 || true
+  ${DRY_ECHO} git tag -d "${PW_TAG_ONTIME_APPLY}" > /dev/null 2>&1 || true
 }
 
 # ***
@@ -1203,7 +1203,7 @@ prepare_return_receipt_encrypt () {
 
   command rm -f "${temp_archive}"
 
-  ${DRY_RUN} git add "${ret_rec_crypt_path}"
+  ${DRY_ECHO} git add "${ret_rec_crypt_path}"
 
   commit_changes_and_counting
 }
@@ -1234,7 +1234,7 @@ remove_archive_from_git () {
     # So that git-rm's output doesn't look like we called `command rm`
     # (it doesn't include 'git' in the output), we'll echo, not Git:
     echo "git rm -q \"${gpgf}\""
-    ${DRY_RUN} git rm -q "${gpgf}"
+    ${DRY_ECHO} git rm -q "${gpgf}"
 
     commit_changes_and_counting
   fi
@@ -1246,7 +1246,7 @@ remove_plaintext_assets () {
 
   ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
 
-  [ -z "${DRY_RUN}" ] || ${DRY_RUN} "CWD: $(pwd -L)"
+  [ -z "${DRY_ECHO}" ] || ${DRY_ECHO} "CWD: $(pwd -L)"
 
   remove_plaintext_assets_dir "${patch_dir}"
   remove_plaintext_assets_file "${ret_rec_plain_name}"
@@ -1259,7 +1259,7 @@ remove_plaintext_assets_dir () {
 
   if [ -d "${a_dir}" ]; then
     echo "command rm -rf \"${a_dir}\""
-    ${DRY_RUN} command rm -rf "${a_dir}"
+    ${DRY_ECHO} command rm -rf "${a_dir}"
   fi
 }
 
@@ -1270,7 +1270,7 @@ remove_plaintext_assets_file () {
 
   if [ -f "${a_file}" ]; then
     echo "command rm -f \"${a_file}\""
-    ${DRY_RUN} command rm -f "${a_file}"
+    ${DRY_ECHO} command rm -f "${a_file}"
   fi
 }
 

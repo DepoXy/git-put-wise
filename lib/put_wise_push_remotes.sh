@@ -8,13 +8,13 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-DRY_RUN=""
-# DRY_RUN=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
+DRY_ECHO=""
+# DRY_ECHO=__DRYRUN  # Uncomment to always dry-run, regardless -T|--dry-run.
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 put_wise_push_remotes () {
-  ${PW_OPTION_DRY_RUN} && DRY_RUN="${DRY_RUN:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -426,7 +426,7 @@ put_wise_push_remotes_go () {
   PW_TAG_SCOPE_PUSHES_SCOPING="${PW_TAG_PREFIX_SCOPING}-${SCOPING_REMOTE_NAME}"
   PW_TAG_SCOPE_PUSHES_THEREST="${PW_TAG_PREFIX_THEREST}-${branch_name}"
 
-  # Skip ${DRY_RUN}, tags no biggie, and user wants to see in tig.
+  # Skip ${DRY_ECHO}, tags no biggie, and user wants to see in tig.
   git tag -f "${PW_TAG_SCOPE_MARKER_PRIVATE}" "${protected_boundary_or_HEAD}" > /dev/null
   git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${release_boundary_or_HEAD}" > /dev/null
 
@@ -516,7 +516,7 @@ bind generic r +<sh -c \" \\
     if ${keep_going}; then
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
         echo_announce_push "${RELEASE_REMOTE_BRANCH}"
-        ${DRY_RUN} git push "${RELEASE_REMOTE_NAME}" \
+        ${DRY_ECHO} git push "${RELEASE_REMOTE_NAME}" \
           "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
@@ -525,21 +525,21 @@ bind generic r +<sh -c \" \\
     if ${keep_going} && ! ${restrict_release}; then
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
         echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
-        ${DRY_RUN} git push "${LIMINAL_REMOTE_NAME}" \
+        ${DRY_ECHO} git push "${LIMINAL_REMOTE_NAME}" \
           "${release_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}"
       fi
 
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_protected}"; then
         echo_announce_push "${SCOPING_REMOTE_BRANCH}"
-        ${DRY_RUN} git push "${SCOPING_REMOTE_NAME}" \
+        ${DRY_ECHO} git push "${SCOPING_REMOTE_NAME}" \
           "${protected_boundary_or_HEAD}:refs/heads/${SCOPING_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
       fi
 
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
         echo_announce_push "${branch_name}"
-        ${DRY_RUN} git push "${remote_name}" \
+        ${DRY_ECHO} git push "${remote_name}" \
           "${release_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
             || handle_push_failed "${remote_name}/${branch_name}"
       fi
@@ -605,10 +605,10 @@ git_force_branch () {
   local start_point="$2"
 
   if git_branch_exists "${branch_name}"; then
-    ${DRY_RUN} git branch -f --no-track "${branch_name}" "${start_point}"
+    ${DRY_ECHO} git branch -f --no-track "${branch_name}" "${start_point}"
   else
     # Might as well make a local branch, eh.
-    ${DRY_RUN} git branch "${branch_name}" "${start_point}"
+    ${DRY_ECHO} git branch "${branch_name}" "${start_point}"
   fi
 }
 
