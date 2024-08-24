@@ -241,12 +241,12 @@ git_rebase_sort_by_scope () {
     \$0 ~ /^\$/ { next; }
     \$0 ~ /^#/ { next; }
 
+    # ALTLY: { print \$0; }
+    1
+
     \$0 ~ /^pick / {
       print_exec_cmd();
     }
-
-    # ALTLY: { print \$0; }
-    1
 
     ENDFILE {
       if (n_extra_any) {
@@ -255,14 +255,14 @@ git_rebase_sort_by_scope () {
 
       # Print PROTECTED commits following release commits.
       for (i_todo = 0; i_todo < i_prot; i_todo++) {
-        print_exec_cmd();
         print protected[i_todo];
+        print_exec_cmd();
       }
 
       # Print PRIVATE commits last, following PROTECTED.
       for (i_todo = 0; i_todo < i_priv; i_todo++) {
-        print_exec_cmd();
         print private[i_todo];
+        print_exec_cmd();
       }
     }
   " ${rebase_todo_path}
@@ -334,14 +334,27 @@ print_rebase_prog_prefix () {
   printf "%s" "${prog_prefix}"
 }
 
+seq_editor_cache_options () {
+  local gpg_sign="$1"
+
+  local opts_gpg_sign_f="$(print_rebase_options_gpg_sign_file)"
+
+  printf "%s" "${gpg_sign}" > "${opts_gpg_sign_f}"
+}
+
 print_rebase_countdown_file () {
   # CXREF: PW_REBASE_CACHE_COUNTDOWN defined in GPW lib file:
   #   ~/.kit/git/git-put-wise/lib/dep_gpg_signing.sh
   printf "%s" "${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 }
 
+print_rebase_options_gpg_sign_file () {
+  printf "%s" "${PW_REBASE_CACHE_OPTS_GPG_SIGN:-.git/put-wise-opts-gpg-sign}"
+}
+
 seq_editor_cleanup_rebase_files () {
   command rm -f -- "$(print_rebase_countdown_file)"
+  command rm -f -- "$(print_rebase_options_gpg_sign_file)"
 }
 
 # ***
@@ -360,8 +373,16 @@ print_exec_fcn_raw () {
   # E.g., ".git/put-wise-countdown"
   local countdown_f="$(print_rebase_countdown_file)"
 
+  # E.g., ".git/put-wise-opts-gpg-sign"
+  local opts_gpg_sign_f="$(print_rebase_options_gpg_sign_file)"
+
   # E.g., "Sorting commits" or "Signing commits"
   local prog_prefix="$(print_rebase_prog_prefix)"
+
+  local gpg_sign_exec=""
+  if [ -s "${opts_gpg_sign_f}" ]; then
+    gpg_sign_exec="git commit --amend --no-edit --allow-empty --no-verify -S -q;"
+  fi
 
   # SAVVY: Move cursor up one row: \033[1A
   #   So if rebase conflict or error occurs, it prints from
@@ -371,9 +392,13 @@ print_exec_fcn_raw () {
 
   echo '
     sort_by_scope_exec () {
+      set -e;
+
       cur_count="$(cat "'"${countdown_f}"'")";
 
       printf "\\r\\033[1A%s%s... \\n" "'"${prog_prefix}"'" "${cur_count}";
+
+      '"${gpg_sign_exec}"'
 
       printf "%s" "$((${cur_count} - 1))" > "'"${countdown_f}"'";
     }

@@ -106,6 +106,25 @@ force_rebase_and_resign_maybe () {
   rebase_and_resign "${starting_ref}" "${n_commits}"
 }
 
+# ***
+
+is_gpg_signed_since_commit () {
+  local starting_ref="$1"
+
+  if [ -z "$(git config user.signingKey)" ]; then
+    echo "✗ Skipped commit signing: no user.signingKey"
+
+    return 0
+  fi
+
+  if ! git log --format="%G?" ${starting_ref}..HEAD | grep -q -e 'N'; then
+
+    return 0
+  fi
+
+  return 1
+}
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # USYNC: Keep this environ path and the one embedded in the exec below synced.

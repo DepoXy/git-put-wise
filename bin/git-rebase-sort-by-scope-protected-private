@@ -86,10 +86,14 @@ git-rebase-sort-by-scope-protected-private () {
 
   local already_sorted=false
 
-  # Sets already_sorted=true and returns 0 if sorted;
-  # Or sets already_sorted=false and returns 1 if not sorted.
-  ! is_already_sorted "${sort_from_commit}" \
-    || return 0
+  # Sets already_sorted=true and returns 1 if sorted but not signed;
+  # Or sets already_sorted=false and returns 1 if not sorted; or
+  # returns 0 if sorted, and signed if requested.
+  if is_already_sorted_and_signed "${sort_from_commit}" ${enable_gpg_sign}; then
+    maybe_unstash_changes ${pop_after}
+
+    return 0
+  fi
 
   # ***
 
@@ -102,6 +106,8 @@ git-rebase-sort-by-scope-protected-private () {
   progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
 
   printf "%s\n" "${progress_orig_msg}"
+
+  seq_editor_cache_options "${gpg_sign}"
 
   # ***
 
@@ -126,7 +132,7 @@ git-rebase-sort-by-scope-protected-private () {
   local errs
   errs="$( \
     GIT_SEQUENCE_EDITOR="${seq_editor}" \
-      git -c color.advice=always rebase -i --rebase-merges ${gpg_sign} ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
+      git -c color.advice=always rebase -i --rebase-merges ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
       | sed \
         -e 's/Rebasing ([0-9]\+\/[0-9]\+)\r//' \
         -e '/Executing: sort_by_scope_exec () { /d' \
@@ -146,8 +152,14 @@ git-rebase-sort-by-scope-protected-private () {
     # - Move to first column, and one line up.
     printf "\r\033[1A%s" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     local msg_verb="Sorted"
-    [ -n "${gpg_sign}" ] && msg_verb="${msg_verb} & signed"
-    printf "\r%s\n" "${msg_verb} ${n_commits} commit(s)"
+    if [ -n "${gpg_sign}" ]; then
+      if ${already_sorted}; then
+        msg_verb="Signed"
+      else
+        msg_verb="${msg_verb} & signed"
+      fi
+    fi
+    printf "\r%s\n" "✓ ${msg_verb} ${n_commits} commit(s)"
   fi
 
   seq_editor_cleanup_rebase_files
@@ -170,29 +182,16 @@ git-rebase-sort-by-scope-protected-private () {
   else
     # ... now.
 
-    if [ ${retcode} -eq 0 ]; then
-      force_rebase_and_resign_maybe "${gpg_sign}" "${head_sha_before_rebase}" \
-        "${sort_from_commit}" \
-        || retcode=$?
-    fi
-
-    if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
-      # ... after rebase finishes (by appending rebase-todo).
-      git_post_rebase_exec_inject ${pop_after}
-    else
-      # ... now.
-
-      # Unstash WIP, and run post-rebase user hooks (GIT_POST_REBASE_EXEC).
-      # - TIMED: Takes a quick but noticeable sec. to run.
-      # - SAVVY: Even if before and after HEAD SHA unchanged, if hard link
-      #   was involved in any of the rebased commits, the hard link will
-      #   have been broken.
-      #   - MAYBE/2024-08-24: Avoid post-rebase exec when possible (when
-      #     no hard links were harmed during the rebase).
-      #     - Altly, can you run exec without calling `mr`?
-      #       Because `mr` startup is what's slow.
-      git_post_rebase_exec_run ${pop_after}
-    fi
+    # Unstash WIP, and run post-rebase user hooks (GIT_POST_REBASE_EXEC).
+    # - TIMED: post-rebase takes a quick but noticeable sec. to run.
+    # - SAVVY: Even if before and after HEAD SHA unchanged, if hard link
+    #   was involved in any of the rebased commits, the hard link will
+    #   have been broken.
+    #   - MAYBE/2024-08-24: Avoid post-rebase exec when possible (when
+    #     no hard links were harmed during the rebase).
+    #     - Altly, can you run exec without calling `mr`?
+    #       Because `mr` startup is what's slow.
+    git_post_rebase_exec_run ${pop_after}
   fi
 
   return ${retcode}
@@ -283,7 +282,8 @@ print_sort_from_commit () {
 
 # ***
 
-# If already sorted by scope,
+# If already sorted by scope and signing declined,
+# or already sorted and signing requested and verified,
 # return true, and caller will return without running rebase.
 #
 # - Running the rebase anyway is generally fast, and the final HEAD SHA
@@ -294,7 +294,7 @@ print_sort_from_commit () {
 #
 # Side-effect: Sets already_sorted=true|false
 
-is_already_sorted () {
+is_already_sorted_and_signed () {
   local sort_from_commit="$1"
   local enable_gpg_sign="$2"
 
@@ -307,7 +307,12 @@ is_already_sorted () {
 
     echo "✓ Verified ${scoped_count} scoped commit(s)"
 
-    return 0
+    if ! ${enable_gpg_sign} \
+      || is_gpg_signed_since_commit "${sort_from_commit}" \
+    ; then
+
+      return 0
+    fi
   fi
 
   return 1
