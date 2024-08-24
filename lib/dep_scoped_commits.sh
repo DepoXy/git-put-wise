@@ -20,6 +20,15 @@ determine_scoping_boundary () {
   local protected_scope_starts_at
   protected_scope_starts_at="$(find_oldest_commit_by_message "^${SCOPING_PREFIX}")"
 
+  # Warn user if PRIVATE precedes (older) than PROTECTED.
+  if ! verify_scope_boundary_not_older_than \
+    "${private_scope_starts_at}" \
+    "${protected_scope_starts_at}" \
+  ; then
+    # Until fixed, don't let PRIVATE commits bleed out.
+    protected_scope_starts_at="${private_scope_starts_at}"
+  fi
+
   # If patches from 'release' but there's only 'private' locally, then
   # also exclude earlier protected-prefix commits from git-am, to avoid
   # conflicts, and because the remote will not have included these.
@@ -53,9 +62,18 @@ identify_scope_ends_at () {
   local scope_ends_at=""
 
   for message_re in "$@"; do
-    scope_ends_at="$(find_oldest_commit_by_message "${message_re}")"
+    local current_boundary=""
+    current_boundary="$(find_oldest_commit_by_message "${message_re}")"
 
-    [ -z "${scope_ends_at}" ] || break
+    [ -n "${current_boundary}" ] || continue
+
+    if [ -z "${scope_ends_at}" ] \
+      || ! verify_scope_boundary_not_older_than "${current_boundary}" "${scope_ends_at}" \
+    ; then
+      # If scope_ends_at unset, pick first match.
+      # If scope_ends_at set and current_boundary was older, pick older.
+      scope_ends_at="${current_boundary}"
+    fi
   done
 
   if [ -z "${scope_ends_at}" ]; then
@@ -65,6 +83,33 @@ identify_scope_ends_at () {
   fi
 
   printf "${scope_ends_at}"
+}
+
+# ***
+
+verify_scope_boundary_not_older_than () {
+  local private_scope_starts_at="$1"
+  local protected_scope_starts_at="$2"
+
+  if true \
+    && [ -n "${private_scope_starts_at}" ] \
+    && [ -n "${protected_scope_starts_at}" ] \
+    && ! git_is_same_commit \
+      "${private_scope_starts_at}" \
+      "${protected_scope_starts_at}" \
+    && git merge-base --is-ancestor \
+      "${private_scope_starts_at}" \
+      "${protected_scope_starts_at}" \
+  ; then
+    >&2 echo "BWARE: A private commit exists earlier than the first protected commit"
+    >&2 echo "- You'll see a “${PRIVATE_PREFIX}” commit" \
+      "older than the last “${SCOPING_PREFIX}” commit"
+    >&2 echo "- This problem usually solves itself, probably don't sweat it"
+
+    return 1
+  fi
+
+  return 0
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
