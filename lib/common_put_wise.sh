@@ -651,7 +651,7 @@ format_pw_tag_ephemeral_pull () {
 # - Exits nonzero (non-elevenses) if git ref. ahead of HEAD, somehow.
 confirm_state_and_resort_to_prepare_branch () {
   local starting_ref="$1"
-  local enable_gpg_sign="$2"
+  local enable_gpg_sign="${2:-false}"
 
   # The callee will emit "HEAD" if starting_ref diverged from HEAD and --force.
   local starting_sha_or_HEAD
@@ -679,7 +679,7 @@ confirm_state_and_resort_to_prepare_branch () {
 
 confirmed_state_resort_from_sha () {
   local starting_sha="$1"
-  local enable_gpg_sign="$2"
+  local enable_gpg_sign="${2:-false}"
 
   # "Stash" (WIP-commit) untidy changes, marked as PRIVATE, so rebase will
   # leave as most recent commit (and won't resort below other commits).
@@ -793,7 +793,7 @@ must_confirm_shares_history_with_head () {
 # Reorder commits in prep. to diff.
 git_sort_by_scope () {
   local sort_from_commit="$1"
-  local enable_gpg_sign="$2"
+  local enable_gpg_sign="${2:-false}"
 
   source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
