@@ -141,6 +141,8 @@ git-rebase-sort-by-scope-protected-private () {
     printf "\r%s\n" "${msg_verb} ${n_commits} commit(s)"
   fi
 
+  seq_editor_cleanup_rebase_files
+
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
     "${head_sha_before_rebase}" "${rev_count_before_rebase}" "${retcode}"
 

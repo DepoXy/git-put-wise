@@ -340,6 +340,10 @@ print_rebase_countdown_file () {
   printf "%s" "${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 }
 
+seq_editor_cleanup_rebase_files () {
+  command rm -f -- "$(print_rebase_countdown_file)"
+}
+
 # ***
 
 # Remove forbidden newlines, and condense whitespace for readability.
