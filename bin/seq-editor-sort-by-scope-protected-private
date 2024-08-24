@@ -279,10 +279,10 @@ gnu_awk () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 main () {
-  git_rebase_sort_by_scope "${@}"
+  git_rebase_sort_by_scope "$@"
 }
 
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
-  main "${@}"
+  main "$@"
 fi
 
