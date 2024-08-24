@@ -344,7 +344,7 @@ print_rebase_countdown_file () {
 
 # Remove forbidden newlines, and condense whitespace for readability.
 print_exec_fcn () {
-  print_fcn_report_pick \
+  print_exec_fcn_raw \
   | sed -e '/^ *#/d' \
   | tr -d '\n' \
   | sed \
@@ -352,7 +352,7 @@ print_exec_fcn () {
     -e 's/"/\\"/g'
 }
 
-print_fcn_report_pick () {
+print_exec_fcn_raw () {
   # E.g., ".git/put-wise-countdown"
   local countdown_f="$(print_rebase_countdown_file)"
 
