@@ -109,7 +109,7 @@ git-rebase-sort-by-scope-protected-private () {
 
   # Note the git-rebase output includes escape sequences, so start-of-line
   # matching won't work, e.g.,
-  #      -e '/^Executing: report_pick () { /d' \
+  #      -e '/^Executing: sort_by_scope_exec () { /d' \
   #      -e '/^Successfully rebased and updated .*\.$/d' \
 
   local retcode=0
@@ -120,7 +120,7 @@ git-rebase-sort-by-scope-protected-private () {
       git -c color.advice=always rebase -i --rebase-merges ${gpg_sign} ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
       | sed \
         -e 's/Rebasing ([0-9]\+\/[0-9]\+)\r//' \
-        -e '/Executing: report_pick () { /d' \
+        -e '/Executing: sort_by_scope_exec () { /d' \
         -e '/Successfully rebased and updated .*\.$/d' \
       | tr -d '\r';
     return ${PIPESTATUS[0]}
@@ -151,11 +151,11 @@ git-rebase-sort-by-scope-protected-private () {
 
     # Remove the progress countdown `exec`'s, because Git prints "Executing: ..."
     # for each exec, which defeats the purpose.
-    # - Note that setting '\\r\\033[2A' in the `report_pick` fcn. *sorta*
-    #   works, but assumes the "Executing: " message was split across two
-    #   lines (\033[2A moves the cursor up 2 lines). But even if that value
-    #   is correct, the UX is too noisy and impossible to read.
-    command sed -i'' "/^exec report_pick () {/d" "${GIT_REBASE_TODO_PATH}"
+    # - Note that setting '\\r\\033[2A' in the `sort_by_scope_exec` fcn.
+    #   *sorta* works, but assumes the "Executing: " message was split
+    #   across two lines (\033[2A moves the cursor up 2 lines). But even if
+    #   that value is correct, the UX is too noisy and impossible to read.
+    command sed -i'' "/^exec sort_by_scope_exec () {/d" "${GIT_REBASE_TODO_PATH}"
   else
     # ... now.
 

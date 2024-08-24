@@ -213,7 +213,7 @@ git_rebase_sort_by_scope () {
     }
 
     function print_exec_cmd() {
-      print \"exec ${exec_cmd}; report_pick\" > \"/dev/stdout\";
+      print \"exec ${exec_cmd}; sort_by_scope_exec\" > \"/dev/stdout\";
     }
 
     {
@@ -366,7 +366,7 @@ print_fcn_report_pick () {
   #   when countdown drops in magnitude, e.g., 100 -> 99, 10 -> 9.
 
   echo '
-    report_pick () {
+    sort_by_scope_exec () {
       cur_count="$(cat "'"${countdown_f}"'")";
 
       printf "\\r\\033[1A%s%s... \\n" "'"${prog_prefix}"'" "${cur_count}";
