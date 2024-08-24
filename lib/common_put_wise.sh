@@ -795,13 +795,42 @@ git_sort_by_scope () {
   local sort_from_commit="$1"
   local enable_gpg_sign="${2:-false}"
 
-  source_dep "bin/git-rebase-sort-by-scope-protected-private"
+  _common_source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
   ${DRY_ECHO} git-rebase-sort-by-scope-protected-private \
     "${sort_from_commit}" \
     "${_magic_starting_ref:-false}" \
     "${enable_gpg_sign}" \
     "${_insist_signing_key:-false}"
+}
+
+# So that you can source common_put_wise.sh without also sourcing git-put-wise
+_common_source_dep () {
+  local dep_path="$1"
+
+  if [ "$(type -t source_dep)" = "function" ]; then
+    # Path when git-put-wise has been sourced.
+    source_dep "${dep_path}"
+  elif [ -n "${BASH_SOURCE[0]}" ]; then
+    # Path when this file was sourced, but not git-put-wise.
+    # - This file at lib/common_put_wise.sh, so project root is parent dir.
+    local project_root
+    project_root="$(dirname -- "${BASH_SOURCE[0]}")/.."
+
+    dep_path="${project_root}/${dep_path}"
+
+    if [ ! -f "${dep_path}" ]; then
+      >&2 echo "GAFFE: Incorrect dependency path resolved: ${dep_path}"
+
+      exit 1
+    fi
+
+    . "${dep_path}"
+  else
+    >&2 echo "GAFFE: Please try running git-put-wise, or sourcing from Bash"
+
+    exit 1
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
