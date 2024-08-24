@@ -198,6 +198,20 @@ git_rebase_sort_by_scope () {
   local exec_cmd="$(print_exec_fcn)"
   # >&2 echo "exec_cmd: ${exec_cmd}"
 
+  # USAGE: Set PW_REBASE_COUNTDOWN_ALWAYS=true to always show countdown.
+  # - But on dozens of commits, rebase without exec countdown is almost
+  #   instantaneous, whereas rebase with exec countdown takes a noticeable
+  #   second.
+  #   - So disabled by default, and ENVIRON not advertised/documented.
+  #     Will show countdown only when signing, which is a slow op, and
+  #     adding progress seems helpful.
+  local enable_exec=0
+  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} \
+    || [ -s "$(print_rebase_options_gpg_sign_file)" ] \
+  ; then
+    enable_exec=1
+  fi
+
   # ***
 
   # Sort the rebase-todo commits and check for errors along the way.
@@ -210,10 +224,13 @@ git_rebase_sort_by_scope () {
       i_prot = 0;
       n_extra_any = 0;
       n_extra_merge = 0;
+      enable_exec = ${enable_exec};
     }
 
     function print_exec_cmd() {
-      print \"exec ${exec_cmd}; sort_by_scope_exec\" > \"/dev/stdout\";
+      if (enable_exec) {
+        print \"exec ${exec_cmd}; sort_by_scope_exec\" > \"/dev/stdout\";
+      }
     }
 
     {

@@ -105,7 +105,9 @@ git-rebase-sort-by-scope-protected-private () {
   local progress_orig_msg
   progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
 
-  printf "%s\n" "${progress_orig_msg}"
+  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign}; then \
+    printf "%s\n" "${progress_orig_msg}"
+  fi
 
   seq_editor_cache_options "${gpg_sign}"
 
@@ -325,9 +327,13 @@ git_prepare_push_resort_scoped_and_sign_commits () {
     >&2 echo
     echo "${errs}" | >&2 sed 's/^/  /'
   else
+    local one_line_up=""
+    if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || [ -n "${gpg_sign}" ]; then \
+      one_line_up="\033[1A"
+    fi
     # Wipe out final 'pick' progress message.
-    # - Move to first column, and one line up.
-    printf "\r\033[1A%s" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
+    # - Move to first column (\r), and one_line_up).
+    printf "\r${one_line_up}%s" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     local msg_verb="Sorted"
     if [ -n "${gpg_sign}" ]; then
       if ${already_sorted}; then
