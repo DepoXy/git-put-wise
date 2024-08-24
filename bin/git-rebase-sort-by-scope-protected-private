@@ -148,7 +148,7 @@ git-rebase-sort-by-scope-protected-private () {
 
   # Always run optional user hook (GIT_POST_REBASE_EXEC) and also pop WIP...
   if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
-    # ... after rebase finishes (by appending rebase-todo).
+    # ... after rebase finishes (by appending exec to git-rebase-todo).
     git_post_rebase_exec_inject ${pop_after}
 
     # Remove the progress countdown `exec`'s, because Git prints "Executing: ..."
