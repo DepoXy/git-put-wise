@@ -67,6 +67,12 @@ force_rebase_and_resign_maybe () {
     return 0
   fi
 
+  if [ -z "$(git config user.signingKey)" ]; then
+    echo "Skipped commit signing: no user.signingKey"
+
+    return 0
+  fi
+
   if [ -n "${head_sha_before_rebase}" ]; then
     local head_sha_after_rebase
     head_sha_after_rebase="$(git rev-parse HEAD)"
