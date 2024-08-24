@@ -59,7 +59,8 @@ git-rebase-sort-by-scope-protected-private () {
 
   # CXREF: ~/.kit/git/git-put-wise/bin/seq-editor-sort-by-scope-protected-private
   local seq_editor
-  seq_editor="$(must_locate_seq_editor)"
+  seq_editor="$(must_locate_seq_editor)" \
+    || return $?
 
   must_verify_starting_ref "${starting_ref}"
 
