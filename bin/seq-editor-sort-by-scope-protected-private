@@ -223,15 +223,19 @@ git_rebase_sort_by_scope () {
         }
       }
     }
+
     { print $0 }
+
     END {
       if (n_extra_any) {
         print "WARNING: Scoped commits found deeper than expected" > "/dev/stderr"
       }
+
       # Print PROTECTED commits following release commits.
       for (i_todo = 0; i_todo < i_prot; i_todo++) {
         print protected[i_todo] >> "'${rebase_todo_path}'"
       }
+
       # Print PRIVATE commits last, following PROTECTED.
       for (i_todo = 0; i_todo < i_priv; i_todo++) {
         print private[i_todo] >> "'${rebase_todo_path}'"
