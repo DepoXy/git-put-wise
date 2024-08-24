@@ -80,11 +80,64 @@ git-rebase-sort-by-scope-protected-private () {
   sort_from_commit="$(print_sort_from_commit "${starting_ref}" \
     "${use_magic_starting_ref}" "${head_sha_before_rebase}")"
 
+  local n_commits
+  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
+
+  # ***
+
+  . "${seq_editor}"
+
+  local progress_orig_msg
+  progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
+
+  printf "%s\n" "${progress_orig_msg}"
+
+  # ***
+
+  # SAVVY: `git rebase --verbose` prints progress on separate lines, e.g.,
+  #     Rebasing (1/n)
+  #     Rebasing (2/n)
+  #     ...
+  # - Whereas without it, each "Rebasing (1/n)" message writes to the same
+  #   line, afterwards being replaced by one final message (on success):
+  #     Successfully rebased and updated <ref>.
+  
+  # Note there's a git-rebase -q|--quiet option, but doesn't seem to
+  # affect output.
+
+  # Note the git-rebase output includes escape sequences, so start-of-line
+  # matching won't work, e.g.,
+  #      -e '/^Executing: report_pick () { /d' \
+  #      -e '/^Successfully rebased and updated .*\.$/d' \
+
   local retcode=0
 
-  GIT_SEQUENCE_EDITOR="${seq_editor}" \
-    git rebase -i --rebase-merges ${gpg_sign} ${sort_from_commit} \
-      || retcode=$?
+  local errs
+  errs="$( \
+    GIT_SEQUENCE_EDITOR="${seq_editor}" \
+      git -c color.advice=always rebase -i --rebase-merges ${gpg_sign} ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
+      | sed \
+        -e 's/Rebasing ([0-9]\+\/[0-9]\+)\r//' \
+        -e '/Executing: report_pick () { /d' \
+        -e '/Successfully rebased and updated .*\.$/d' \
+      | tr -d '\r';
+    return ${PIPESTATUS[0]}
+  )" \
+    || retcode=$?
+
+  if [ -n "${errs}" ] || [ ${retcode} != 0 ]; then
+    >&2 echo
+    >&2 echo "ERROR: \`git rebase\` failed (${retcode}):"
+    >&2 echo
+    echo "${errs}" | >&2 sed 's/^/  /'
+  else
+    # Wipe out final 'pick' progress message.
+    # - Move to first column, and one line up.
+    printf "\r\033[1A%s" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
+    local msg_verb="Sorted"
+    [ -n "${gpg_sign}" ] && msg_verb="${msg_verb} & signed"
+    printf "\r%s\n" "${msg_verb} ${n_commits} commit(s)"
+  fi
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
     "${head_sha_before_rebase}" "${rev_count_before_rebase}" "${retcode}"
@@ -93,6 +146,14 @@ git-rebase-sort-by-scope-protected-private () {
   if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
     # ... after rebase finishes (by appending rebase-todo).
     git_post_rebase_exec_inject ${pop_after}
+
+    # Remove the progress countdown `exec`'s, because Git prints "Executing: ..."
+    # for each exec, which defeats the purpose.
+    # - Note that setting '\\r\\033[2A' in the `report_pick` fcn. *sorta*
+    #   works, but assumes the "Executing: " message was split across two
+    #   lines (\033[2A moves the cursor up 2 lines). But even if that value
+    #   is correct, the UX is too noisy and impossible to read.
+    command sed -i'' "/^exec report_pick () {/d" "${GIT_REBASE_TODO_PATH}"
   else
     # ... now.
 

@@ -193,6 +193,13 @@ git_rebase_sort_by_scope () {
     read -n 1 the_choice
   fi
 
+  # ***
+
+  local exec_cmd="$(print_exec_fcn_report_pick)"
+  # >&2 echo "exec_cmd: ${exec_cmd}"
+
+  # ***
+
   # Sort the rebase-todo commits and check for errors along the way.
   # - Also discard comment and blank lines.
   # - And use ENDFILE, not END, b/c END sends output to terminal (stdout),
@@ -204,6 +211,11 @@ git_rebase_sort_by_scope () {
       n_extra_any = 0;
       n_extra_merge = 0;
     }
+
+    function print_exec_cmd() {
+      print \"exec ${exec_cmd}; report_pick\" > \"/dev/stdout\";
+    }
+
     {
       if (\$0 ~ /^pick [0-9a-f]+ ${PRIVATE_PREFIX:-PRIVATE: }/) {
         private[i_priv] = \$0
@@ -229,6 +241,10 @@ git_rebase_sort_by_scope () {
     \$0 ~ /^\$/ { next; }
     \$0 ~ /^#/ { next; }
 
+    \$0 ~ /^pick / {
+      print_exec_cmd();
+    }
+
     # ALTLY: { print \$0; }
     1
 
@@ -239,11 +255,13 @@ git_rebase_sort_by_scope () {
 
       # Print PROTECTED commits following release commits.
       for (i_todo = 0; i_todo < i_prot; i_todo++) {
+        print_exec_cmd();
         print protected[i_todo];
       }
 
       # Print PRIVATE commits last, following PROTECTED.
       for (i_todo = 0; i_todo < i_priv; i_todo++) {
+        print_exec_cmd();
         print private[i_todo];
       }
     }
@@ -284,6 +302,78 @@ print_todo_maybe () {
 
 gnu_awk () {
   command -v gawk || command -v awk
+}
+
+# ***
+
+prepare_progress_messaging () {
+  local n_commits="${1:-0}"
+
+  local progress_orig_msg=""
+
+  local countdown_f="$(print_rebase_countdown_file)"
+
+  printf "%s" "${n_commits}" > "${countdown_f}"
+
+  local prog_prefix="$(print_rebase_prog_prefix)"
+
+  progress_orig_msg="${prog_prefix}${n_commits}..."
+
+  printf "%s" "${progress_orig_msg}"
+}
+
+print_rebase_prog_prefix () {
+  local prog_prefix
+
+  if [ "$(cat .git/rebase-merge/gpg_sign_opt 2> /dev/null)" = "-S" ]; then
+    prog_prefix="Signing commits: "
+  else
+    prog_prefix="Sorting commits: "
+  fi
+
+  printf "%s" "${prog_prefix}"
+}
+
+print_rebase_countdown_file () {
+  # CXREF: PW_REBASE_CACHE_COUNTDOWN defined in GPW lib file:
+  #   ~/.kit/git/git-put-wise/lib/dep_gpg_signing.sh
+  printf "%s" "${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
+}
+
+# ***
+
+# Remove forbidden newlines, and condense whitespace for readability.
+print_exec_fcn_report_pick () {
+  print_fcn_report_pick \
+  | sed -e '/^ *#/d' \
+  | tr -d '\n' \
+  | sed \
+    -e 's/ \+/ /g' \
+    -e 's/"/\\"/g'
+}
+
+print_fcn_report_pick () {
+  # E.g., ".git/put-wise-countdown"
+  local countdown_f="$(print_rebase_countdown_file)"
+
+  # E.g., "Sorting commits" or "Signing commits"
+  local prog_prefix="$(print_rebase_prog_prefix)"
+
+  # SAVVY: Move cursor up one row: \033[1A
+  #   So if rebase conflict or error occurs, it prints from
+  #   the first column, and not after the progress countdown.
+  # - Also print one space after countdown, to clear character
+  #   when countdown drops in magnitude, e.g., 100 -> 99, 10 -> 9.
+
+  echo '
+    report_pick () {
+      cur_count="$(cat "'"${countdown_f}"'")";
+
+      printf "\\r\\033[1A%s%s... \\n" "'"${prog_prefix}"'" "${cur_count}";
+
+      printf "%s" "$((${cur_count} - 1))" > "'"${countdown_f}"'";
+    }
+  '
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
