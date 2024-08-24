@@ -108,14 +108,16 @@ force_rebase_and_resign_maybe () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# USYNC: Keep this environ path and the one embedded in the exec below synced.
+# - Also note you can `export PW_REBASE_CACHE_COUNTDOWN=...` from your shell
+#   and it will work in the exec.
+PW_REBASE_CACHE_COUNTDOWN="${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
+
 rebase_and_resign () {
   local starting_ref="$1"
   local n_commits="$2"
 
-  # USYNC: Keep this countdown_f and one below synced.
-  # - Also note you can `export PW_REBASE_COUNTDOWN=...` from your shell
-  #   and it will work in the exec.
-  local countdown_f=".git/${PW_REBASE_COUNTDOWN:-put-wise-countdown}"
+  local countdown_f="${PW_REBASE_CACHE_COUNTDOWN}"
 
   printf "%s" "${n_commits}" > "${countdown_f}"
 
@@ -129,7 +131,7 @@ rebase_and_resign () {
     # Run from git --exec callback, so errexit no longer enabled.
     set -e
 
-    local countdown_f=".git/${PW_REBASE_COUNTDOWN:-put-wise-countdown}"
+    local countdown_f="${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 
     local cur_count="$(cat ${countdown_f})"
     local prog_prefix="Signing commits: "
