@@ -195,7 +195,7 @@ git_rebase_sort_by_scope () {
 
   # ***
 
-  local exec_cmd="$(print_exec_fcn_report_pick)"
+  local exec_cmd="$(print_exec_fcn)"
   # >&2 echo "exec_cmd: ${exec_cmd}"
 
   # ***
@@ -343,7 +343,7 @@ print_rebase_countdown_file () {
 # ***
 
 # Remove forbidden newlines, and condense whitespace for readability.
-print_exec_fcn_report_pick () {
+print_exec_fcn () {
   print_fcn_report_pick \
   | sed -e '/^ *#/d' \
   | tr -d '\n' \
