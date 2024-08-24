@@ -359,9 +359,13 @@ seq_editor_cache_options () {
   printf "%s" "${gpg_sign}" > "${opts_gpg_sign_f}"
 }
 
+# Temporary .git/ file used to persist the countdown value.
+# - We'll expand this path in the 'exec' string, but you can also 
+#   `export PW_REBASE_CACHE_COUNTDOWN=...` from your sell and it
+#   will work in the exec (though not export from seq. editor).
+PW_REBASE_CACHE_COUNTDOWN="${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
+
 print_rebase_countdown_file () {
-  # CXREF: PW_REBASE_CACHE_COUNTDOWN defined in GPW lib file:
-  #   ~/.kit/git/git-put-wise/lib/dep_gpg_signing.sh
   printf "%s" "${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 }
 
