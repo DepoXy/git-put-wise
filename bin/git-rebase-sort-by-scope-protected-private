@@ -67,6 +67,8 @@ git-rebase-sort-by-scope-protected-private () {
   local gpg_sign
   gpg_sign="$(insist_print_gpg_sign_arg ${enable_gpg_sign} ${insist_signing_key})"
 
+  # ***
+
   local pop_after=false
   pop_after=$(maybe_stash_changes "git-rebase-sort-by-scope-protected-private")
 
