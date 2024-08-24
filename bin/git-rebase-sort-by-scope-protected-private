@@ -168,7 +168,16 @@ git-rebase-sort-by-scope-protected-private () {
       git_post_rebase_exec_inject ${pop_after}
     else
       # ... now.
-      # - Unstashes, and runs post-rebase user hooks (GIT_POST_REBASE_EXEC).
+
+      # Unstash WIP, and run post-rebase user hooks (GIT_POST_REBASE_EXEC).
+      # - TIMED: Takes a quick but noticeable sec. to run.
+      # - SAVVY: Even if before and after HEAD SHA unchanged, if hard link
+      #   was involved in any of the rebased commits, the hard link will
+      #   have been broken.
+      #   - MAYBE/2024-08-24: Avoid post-rebase exec when possible (when
+      #     no hard links were harmed during the rebase).
+      #     - Altly, can you run exec without calling `mr`?
+      #       Because `mr` startup is what's slow.
       git_post_rebase_exec_run ${pop_after}
     fi
   fi
