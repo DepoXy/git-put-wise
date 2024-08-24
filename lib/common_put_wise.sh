@@ -660,8 +660,8 @@ resort_and_sign_commits_before_push () {
   )" || exit $?
 
   if [ -z "${starting_sha_or_HEAD}" ]; then
-    # The called fcn. emitted stderr to alert that starting_ref is HEAD.
-    # - Short-circuit “See ya!”
+    # If called fcn. exited 0 rather than PW_ELEVENSES, it alerted on
+    # stderr that starting_ref is HEAD, and we can continue the exit.
 
     exit 0
   fi

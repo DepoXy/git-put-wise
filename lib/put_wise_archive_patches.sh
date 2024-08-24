@@ -57,8 +57,8 @@ put_wise_archive_patches_go () {
 
   debug "starting_ref: ${starting_ref}"
 
-  # Note: This calls must_confirm_shares_history_with_head,
-  # which exit's 11 if starting_ref → HEAD (because no-op).
+  # Note: This calls must_confirm_shares_history_with_head, which
+  # exit's 0 or 11 if starting_ref → HEAD (because no-op).
   resort_and_sign_commits_before_push "${starting_ref}" \
     ${_enable_gpg_sign:-false}
 
