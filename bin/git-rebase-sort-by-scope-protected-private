@@ -111,56 +111,16 @@ git-rebase-sort-by-scope-protected-private () {
 
   # ***
 
-  # SAVVY: `git rebase --verbose` prints progress on separate lines, e.g.,
-  #     Rebasing (1/n)
-  #     Rebasing (2/n)
-  #     ...
-  # - Whereas without it, each "Rebasing (1/n)" message writes to the same
-  #   line, afterwards being replaced by one final message (on success):
-  #     Successfully rebased and updated <ref>.
-  
-  # Note there's a git-rebase -q|--quiet option, but doesn't seem to
-  # affect output.
-
-  # Note the git-rebase output includes escape sequences, so start-of-line
-  # matching won't work, e.g.,
-  #      -e '/^Executing: sort_by_scope_exec () { /d' \
-  #      -e '/^Successfully rebased and updated .*\.$/d' \
-
   local retcode=0
 
-  local errs
-  errs="$( \
-    GIT_SEQUENCE_EDITOR="${seq_editor}" \
-      git -c color.advice=always rebase -i --rebase-merges ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
-      | sed \
-        -e 's/Rebasing ([0-9]\+\/[0-9]\+)\r//' \
-        -e '/Executing: sort_by_scope_exec () { /d' \
-        -e '/Successfully rebased and updated .*\.$/d' \
-      | tr -d '\r';
-    return ${PIPESTATUS[0]}
-  )" \
+  git_prepare_push_resort_scoped_and_sign_commits \
+    "${seq_editor}" \
+    "${gpg_sign}" \
+    "${sort_from_commit}" \
+    "${already_sorted}" \
+    "${n_commits}" \
+    "${progress_orig_msg}" \
     || retcode=$?
-
-  if [ -n "${errs}" ] || [ ${retcode} != 0 ]; then
-    >&2 echo
-    >&2 echo "ERROR: \`git rebase\` failed (${retcode}):"
-    >&2 echo
-    echo "${errs}" | >&2 sed 's/^/  /'
-  else
-    # Wipe out final 'pick' progress message.
-    # - Move to first column, and one line up.
-    printf "\r\033[1A%s" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
-    local msg_verb="Sorted"
-    if [ -n "${gpg_sign}" ]; then
-      if ${already_sorted}; then
-        msg_verb="Signed"
-      else
-        msg_verb="${msg_verb} & signed"
-      fi
-    fi
-    printf "\r%s\n" "✓ ${msg_verb} ${n_commits} commit(s)"
-  fi
 
   seq_editor_cleanup_rebase_files
 
@@ -319,6 +279,68 @@ is_already_sorted_and_signed () {
 }
 
 # ***
+
+# SAVVY: `git rebase --verbose` prints progress on separate lines, e.g.,
+#     Rebasing (1/n)
+#     Rebasing (2/n)
+#     ...
+# - Whereas without it, each "Rebasing (1/n)" message writes to the same
+#   line, afterwards being replaced by one final message (on success):
+#     Successfully rebased and updated <ref>.
+
+# Note there's a git-rebase -q|--quiet option, but doesn't seem to
+# affect output.
+
+# Note the git-rebase output includes escape sequences, so start-of-line
+# matching won't work, e.g.,
+#      -e '/^Executing: sort_by_scope_exec () { /d' \
+#      -e '/^Successfully rebased and updated .*\.$/d' \
+
+git_prepare_push_resort_scoped_and_sign_commits () {
+  local seq_editor="$1"
+  local gpg_sign="$2"
+  local sort_from_commit="$3"
+  local already_sorted="$4"
+  local n_commits="$5"
+  local progress_orig_msg="$6"
+
+  local retcode=0
+
+  local errs
+  errs="$( \
+    GIT_SEQUENCE_EDITOR="${seq_editor}" \
+      git -c color.advice=always rebase -i --rebase-merges ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
+      | sed \
+        -e 's/Rebasing ([0-9]\+\/[0-9]\+)\r//' \
+        -e '/Executing: sort_by_scope_exec () { /d' \
+        -e '/Successfully rebased and updated .*\.$/d' \
+      | tr -d '\r';
+    return ${PIPESTATUS[0]}
+  )" \
+    || retcode=$?
+
+  if [ -n "${errs}" ] || [ ${retcode} != 0 ]; then
+    >&2 echo
+    >&2 echo "ERROR: \`git rebase\` failed (${retcode}):"
+    >&2 echo
+    echo "${errs}" | >&2 sed 's/^/  /'
+  else
+    # Wipe out final 'pick' progress message.
+    # - Move to first column, and one line up.
+    printf "\r\033[1A%s" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
+    local msg_verb="Sorted"
+    if [ -n "${gpg_sign}" ]; then
+      if ${already_sorted}; then
+        msg_verb="Signed"
+      else
+        msg_verb="${msg_verb} & signed"
+      fi
+    fi
+    printf "\r%s\n" "✓ ${msg_verb} ${n_commits} commit(s)"
+  fi
+
+  return ${retcode}
+}
 
 print_hint_if_rebase_incomplete_or_new_state_suspicious () {
   local head_sha_before_rebase="$1"
