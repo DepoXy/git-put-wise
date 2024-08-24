@@ -195,6 +195,8 @@ git_rebase_sort_by_scope () {
 
   # Sort the rebase-todo commits and check for errors along the way.
   # - Also discard comment and blank lines.
+  # - And use ENDFILE, not END, b/c END sends output to terminal (stdout),
+  #   not to the inplace file.
   $(gnu_awk) -i inplace "
     BEGIN {
       i_priv = 0;
@@ -229,19 +231,19 @@ git_rebase_sort_by_scope () {
 
     { print \$0 }
 
-    END {
+    ENDFILE {
       if (n_extra_any) {
         print \"WARNING: Scoped commits found deeper than expected\" > \"/dev/stderr\"
       }
 
       # Print PROTECTED commits following release commits.
       for (i_todo = 0; i_todo < i_prot; i_todo++) {
-        print protected[i_todo] >> \"${rebase_todo_path}\";
+        print protected[i_todo];
       }
 
       # Print PRIVATE commits last, following PROTECTED.
       for (i_todo = 0; i_todo < i_priv; i_todo++) {
-        print private[i_todo] >> \"${rebase_todo_path}\";
+        print private[i_todo];
       }
     }
   " ${rebase_todo_path}
