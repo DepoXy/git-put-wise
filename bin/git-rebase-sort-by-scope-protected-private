@@ -111,10 +111,10 @@ git-rebase-sort-by-scope-protected-private () {
 
   . "${seq_editor}"
 
-  local progress_orig_msg
-  progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
-
+  local progress_orig_msg=""
   if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign}; then \
+    progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
+
     printf "%s\n" "${progress_orig_msg}"
   fi
 
@@ -273,6 +273,12 @@ print_sort_from_commit () {
 #      -e '/^Executing: sort_by_scope_exec () { /d' \
 #      -e '/^Successfully rebased and updated .*\.$/d' \
 
+# Note this filters "Rebasing (n/N)" progress messages, so that we
+# can replace the "Successfully rebased..." message with a custom
+# message (as opposed to showing both messages, I know!). But the
+# resort generally runs in a split second, faster than you'd care
+# about, or could read, in the moment.
+
 git_prepare_push_resort_scoped_and_sign_commits () {
   local seq_editor="$1"
   local gpg_sign="$2"
@@ -302,13 +308,12 @@ git_prepare_push_resort_scoped_and_sign_commits () {
     >&2 echo
     echo "${errs}" | >&2 sed 's/^/  /'
   else
-    local one_line_up=""
-    if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || [ -n "${gpg_sign}" ]; then \
-      one_line_up="\033[1A"
+    if [ -n "${progress_orig_msg}" ]; then
+      local one_line_up="\033[1A"
+      # Wipe out final 'pick' progress message.
+      # - Move to first column (\r), and one_line_up).
+      printf "\r${one_line_up}%s\r" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     fi
-    # Wipe out final 'pick' progress message.
-    # - Move to first column (\r), and one_line_up).
-    printf "\r${one_line_up}%s\r" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     print_sorted_and_signed_message "${gpg_sign}" "${already_sorted}" "${n_commits}"
   fi
 
