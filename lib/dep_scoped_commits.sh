@@ -85,34 +85,7 @@ identify_scope_ends_at () {
   printf "${scope_ends_at}"
 }
 
-# ***
-
-verify_scope_boundary_not_older_than () {
-  local private_scope_starts_at="$1"
-  local protected_scope_starts_at="$2"
-
-  if true \
-    && [ -n "${private_scope_starts_at}" ] \
-    && [ -n "${protected_scope_starts_at}" ] \
-    && ! git_is_same_commit \
-      "${private_scope_starts_at}" \
-      "${protected_scope_starts_at}" \
-    && git merge-base --is-ancestor \
-      "${private_scope_starts_at}" \
-      "${protected_scope_starts_at}" \
-  ; then
-    >&2 echo "BWARE: A private commit exists earlier than the first protected commit"
-    >&2 echo "- You'll see a “${PRIVATE_PREFIX}” commit" \
-      "older than the last “${SCOPING_PREFIX}” commit"
-    >&2 echo "- This problem usually solves itself, probably don't sweat it"
-
-    return 1
-  fi
-
-  return 0
-}
-
-# ***
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 is_sorted_by_scope () {
   local starting_ref="$1"
@@ -175,6 +148,8 @@ is_sorted_by_scope () {
   [ ${scoped_count} -eq ${commit_count} ] && [ ${private_count} -eq ${expected_private} ]
 }
 
+# ***
+
 find_boundary_constrained () {
   local msg_pattern="$1"
   local ref_constrain="$2"
@@ -191,6 +166,33 @@ find_boundary_constrained () {
   fi
 
   printf "%s" "${oldest_commit}"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+verify_scope_boundary_not_older_than () {
+  local private_scope_starts_at="$1"
+  local protected_scope_starts_at="$2"
+
+  if true \
+    && [ -n "${private_scope_starts_at}" ] \
+    && [ -n "${protected_scope_starts_at}" ] \
+    && ! git_is_same_commit \
+      "${private_scope_starts_at}" \
+      "${protected_scope_starts_at}" \
+    && git merge-base --is-ancestor \
+      "${private_scope_starts_at}" \
+      "${protected_scope_starts_at}" \
+  ; then
+    >&2 echo "BWARE: A private commit exists earlier than the first protected commit"
+    >&2 echo "- You'll see a “${PRIVATE_PREFIX}” commit" \
+      "older than the last “${SCOPING_PREFIX}” commit"
+    >&2 echo "- This problem usually solves itself, probably don't sweat it"
+
+    return 1
+  fi
+
+  return 0
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
