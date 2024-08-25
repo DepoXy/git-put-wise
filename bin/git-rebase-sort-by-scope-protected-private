@@ -294,7 +294,7 @@ git_prepare_push_resort_scoped_and_sign_commits () {
     GIT_SEQUENCE_EDITOR="${seq_editor}" \
       git -c color.advice=always rebase -i --rebase-merges ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
       | sed \
-        -e 's/Rebasing ([0-9]\+\/[0-9]\+)\r//' \
+        -e '/Rebasing ([0-9]\+\/[0-9]\+)/d' \
         -e '/Executing: sort_by_scope_exec () { /d' \
         -e '/Successfully rebased and updated .*\.$/d' \
       | tr -d '\r';
