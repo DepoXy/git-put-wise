@@ -803,21 +803,22 @@ print_sorted_and_signed_message () {
 #     ...
 
 insist_print_gpg_sign_arg () {
-  local enable_gpg_sign="$1"
-  local insist_signing_key="$2"
+  local enable_gpg_sign_if_signingkey="${1:-false}"
+  local insist_signing_key="${2:-false}"
 
   local gpg_sign=""
 
-  if ${enable_gpg_sign} \
+  if ${enable_gpg_sign_if_signingkey} \
     && [ "$(git config put-wise.sign-before-push)" = "true" ] \
   ; then
-    if ${insist_signing_key} && [ -z "$(git config user.signingkey)" ]; then
+    if [ -n "$(git config user.signingkey)" ]; then
+      # E.g., `git rebase -S|--gpg-sign`
+      gpg_sign="--gpg-sign"
+    elif ${insist_signing_key}; then
       >&2 echo "ERROR: Cannot sign: Please specify user.signingkey in your Git config"
 
       return 1
     fi
-
-    gpg_sign="--gpg-sign"
   fi
 
   printf "%s" "${gpg_sign}"

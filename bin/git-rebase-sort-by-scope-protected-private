@@ -54,7 +54,7 @@ print_project_root () {
 git-rebase-sort-by-scope-protected-private () {
   local starting_ref="$1"
   local use_magic_starting_ref="${2:-false}"
-  local enable_gpg_sign="${3:-false}"
+  local enable_gpg_sign_if_signingkey="${3:-false}"
   local insist_signing_key="${4:-false}"
 
   # CXREF: ~/.kit/git/git-put-wise/bin/seq-editor-sort-by-scope-protected-private
@@ -64,8 +64,16 @@ git-rebase-sort-by-scope-protected-private () {
 
   must_verify_starting_ref "${starting_ref}"
 
+  local enable_gpg_sign=${enable_gpg_sign_if_signingkey}
+
   local gpg_sign
-  gpg_sign="$(insist_print_gpg_sign_arg ${enable_gpg_sign} ${insist_signing_key})"
+  gpg_sign="$( \
+    insist_print_gpg_sign_arg ${enable_gpg_sign_if_signingkey} ${insist_signing_key}
+  )" || return 1
+
+  if [ -z "${gpg_sign}" ]; then
+    enable_gpg_sign=false
+  fi
 
   # ***
 
