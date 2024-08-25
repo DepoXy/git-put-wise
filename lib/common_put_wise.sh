@@ -794,6 +794,8 @@ print_sorted_and_signed_message () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+PW_GIT_CONFIG_SIGN_BEFORE_PUSH="put-wise.sign-before-push"
+
 # Returns '--gpg-sign' git-rebase arg if caller requested it.
 # - Also checks if signing key is expected to be present,
 #   otherwise Git fails, e.g.,
@@ -809,7 +811,7 @@ insist_print_gpg_sign_arg () {
   local gpg_sign=""
 
   if ${enable_gpg_sign_if_signingkey} \
-    && [ "$(git config put-wise.sign-before-push)" = "true" ] \
+    && [ "$(git config ${PW_GIT_CONFIG_SIGN_BEFORE_PUSH:-put-wise.sign-before-push})" = "true" ] \
   ; then
     if [ -n "$(git config user.signingkey)" ]; then
       # E.g., `git rebase -S|--gpg-sign`
