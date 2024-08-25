@@ -735,7 +735,7 @@ is_already_sorted_and_signed () {
     local msg_postfix=" sorted"
 
     if ! ${enable_gpg_sign} \
-      || is_gpg_signed_since_commit "${sort_from_commit}" \
+      || git_is_gpg_signed_since_commit "${sort_from_commit}" \
     ; then
       if ${enable_gpg_sign}; then
         msg_postfix=" sorted & signed"
