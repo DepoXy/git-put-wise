@@ -718,6 +718,8 @@ is_already_sorted_and_signed () {
   local enable_gpg_sign="$2"
   local n_commits="$3"
 
+  local retcode=1
+
   already_sorted=false
 
   if [ -z "${n_commits}" ]; then
@@ -738,17 +740,15 @@ is_already_sorted_and_signed () {
       if ${enable_gpg_sign}; then
         msg_postfix=" sorted & signed"
       fi
-      print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-        "${n_commits}" "${_scoped_count_arg+}"
 
-      return 0
-    else
-      print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-        "${n_commits}" "${_scoped_count_arg+}"
+      retcode=0
     fi
+
+    print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
+      "${n_commits}" "${_scoped_count_arg+}"
   fi
 
-  return 1
+  return ${retcode}
 }
 
 # ***
