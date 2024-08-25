@@ -245,91 +245,6 @@ print_sort_from_commit () {
 
 # ***
 
-# If already sorted by scope and signing declined,
-# or already sorted and signing requested and verified,
-# return true, and caller will return without running rebase.
-#
-# - Running the rebase anyway is generally fast, and the final HEAD SHA
-#   remains unchanged. But this way we can also skip the user's
-#   post-rebase exec, which might not be so fast (e.g., DepoXy uses the
-#   post-rebase exec to call `mr` to repair hard links, and `mr` is slow
-#   to load (at least author's is, will uses lots of mrconfig files)).
-#
-# Side-effect: Sets already_sorted=true|false
-
-is_already_sorted_and_signed () {
-  local sort_from_commit="$1"
-  local enable_gpg_sign="$2"
-  local n_commits="$3"
-
-  already_sorted=false
-
-  local scoped_count
-
-  if scoped_count="$(is_sorted_by_scope "${sort_from_commit}")"; then
-    already_sorted=true
-
-    local msg_prefix="Verified "
-    local msg_postfix=" sorted"
-
-    if ! ${enable_gpg_sign} \
-      || is_gpg_signed_since_commit "${sort_from_commit}" \
-    ; then
-      if ${enable_gpg_sign}; then
-        msg_postfix=" sorted & signed"
-      fi
-      print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-        "${n_commits}" "${_scoped_count_arg+}"
-
-      return 0
-    else
-      print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-        "${n_commits}" "${_scoped_count_arg+}"
-    fi
-  fi
-
-  return 1
-}
-
-print_generic_status_message () {
-  local msg_prefix="$1"
-  local msg_postfix="$2"
-  local n_commits="$3"
-  local scoped_count="$4"
-
-  local scoped_msg=""
-  if [ -n "${scoped_count}" ]; then
-    scoped_msg=" (${scoped_count} scoped)"
-  fi
-
-  echo "✓ ${msg_prefix}${n_commits}${msg_postfix}${scoped_msg}"
-}
-
-print_sorted_and_signed_message () {
-  local gpg_sign="$1"
-  local already_sorted="$2"
-  local n_commits="$3"
-
-  local msg_prefix="Sorted "
-  if [ -n "${gpg_sign}" ]; then
-    if ${already_sorted}; then
-      msg_prefix="Signed "
-    else
-      msg_prefix="${msg_prefix}& signed "
-    fi
-  fi
-
-  local n_commits_inflector=""
-  [ ${n_commits} -eq 1 ] || n_commits_inflector="s"
-
-  local msg_postfix=" commit${n_commits_inflector}"
-
-  print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-    "${n_commits}" "${_scoped_count_arg+}"
-}
-
-# ***
-
 # SAVVY: `git rebase --verbose` prints progress on separate lines, e.g.,
 #     Rebasing (1/n)
 #     Rebasing (2/n)
@@ -440,37 +355,6 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
       echo "ERROR: rebase-todo not found, but git-rebase exited nonzero"
     fi
   fi
-}
-
-# ***
-
-# Returns '--gpg-sign' git-rebase arg if caller requested it.
-# - Also checks if signing key is expected to be present,
-#   otherwise Git fails, e.g.,
-#     $ git rebase --exec 'git commit --amend --no-edit -n -S' <sha>
-#     ...
-#     error: gpg failed to sign the data
-#     ...
-
-insist_print_gpg_sign_arg () {
-  local enable_gpg_sign="$1"
-  local insist_signing_key="$2"
-
-  local gpg_sign=""
-
-  if ${enable_gpg_sign} \
-    && [ "$(git config put-wise.sign-before-push)" = "true" ] \
-  ; then
-    if ${insist_signing_key} && [ -z "$(git config user.signingkey)" ]; then
-      >&2 echo "ERROR: Cannot sign: Please specify user.signingkey in your Git config"
-
-      return 1
-    fi
-
-    gpg_sign="--gpg-sign"
-  fi
-
-  printf "%s" "${gpg_sign}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
