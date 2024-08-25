@@ -261,6 +261,10 @@ print_sort_from_commit () {
 #   line, afterwards being replaced by one final message (on success):
 #     Successfully rebased and updated <ref>.
 
+# git-rebase prints each exec, e.g.,
+#   Executing: sort_by_scope_exec () { ... }
+# which we'll filter out.
+
 # Note there's a git-rebase -q|--quiet option, but doesn't seem to
 # affect output.
 

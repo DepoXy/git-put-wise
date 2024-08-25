@@ -386,6 +386,14 @@ print_exec_fcn () {
     -e 's/"/\\"/g'
 }
 
+# - git-commit options used to GPG sign via rebase exec:
+#     -n : --no-verify (skip hooks)
+#     -S : --gpg-sign [${gpg_sign}]
+#     --amend : redo current commit
+#     --no-edit : use same commit message
+#     -q : be quiet, else prints, e.g.,
+#          "[detached HEAD 76fc9f4] <message>"
+
 print_exec_fcn_raw () {
   # E.g., ".git/put-wise-countdown"
   local countdown_f="$(print_rebase_countdown_file)"
