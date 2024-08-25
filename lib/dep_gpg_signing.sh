@@ -92,12 +92,7 @@ force_rebase_and_resign_maybe () {
   local n_commits
   n_commits="$(git rev-list --count ${starting_ref}..HEAD)"
 
-  # Check if already signed.
-  # - %G? : "G" for good/valid sig, "B" for bad, "U" for good w/ unknown validity,
-  #         "X" for good but expired, "Y" for good made by expired key,
-  #         "R" for good made by revoked key, "E" if sig cannot be checked
-  #         (e.g. missing key) and "N" for no signature
-  if ! git log --format="%G?" ${starting_ref}..HEAD | grep -q -e 'N'; then
+  if ! git_is_gpg_signed_since_commit "${starting_ref}"; then
     echo "✓ Verified ${n_commits} signed commit(s)"
 
     return 0
@@ -117,7 +112,7 @@ is_gpg_signed_since_commit () {
     return 0
   fi
 
-  if ! git log --format="%G?" ${starting_ref}..HEAD | grep -q -e 'N'; then
+  if ! git_is_gpg_signed_since_commit "${starting_ref}"; then
 
     return 0
   fi
