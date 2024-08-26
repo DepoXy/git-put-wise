@@ -249,6 +249,11 @@ put_wise_identify_rebase_boundary_and_remotes () {
     fi
   fi
 
+  # Fallback latest version tag.
+  if [ -z "${sort_from_commit}" ]; then
+    sort_from_commit="$(git_most_recent_version_tag)"
+  fi
+
   if ${PUT_WISE_SKIP_REBASE:-false}; then
     sort_from_commit=""
   else
