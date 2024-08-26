@@ -48,7 +48,6 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
   remote_name=""
   sort_from_commit=""
 
-  local include_liminal="${PW_OPTION_USE_LIMINAL:-false}"
   local force_liminal=false
 
   local sortless_msg=""
@@ -84,7 +83,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
     # User can opt-into 'liminal' usage, or if remote branch exists,
     # then it's automatic. (User has to manually delete that branch
     # if you want to disable 'liminal' behavior.)
-    if ${include_liminal} || git_remote_branch_exists "${remote_liminal}"; then
+    if ${PW_OPTION_USE_LIMINAL:-false} || git_remote_branch_exists "${remote_liminal}"; then
       force_liminal=true
     else
       remote_liminal=""
