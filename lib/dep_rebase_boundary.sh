@@ -203,7 +203,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
   # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
 
   else
-    # $(git_branch_name) not 'release'|'protected'|'private'.
+    # ${branch_name} not 'release'|'protected'|'private'.
     # - Note that push.default defaults to 'simple', which pushes to upstream
     #   tracking branch when pushing to that remote, otherwise works like
     #   push.default 'current', which uses same name for pushing.
@@ -261,7 +261,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
     ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
 
     >&2 echo "ERROR: Nothing upstream identified for project: “$(pwd -L)”"
-    >&2 echo "- Branch: “$(git_branch_name)”"
+    >&2 echo "- Branch: “${branch_name}”"
     if [ -n "${sortless_msg}" ]; then
       >&2 echo -e "${sortless_msg}"
     else
