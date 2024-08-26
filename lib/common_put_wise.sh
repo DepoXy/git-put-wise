@@ -716,15 +716,13 @@ resort_and_sign_commits_before_push_unless_unnecessary () {
 is_already_sorted_and_signed () {
   local sort_from_commit="$1"
   local enable_gpg_sign="$2"
-  local n_commits="$3"
 
   local retcode=1
 
   already_sorted=false
 
-  if [ -z "${n_commits}" ]; then
-    n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
-  fi
+  local n_commits
+  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
 
   local scoped_count
 

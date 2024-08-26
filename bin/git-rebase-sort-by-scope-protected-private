@@ -90,9 +90,6 @@ git-rebase-sort-by-scope-protected-private () {
   sort_from_commit="$(print_sort_from_commit "${starting_ref}" \
     "${use_magic_starting_ref}" "${head_sha_before_rebase}")"
 
-  local n_commits
-  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
-
   # ***
 
   local already_sorted=false
@@ -100,7 +97,7 @@ git-rebase-sort-by-scope-protected-private () {
   # Sets already_sorted=true and returns 1 if sorted but not signed;
   # Or sets already_sorted=false and returns 1 if not sorted; or
   # returns 0 if sorted, and signed if requested.
-  if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" "${n_commits}" \
+  if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" \
   ; then
     maybe_unstash_changes ${pop_after}
 
@@ -108,6 +105,9 @@ git-rebase-sort-by-scope-protected-private () {
   fi
 
   # ***
+
+  local n_commits
+  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
 
   . "${seq_editor}"
 
