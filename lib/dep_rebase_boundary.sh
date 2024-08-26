@@ -146,7 +146,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       # Always fetch the remote, so that our ref is current,
       # because this function also does a lot of state validating.
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      echo_announce "Fetch from ‘${SCOPING_REMOTE_NAME}’"
+      >&2 echo_announce "Fetch from ‘${SCOPING_REMOTE_NAME}’"
 
       git fetch "${SCOPING_REMOTE_NAME}"
     else
@@ -159,7 +159,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if git_remote_branch_exists "${remote_release}"; then
       sort_from_commit="${remote_release}"
 
-      echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
+      >&2 echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
 
       # So that merge-base is accurate.
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
@@ -234,7 +234,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     remote_current="${remote_name}/${branch_name}"
 
     if git_remote_exists "${remote_name}"; then
-      echo_announce "Fetch from ‘${remote_name}’"
+      >&2 echo_announce "Fetch from ‘${remote_name}’"
 
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
       git fetch "${remote_name}"
