@@ -192,8 +192,8 @@ put_wise_push_remotes_go () {
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
     "${tagged_liminal}" "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}" \
     "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
-    $(test -z "${remote_name}" || printf "%s" "${tagged_current}") \
-      $(test -z "${remote_name}" || printf "%s" "${remote_name}/${branch_name}") \
+    $(test -z "${remote_current}" || printf "%s" "${tagged_current}") \
+      $(test -z "${remote_current}" || printf "%s" "${remote_name}/${branch_name}") \
   ; then
     # Add 'r' command to restrict push just to 'release'.
     # - Useful when 'liminal' or 'entrust' diverged, and

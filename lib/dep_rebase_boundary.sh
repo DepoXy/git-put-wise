@@ -148,13 +148,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
         local_release=""
       fi
     elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
-      # Because we rebase to reorder scoping commits, we need to identify
-      # a starting ref. Without a starting ref, it gets complicated (do
-      # we resort everything? Do we find the first PROTECTED or PRIVATE
-      # commit and rebase from there?). It's easier to tell the user to
-      # make the first push.
-      must_verify_remote_branch_exists "${REMOTE_BRANCH_RELEASE}"
-
       if git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; then
         warn "ALERT: Working from branch '${LOCAL_BRANCH_RELEASE}'," \
           "but '${LOCAL_BRANCH_PRIVATE}' branch also exists"
@@ -189,17 +182,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #       how it works because you're managing so many unshareable
     #       forks.
 
-    if [ -z "${sort_from_commit}" ]; then
-      sortless_msg="$(echo -e \
-        "Options:" \
-        "\n- Use --apply command, or set '${applied_tag}' tag manually" \
-        "\n- Push upstream to '${REMOTE_BRANCH_SCOPING}' branch" \
-        "\n- Push upstream to '${REMOTE_BRANCH_RELEASE}' branch" \
-        "\n- Create local '${LOCAL_BRANCH_RELEASE}' branch" \
-        "\nComplete any one of these activities and then you may ${action_desc}" \
-      )"
-    fi
-
   # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
 
   else
@@ -212,61 +194,46 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #     that push uses the same feature branch name that I use locally.
     # - The following effectively mimics 'current'.
     local tracking_branch
-
-    if ! tracking_branch="$(git_tracking_branch)"; then
-      >&2 echo "ERROR: No tracking branch: Needed to determine push remote"
-      >&2 echo "- Either \`git branch -u <remote>/<branch>\` or use --remote"
-
-      exit 1
-    fi
+    tracking_branch="$(git_tracking_branch)" \
+      || true
 
     remote_name="${PW_OPTION_REMOTE}"
 
-    if [ -z "${remote_name}" ]; then
+    if [ -z "${remote_name}" ] && [ -n "${tracking_branch}" ]; then
       remote_name="$(git_upstream_parse_remote_name "${tracking_branch}")"
     fi
-
-    if [ -z "${remote_name}" ]; then
-      >&2 echo "ERROR: Cannot determine push remote from tracking branch"
-      >&2 echo "- Either \`git branch -u <remote>/<branch>\` or use --remote"
-
-      exit 1
-    fi
-
-    echo_announce "Fetch from ‘${remote_name}’"
-
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    git fetch "${remote_name}"
 
     # Note we don't use PW_OPTION_BRANCH here, but the current branch.
     remote_current="${remote_name}/${branch_name}"
 
-    if ! ${PW_OPTION_FORCE_PUSH} && git_remote_branch_exists "${remote_current}"; then
-      sort_from_commit="${remote_current}"
-    else
-      # Similarly to the 'release' branch, which dies if no 'publish/release'
-      # yet, here we die if there's not upstream ref, either. But this path
-      # will likely not happen for new feature branches so long as the user
-      # uses a tracking branch. E.g., consider a new branch was made like this:
-      #   git checkout -b feature/abc && git branch -u origin/main
-      # Then when you first call `put-wise --archive`, this if-block runs,
-      # and we'll set sort_from_commit to origin/main.
-      must_verify_remote_branch_exists "${tracking_branch}"
+    if git_remote_exists "${remote_name}"; then
+      echo_announce "Fetch from ‘${remote_name}’"
 
+      # MAYBE/2023-01-18: GIT_FETCH: Use -q?
+      git fetch "${remote_name}"
+
+      if ! ${PW_OPTION_FORCE_PUSH:-false} && git_remote_branch_exists "${remote_current}"; then
+        sort_from_commit="${remote_current}"
+      fi
+    fi
+
+    if [ -z "${sort_from_commit}" ] && [ -n "${tracking_branch}" ]; then
       sort_from_commit="${tracking_branch}"
     fi
   fi
 
-  if [ -z "${sort_from_commit}" ]; then
+  # Because we rebase to reorder scoping commits, we need to identify
+  # a starting ref. Without a starting ref, it gets complicated (do
+  # we resort everything? Do we find the first PROTECTED or PRIVATE
+  # commit and rebase from there?). It's easier to tell the user to
+  # make the first push.
+  if ! verify_rebase_boundary_exists "${sort_from_commit}"; then
     ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
 
-    >&2 echo "ERROR: Nothing upstream identified for project: “$(pwd -L)”"
-    >&2 echo "- Branch: “${branch_name}”"
-    if [ -n "${sortless_msg}" ]; then
-      >&2 echo -e "${sortless_msg}"
-    else
-      >&2 echo "You may need to get things rolling by initiating the first push."
-    fi
+    alert_cannot_identify_rebase_boundary \
+      "${branch_name}" \
+      "${remote_name}" \
+      "${sort_from_commit}"
 
     exit 1
   fi
@@ -301,24 +268,82 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_verify_remote_branch_exists () {
-  local remote_branch="$1"
+verify_rebase_boundary_exists () {
+  local sort_from_commit="$1"
 
-  ( [ -z "${remote_branch}" ] || ! git_remote_branch_exists "${remote_branch}" ) \
-    || return 0
+  if [ -z "${sort_from_commit}" ]; then
 
-  >&2 echo "ERROR: Where's remote branch “${remote_branch}”?"
-  >&2 echo "- Nothing to do for project: “$(pwd -L)”"
-  >&2 echo "(We use remote to set scoping rebase starting ref," \
-    "and we'd rather not rebase from the first commit nor ask" \
-    "you where to start from, so we let you make the first push," \
-    "and then we'll use that upstream the next time you call us." \
-    "Alternatively, if this is not a special branch" \
-    "('${LOCAL_BRANCH_PRIVATE}' or '${LOCAL_BRANCH_RELEASE}')" \
-    "you can set a \`git branch -u <>\` upstream tracking branch" \
-    "and we'll use that as the rebase-resort start reference."
+    return 1
+  fi
 
-  exit 1
+  git_commit_object_name ${sort_from_commit} > /dev/null
+}
+
+# ***
+
+alert_cannot_identify_rebase_boundary () {
+  local branch_name="$1"
+  local tracking_remote_name="$2"
+  local sort_from_commit="$3"
+
+  local is_gpw_itself=false
+  if [ "$(basename -- "$0")" = "git-put-wise" ]; then
+    is_gpw_itself=true
+  fi
+
+  >&2 echo "ERROR: Could not identify the rebase boundary"
+  >&2 echo
+  >&2 echo "- A rebase boundary must be identified as the"
+  >&2 echo "  starting point for the sort and sign rebase"
+  >&2 echo
+  >&2 echo "POSSIBLE SOLUTIONS:"
+  >&2 echo
+  >&2 echo "- OPTION 1: If you want to skip the sort and sign rebase"
+  >&2 echo "  altogether, set the environ:"
+  >&2 echo "    PUT_WISE_SKIP_REBASE=true"
+  >&2 echo
+  >&2 echo "- OPTION 2: Create one of the missing references:"
+
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
+    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+  ; then
+    # NOTED: Not mentioning REMOTE_BRANCH_LIMINAL.
+    >&2 echo "- The local branch '${branch_name}' pushes to"
+    >&2 echo "  the remote branch '${REMOTE_BRANCH_RELEASE}', and also"
+    >&2 echo "  the remote branch '${REMOTE_BRANCH_SCOPING}' if it exists,"
+    >&2 echo "  but neither of those remote branches exist. So either:"
+    >&2 echo "    \`git push ${RELEASE_REMOTE_NAME} <SHA>:refs/heads/${RELEASE_REMOTE_BRANCH}\`"
+    >&2 echo "  or:"
+    >&2 echo "    \`git push ${SCOPING_REMOTE_NAME} <SHA>:refs/heads/${SCOPING_REMOTE_BRANCH}\`"
+    if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
+      >&2 echo "- The local branch '${LOCAL_BRANCH_PRIVATE}' can also use"
+      >&2 echo "  another local branch, '${LOCAL_BRANCH_RELEASE}', as a"
+      >&2 echo "  reference, but that branch does not exist, either, e.g.:"
+      >&2 echo "    \`git checkout -b ${LOCAL_BRANCH_RELEASE} <SHA>\`"
+    fi
+    >&2 echo "- The local branch '${branch_name}' can also use"
+    >&2 echo "  the '${applied_tag}' tag to mark the rebase boundary"
+    >&2 echo "  (which is usually managed by the git-put-wise-apply"
+    >&2 echo "   command, but you can set it manually for this purpose),"
+    >&2 echo "  e.g.:"
+    >&2 echo "    \`git tag ${applied_tag} <SHA>\`"
+  else
+    >&2 echo "- The local branch '${branch_name}' pushes to"
+    >&2 echo "  the remote branch '${remote_current}', but that branch"
+    >&2 echo "  does not exist"
+    >&2 echo "- The remote name is determined from the tracking branch, e.g.,"
+    >&2 echo "    \`git branch -u <remote>/<branch>\`"
+    if ${is_gpw_itself}; then
+      >&2 echo "  Which you can override using the --remote CLI option,"
+      >&2 echo "  or using the PW_OPTION_REMOTE environ."
+    else
+      >&2 echo "  Which you can override using the PW_OPTION_REMOTE environ."
+    fi
+    >&2 echo
+    >&2 echo "- OPTION 3: If you don't plan to publish this project,"
+    >&2 echo "  change the branch name to '${LOCAL_BRANCH_PRIVATE}' and use the"
+    >&2 echo "  '${applied_tag}' tag to mark the rebase boundary"
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
