@@ -203,7 +203,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
 
   else
-    # ${branch_name} not 'release'|'protected'|'private'.
+    # ${branch_name} not 'release' or 'private'.
     # - Note that push.default defaults to 'simple', which pushes to upstream
     #   tracking branch when pushing to that remote, otherwise works like
     #   push.default 'current', which uses same name for pushing.
