@@ -43,11 +43,11 @@ DRY_ECHO=""
 #   or it might be a path to an archive file in PW_PATCHES_REPO;
 #   or it might be empty if --apply-all.
 put_wise_apply_patches () {
-  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
-  if ${PW_ACTION_APPLY_ALL}; then
+  if ${PW_ACTION_APPLY_ALL:-false}; then
     put_wise_apply_patches_apply_all
   else
     # else, ${PW_ACTION_APPLY}.
@@ -581,7 +581,7 @@ put_wise_apply_patches_cleanup () {
   # run entry point checks.
   #
   # E.g., `PW_OPTION_DRY_RUN=true git put-wise abort`
-  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
   #
   local before_cd="$(pwd -L)"
   #
@@ -952,7 +952,7 @@ apply_patches_unless_dry_run () {
   #        you can archive from one machine, apply to another, archive from
   #        that one, apply back to the first, etc., regardless of matching
   #        SHAs; because put-wise is just that clever).
-  if ! ${PW_OPTION_RESET_AUTHOR_DISABLE}; then
+  if ! ${PW_OPTION_RESET_AUTHOR_DISABLE:-false}; then
     local author_name=${PW_OPTION_APPLY_AUTHOR_NAME:-$(git config user.name)}
     local author_email=${PW_OPTION_APPLY_AUTHOR_EMAIL:-$(git config user.email)}
 

@@ -14,7 +14,7 @@ DRY_ECHO=""
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 put_wise_push_remotes () {
-  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -181,7 +181,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
     fi
 
     # When liminal enabled, we never force-push to 'release'.
-    if ${PW_OPTION_FORCE_PUSH} && ${force_liminal}; then
+    if ${PW_OPTION_FORCE_PUSH:-false} && ${force_liminal}; then
       local_release=""
       remote_release=""
     fi
@@ -322,7 +322,7 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
 
 put_wise_push_remotes_go () {
   local git_push_force=""
-  ! ${PW_OPTION_FORCE_PUSH} || git_push_force="--force-with-lease"
+  ! ${PW_OPTION_FORCE_PUSH:-false} || git_push_force="--force-with-lease"
 
   # ***
 

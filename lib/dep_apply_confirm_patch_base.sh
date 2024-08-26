@@ -154,7 +154,7 @@ choose_patch_base_or_ask_user () {
       >&2 echo "  ${describe_patch}"
     fi
     >&2 echo
-    if ${PW_ACTION_APPLY} || ${PW_ACTION_APPLY_ALL}; then
+    if ${PW_ACTION_APPLY:-false} || ${PW_ACTION_APPLY_ALL:-false}; then
       >&2 echo "The best way out of this mess is to rebase that reference"
       >&2 echo "back into view (or delete or move it if you're confident):"
       >&2 echo

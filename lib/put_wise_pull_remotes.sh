@@ -16,7 +16,7 @@ DRY_ECHO=""
 # The user called us on a specific project, and not the transport repo,
 # so we'll update just the current project's active branch.
 put_wise_pull_remotes () {
-  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -392,7 +392,7 @@ put_wise_pull_remotes_cleanup () {
   # run entry point checks.
   #
   # E.g., `PW_OPTION_DRY_RUN=true git put-wise abort`
-  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
   #
   local before_cd="$(pwd -L)"
   #
@@ -480,7 +480,7 @@ must_locate_tracking_upstream () {
         must_ensure_ready_to_rebase_onto_remote_release_branch
         tracking_upstream="${REMOTE_BRANCH_RELEASE}"
       else
-        ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
+        ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
 
         >&2 echo "ERROR: Please setup an appropriate remote for '${branch_name}':" \
                  "Try either/and “${SCOPING_REMOTE_NAME}” or “${RELEASE_REMOTE_NAME}”."
@@ -534,7 +534,7 @@ must_have_git_tracking_branch_or_exit () {
   reset_ref="$(git_tracking_branch)" || true
 
   if [ -z "${reset_ref}" ]; then
-    ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
+    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
 
     >&2 echo "ERROR: Please set a tracking branch so we know what to pull"
 

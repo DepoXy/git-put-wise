@@ -881,7 +881,7 @@ must_confirm_shares_history_with_head () {
     exit 1
   else
     # Diverged!
-    if ! ${PW_OPTION_FORCE_PUSH}; then
+    if ! ${PW_OPTION_FORCE_PUSH:-false}; then
       >&2 echo "ERROR: The object “${gitref}” does not share history with HEAD."
       >&2 echo "- HINT: You probably rebased one of them."
       >&2 echo "  - You may need to call sort-by-scope with a specific SHA."

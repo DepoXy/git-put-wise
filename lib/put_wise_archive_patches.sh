@@ -14,7 +14,7 @@ DRY_ECHO=""
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 put_wise_archive_patches () {
-  ${PW_OPTION_DRY_RUN} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
+  ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
 
@@ -504,7 +504,7 @@ must_have_non_empty_rev_range_not_already_tagged () {
   if [ "${archive_from}" = "${archive_upto}" ]; then
     >&2 echo "Nothing to do: Only PRIVATE commits since previous archive"
 
-    ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES} || exit 0
+    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
   fi
 
   # If pw/<branch>/out tag exists, means --archive was run more recently than
