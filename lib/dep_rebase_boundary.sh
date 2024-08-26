@@ -276,6 +276,11 @@ put_wise_identify_rebase_boundary_and_remotes () {
       exit 1
     fi
 
+    if ! insist_nothing_tagged_after "${sort_from_commit}"; then
+
+      exit 1
+    fi
+
     debug_alert_if_ref_tags_at_or_behind_sort_from_commit \
       "${branch_name}" "${sort_from_commit}" "${applied_tag}"
   fi
@@ -312,6 +317,46 @@ debug_alert_if_ref_tags_at_or_behind_sort_from_commit () {
       fi
     fi
   done
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+PW_OPTION_FORCE_ORPHAN_TAGS="${PW_OPTION_FORCE_ORPHAN_TAGS:-false}"
+
+insist_nothing_tagged_after () {
+  local sort_from_commit="$1"
+
+  local child_of_sort_from_commit="$( \
+    git rev-list "${sort_from_commit}"..HEAD | tail -n 1
+  )"
+
+  local version_tag
+  version_tag="$(git_most_recent_version_tag "${child_of_sort_from_commit}")"
+
+  local other_tag
+  other_tag="$(git_most_recent_tag "${child_of_sort_from_commit}")"
+
+  if [ -n "${version_tag}" ] \
+    || [ -n "${other_tag}" ] \
+  ; then
+    local msg_fiver="ERROR"
+    if ${PW_OPTION_FORCE_ORPHAN_TAGS:-false}; then
+      msg_fiver="ALERT"
+    fi
+
+    >&2 echo "${msg_fiver}: Tag(s) found after sort-from reference"
+    >&2 echo "- Ver. tag: ${version_tag}"
+    >&2 echo "- Oth. tag: ${other_tag}"
+    >&2 echo "- Target rebase ref: ${sort_from_commit}"
+
+    if ${PW_OPTION_FORCE_ORPHAN_TAGS:-false}; then
+      >&2 echo "- USAGE: Set PW_OPTION_FORCE_ORPHAN_TAGS=false to fail on this check"
+    else
+      >&2 echo "- USAGE: Set PW_OPTION_FORCE_ORPHAN_TAGS=true to disable this check"
+
+      exit 1
+    fi
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
