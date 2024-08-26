@@ -35,7 +35,7 @@
 #     ref is accurate/up to date.
 #   - Fails if bad state detected (e.g., diverged branches).
 
-put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
+put_wise_identify_rebase_boundary_and_remotes () {
   local action_desc="$1"
 
   # Caller vars set below:
