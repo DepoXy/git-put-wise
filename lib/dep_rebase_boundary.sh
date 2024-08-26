@@ -8,20 +8,37 @@
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# Reusable fcn. to determine oldest sort-by-scope commit automatically.
-# - E.g., if you have a local 'release' (or 'private') branch, and the
-#   upstream remote is 'publish/release', sets
-#     sort_from_commit='publish/release'
-# - Also used by put-wise-push to suss other remote and branch vars.
+# Determines rebase ref. commit, and identifies one or more push remotes.
 #
-# SORRY: I don't generally like to "abuse" `local` like this. It seems
-# like a weird side-effect to have a fcn. set its caller's vars.
-# - But this is shell script, and passing data is not always so simple.
-#   And I want to reuse the sort_from_commit susser without refactoring
-#   complex code that's been working for years.
+# - The rebase ref. is the youngest published commit, i.e., we can rebase
+#   commits since this ref. and not worry about rewriting public history.
+# - In the most basic use case where there's a single remote, the rebase
+#   ref. is the remote HEAD.
+#   - If you have a local 'release' (or 'private') branch, and the remote
+#     branch REMOTE_BRANCH_RELEASE exists (e.g., 'publish/release'), sets
+#       sort_from_commit='publish/release'
+#   - For a feature branch (any branch not named 'release' or 'private'),
+#     uses the remote name from the tracking branch, or from the --remote
+#     CLI arg, paired with the feature branch name, e.g.,
+#       sort_from_commit='<remote>/<branch>'
+# - For a 'private' branch with no remote, uses the pw/private/in tag if
+#   set, which is used by the put-wise-apply command and marks the latest
+#   commit from the patches archive (which lets you move changes between
+#   hosts using an encrypted patch archive, useful when you cannot use SSH
+#   to git-fetch and still you want your data E2E encrypted between hosts).
+# - May also baulk if a version or other tag is identified amongst the
+#   rebase commits.
+#
+# - Also used by put-wise-push to suss other remote and branch vars.
+
+# SORRY:
+# - I don't generally like to "abuse" `local` like this. It seems
+#   like a weird side-effect to have a fcn. set its caller's vars.
+#   - But this is shell script, and passing data is not always so
+#     simple or elegant.
 #
 # REFER:
-# - This fcn will set the following vars (its "return" values):
+# - This fcn. sets the following vars (its "return" values):
 #     local_release=""
 #     remote_release=""
 #     remote_liminal=""
@@ -33,7 +50,14 @@
 # - Other side effects:
 #   - Calls `git fetch` as appropriate to ensure remote branch
 #     ref is accurate/up to date.
-#   - Fails if bad state detected (e.g., diverged branches).
+#   - Fails if bad state detected (e.g., diverged branches), or if
+#     the rebase boundary (sort_from_commit) cannot be identified or
+#     verified.
+#
+# BWARE:
+# - This fcn. does not verify sort_from_commit is reachable from HEAD.
+#   - See resort_and_sign_commits_before_push, which will `exit 1` if
+#     sort_from_commit diverges,
 
 put_wise_identify_rebase_boundary_and_remotes () {
   local action_desc="$1"
@@ -63,21 +87,20 @@ put_wise_identify_rebase_boundary_and_remotes () {
     remote_protected="${REMOTE_BRANCH_SCOPING}"
 
     # The pw/in tag signifies the final patch from the latest --apply command.
-    # It's the remote's HEAD, essentially (minus PRIVATE commits).
-    # This is the fallback sort-from, in case there's no 'release' branch.
-    # Note that this will move PRIVATE commits toward HEAD, but it'll
-    # leave behind PROTECTED commits that may precede pw/work. (The
-    # pw/work tag is the merge-base from the latest --apply command. It's
-    # what the patches were based from, and it signifies what this host
-    # pushed before that the remote added work to. I.e., when this host
-    # pushed pw/work, it had just resorted, and PROTECTED commits were
-    # bubbled toward pw/work. So if we wanted to move those commits
-    # forward now, we'd have to set sort-from to a commit preceding
-    # pw/work. Fortunately, we can use the 'release' branch, which
-    # precedes these PROTECTED commits, as the sort-from base. Using
-    # this tag is just fallback, but note that it means we won't move
-    # earlier PROTECTED commits forward. Which we can a feature of not
-    # having a 'release' branch.
+    # It's the remote's HEAD, essentially (minus PRIVATE commits). This is the
+    # fallback sort-from, in case there's no remote branch or local 'release'
+    # branch. Note that this will move PRIVATE commits toward HEAD, but it'll
+    # leave behind PROTECTED commits that may precede pw/work. (The pw/work tag
+    # is the merge-base from the latest --apply command. It's what the patches
+    # were based from, and it signifies what this host pushed before that the
+    # remote added work to. I.e., when this host pushed pw/work, it had just
+    # resorted, and PROTECTED commits were bubbled toward pw/work. So if we
+    # wanted to move those commits forward now, we'd have to set sort-from to a
+    # commit preceding pw/work. Fortunately, we can use the 'release' branch,
+    # which precedes these PROTECTED commits, as the sort-from base. Using this
+    # tag is just a fallback, but note that it means we won't move earlier
+    # PROTECTED commits forward. Which we can say is a feature of not having a
+    # 'release' branch.
     if git_tag_exists "${applied_tag}"; then
       sort_from_commit="${applied_tag}"
     fi
@@ -91,27 +114,31 @@ put_wise_identify_rebase_boundary_and_remotes () {
       remote_liminal=""
     fi
 
+    # Unless the 'pw/private/in' tag is set as the sort_from_commit default
+    # (see above), use the protected remote (e.g., 'entrust/scoping') as the
+    # default starting point for the sort-and-sign rebase (sort_from_commit).
+    # - We'll pick a different starting point below if there's a remote
+    #   release branch (e.g., 'publish/release') or if there's a local
+    #   release branch (e.g., 'release'), which is the "normal" use case:
+    #   - UCASE: Keep scoped (PROTECTED/PRIVATE) commits *ahead* of the
+    #     'release' branches (so that you never publish scoped commits).
+    #     - This is actually a core concept in put-wise: locally you have
+    #       scoped commits that you never publish to the release remote.
+    #       - PRIVATE commits are never pushed/pulled by put-wise (though
+    #         you might sync them between personal hosts using SSH remotes
+    #         and git-fetch).
+    #       - PROTECTED commits are only shared via --archive or via
+    #         --push to a protected remote (e.g., a private GH repo).
+    # - Here we use the protected remote ('entrust/scoping') as the
+    #   default in case there's no 'release' branch (local or remote).
+    # - Note if this is the only rebase boundary identified, the scoped
+    #   sort will not include PROTECTED commits that were previously
+    #   pushed to the protected remote. Which is fine. User can manually
+    #   sort-by-scope to bubble them up, if they care (and note that the
+    #   protected remote does not guarantee linear history, and user may
+    #   need to force-push if they bubble up previously pushed PROTECTED
+    #   commits).
     if git_remote_branch_exists "${remote_protected}"; then
-      # The --push host is considered the leader, and it will rebase as far
-      # back as it takes to bubble up PROTECTED commits. The simplest case
-      # is when there's a 'release' branch -- we'll pick that (below) as the
-      # sort-from-commit, and we'll rebase all commits since 'release'.
-      # But if there's no 'release' branch, there's not much point to having
-      # PROTECTED commits, is there? And without the 'release' branch as
-      # reference, it's less trivial to determine the sort-from-commit:
-      # we could either rebase from the very first commit (easy solution),
-      # or we could start walking from pw/work (with is the last --apply
-      # command merge-base) -- because there are PROTECTED commits adjacent
-      # to the pw/work tag. Walk from pw/work toward the root commit
-      # until there are no more PROTECTED commits, and rebase from there,
-      # and you'll bubble all the PROTECTED commits forward to HEAD. But this
-      # sounds tedious, and doesn't seem like a feature anyone cares about
-      # (surfacing PROTECTED commits in a repo that's not being published
-      # (has no 'release' branch)). So we (I, the author) choose to leave
-      # PROTECTED commits behind, abandoned, frozen in time if there's no
-      # 'release' branch. If that's the case -- no 'release' reference --
-      # we'll first fallback pw/applied, and then we'll fallback the
-      # protected remote. Which, to be honest, generally ref. the same.
       if [ -z "${sort_from_commit}" ]; then
         sort_from_commit="${remote_protected}"
       fi
@@ -298,11 +325,7 @@ alert_cannot_identify_rebase_boundary () {
   >&2 echo
   >&2 echo "POSSIBLE SOLUTIONS:"
   >&2 echo
-  >&2 echo "- OPTION 1: If you want to skip the sort and sign rebase"
-  >&2 echo "  altogether, set the environ:"
-  >&2 echo "    PUT_WISE_SKIP_REBASE=true"
-  >&2 echo
-  >&2 echo "- OPTION 2: Create one of the missing references:"
+  >&2 echo "- OPTION 1: Create one of the missing references:"
 
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
     || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
@@ -340,7 +363,7 @@ alert_cannot_identify_rebase_boundary () {
       >&2 echo "  Which you can override using the PW_OPTION_REMOTE environ."
     fi
     >&2 echo
-    >&2 echo "- OPTION 3: If you don't plan to publish this project,"
+    >&2 echo "- OPTION 2: If you don't plan to publish this project,"
     >&2 echo "  change the branch name to '${LOCAL_BRANCH_PRIVATE}' and use the"
     >&2 echo "  '${applied_tag}' tag to mark the rebase boundary"
   fi
