@@ -154,6 +154,11 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
       # commit and rebase from there?). It's easier to tell the user to
       # make the first push.
       must_verify_remote_branch_exists "${REMOTE_BRANCH_RELEASE}"
+
+      if git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; then
+        warn "ALERT: Working from branch '${LOCAL_BRANCH_RELEASE}'," \
+          "but '${LOCAL_BRANCH_PRIVATE}' branch also exists"
+      fi
     fi
 
     # else, if sort_from_commit unset, will die after return from if-block.
