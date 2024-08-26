@@ -249,26 +249,39 @@ put_wise_identify_rebase_boundary_and_remotes () {
     fi
   fi
 
-  # Because we rebase to reorder scoping commits, we need to identify
-  # a starting ref. Without a starting ref, it gets complicated (do
-  # we resort everything? Do we find the first PROTECTED or PRIVATE
-  # commit and rebase from there?). It's easier to tell the user to
-  # make the first push.
-  if ! verify_rebase_boundary_exists "${sort_from_commit}"; then
-    ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
+  if ${PUT_WISE_SKIP_REBASE:-false}; then
+    sort_from_commit=""
+  else
+    # Because we rebase to reorder scoping commits, we need to identify
+    # a starting ref. Without a starting ref, it gets complicated (do
+    # we resort everything? Do we find the first PROTECTED or PRIVATE
+    # commit and rebase from there?). It's easier to tell the user to
+    # make the first push.
+    if ! verify_rebase_boundary_exists "${sort_from_commit}"; then
+      ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
 
-    alert_cannot_identify_rebase_boundary \
-      "${branch_name}" \
-      "${remote_name}" \
-      "${sort_from_commit}"
+      alert_cannot_identify_rebase_boundary \
+        "${branch_name}" \
+        "${remote_name}" \
+        "${sort_from_commit}"
 
-    exit 1
+      exit 1
+    fi
+
+    debug_alert_if_ref_tags_at_or_behind_sort_from_commit \
+      "${branch_name}" "${sort_from_commit}" "${applied_tag}"
   fi
+}
 
-  # ***
+# ***
 
-  # Overzealous UX reporting if diverging from tags, not sure why I care
-  # to alert user.
+# Overzealous UX reporting if diverging from tags, not sure why I care
+# to alert user.
+
+debug_alert_if_ref_tags_at_or_behind_sort_from_commit () {
+  local branch_name="$1"
+  local sort_from_commit="$2"
+  local applied_tag="$3"
 
   local work_tag="$(format_pw_tag_starting "${branch_name}")"
 
@@ -325,7 +338,11 @@ alert_cannot_identify_rebase_boundary () {
   >&2 echo
   >&2 echo "POSSIBLE SOLUTIONS:"
   >&2 echo
-  >&2 echo "- OPTION 1: Create one of the missing references:"
+  >&2 echo "- OPTION 1: If you want to skip the sort and sign rebase"
+  >&2 echo "  altogether, set the environ:"
+  >&2 echo "    PUT_WISE_SKIP_REBASE=true"
+  >&2 echo
+  >&2 echo "- OPTION 2: Create one of the missing references:"
 
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
     || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
@@ -363,7 +380,7 @@ alert_cannot_identify_rebase_boundary () {
       >&2 echo "  Which you can override using the PW_OPTION_REMOTE environ."
     fi
     >&2 echo
-    >&2 echo "- OPTION 2: If you don't plan to publish this project,"
+    >&2 echo "- OPTION 3: If you don't plan to publish this project,"
     >&2 echo "  change the branch name to '${LOCAL_BRANCH_PRIVATE}' and use the"
     >&2 echo "  '${applied_tag}' tag to mark the rebase boundary"
   fi
