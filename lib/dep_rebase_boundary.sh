@@ -54,7 +54,9 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
 
   local applied_tag="$(format_pw_tag_applied "${branch_name}")"
 
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
+    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+  ; then
     local_release="${LOCAL_BRANCH_RELEASE}"
     remote_release="${REMOTE_BRANCH_RELEASE}"
     remote_liminal="${REMOTE_BRANCH_LIMINAL}"
@@ -130,18 +132,28 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
     if git_remote_branch_exists "${remote_release}"; then
       sort_from_commit="${remote_release}"
 
-      # MAYBE/2023-01-18: GIT_FETCH: Use -q?
       echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
 
+      # So that merge-base is accurate.
+      # MAYBE/2023-01-18: GIT_FETCH: Use -q?
       git fetch "${RELEASE_REMOTE_NAME}"
     else
       remote_release=""
     fi
 
-    if git_branch_exists "${local_release}"; then
-      sort_from_commit="${local_release}"
-    else
-      local_release=""
+    if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
+      if git_branch_exists "${local_release}"; then
+        sort_from_commit="${local_release}"
+      else
+        local_release=""
+      fi
+    elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
+      # Because we rebase to reorder scoping commits, we need to identify
+      # a starting ref. Without a starting ref, it gets complicated (do
+      # we resort everything? Do we find the first PROTECTED or PRIVATE
+      # commit and rebase from there?). It's easier to tell the user to
+      # make the first push.
+      must_verify_remote_branch_exists "${REMOTE_BRANCH_RELEASE}"
     fi
 
     # else, if sort_from_commit unset, will die after return from if-block.
@@ -153,8 +165,11 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
       must_confirm_commit_at_or_behind_commit "${remote_release}" "${local_release}" \
         ${divergent_ok} "remote-release" "local-release"
 
-      # Resort since 'release', which is guaranteed further along.
-      sort_from_commit="${local_release}"
+      if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
+        # Rebase starting from 'release', which is guaranteed at or further
+        # along than 'publish/release'.
+        sort_from_commit="${local_release}"
+      fi
     fi
 
     # When liminal enabled, we never force-push to 'release'.
@@ -182,22 +197,6 @@ put_wise_suss_push_vars_and_rebase_sort_by_scope_automatic () {
 
   # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
 
-  elif [ "$(git_branch_name)" = "${LOCAL_BRANCH_RELEASE}" ]; then
-    # Because we rebase to reorder scoping commits, we need to identify
-    # a starting ref. Without a starting ref, it gets complicated (do
-    # we resort everything? Do we find the first PROTECTED or PRIVATE
-    # commit and rebase from there?). It's easier to tell the user to
-    # make the first push.
-    must_verify_remote_branch_exists "${REMOTE_BRANCH_RELEASE}"
-
-    # So that merge-base is accurate.
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
-    git fetch "${RELEASE_REMOTE_NAME}"
-
-    sort_from_commit="${REMOTE_BRANCH_RELEASE}"
-
-    remote_release="${REMOTE_BRANCH_RELEASE}"
   else
     # $(git_branch_name) not 'release'|'protected'|'private'.
     # - Note that push.default defaults to 'simple', which pushes to upstream
