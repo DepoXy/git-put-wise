@@ -4,7 +4,7 @@
 # Project: https://github.com/DepoXy/git-put-wise#🥨
 # License: MIT
 
-# Copyright (c) © 2022-2023 Landon Bouma. All Rights Reserved.
+# Copyright (c) © 2022-2024 Landon Bouma. All Rights Reserved.
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
