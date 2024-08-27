@@ -87,7 +87,7 @@ git-rebase-sort-by-scope-protected-private () {
   rev_count_before_rebase="$(git rev-list HEAD --count)"
 
   local sort_from_commit=""
-  sort_from_commit="$(print_sort_from_commit "${starting_ref}" "${use_magic_starting_ref}")"
+  sort_from_commit="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")"
 
   # ***
 
@@ -225,7 +225,7 @@ must_verify_starting_ref () {
 # - Makes it easy to resort unpublished commits without having to specify
 #   the commit, e.g., `git sort-by-scope HEAD true`. (Though more so
 #   intended for automation (see '%' `tig` binding in DepoXy project)).
-print_sort_from_commit () {
+print_rebase_boundary () {
   local starting_ref="$1"
   local use_magic_starting_ref="$2"
 
