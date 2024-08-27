@@ -143,8 +143,8 @@ git-rebase-sort-by-scope-protected-private () {
     # ... after rebase finishes (by appending exec to git-rebase-todo).
     git_post_rebase_exec_inject ${pop_after}
 
-    # Remove the progress countdown `exec`'s, because Git prints "Executing: ..."
-    # for each exec, which defeats the purpose.
+    # Remove the progress countdown `exec`'s, because Git prints
+    # "Executing: ..." for each exec (and we can't filter them out).
     # - Note that setting '\\r\\033[2A' in the `exec_countdown` fcn.
     #   *sorta* works, but assumes the "Executing: " message was split
     #   across two lines (\033[2A moves the cursor up 2 lines). But even if
@@ -230,6 +230,9 @@ print_sort_from_commit () {
 
     return 0
   fi
+
+  # Magic starting ref: when user specifies HEAD starting_ref and use-magic,
+  # look for specific branches or tags to identify the rebase boundary.
 
   # Load: put_wise_identify_rebase_boundary_and_remotes
   . "$(print_project_root)/lib/dep_rebase_boundary.sh"

@@ -157,8 +157,9 @@ find_boundary_constrained () {
   local oldest_commit
   oldest_commit="$(find_oldest_commit_by_message "${msg_pattern}")"
 
-  # Because ref_constrain is not part of the rebase, if the oldest_commit
-  # is ref_constrain or older, change to the child of ref_constrain.
+  # Because ref_constrain (starting_ref) is not part of the query space,
+  # if the oldest commit w/ matching pattern is ref_constrain or older,
+  # change to the child of ref_constrain.
   if [ -n "${oldest_commit}" ] \
     && git merge-base --is-ancestor "${oldest_commit}" "${ref_constrain}" \
   ; then
