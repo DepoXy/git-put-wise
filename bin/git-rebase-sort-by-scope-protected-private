@@ -304,7 +304,7 @@ git_prepare_push_resort_scoped_and_sign_commits () {
   )" \
     || retcode=$?
 
-  if [ -n "${errs}" ] || [ ${retcode} != 0 ]; then
+  if [ -n "${errs}" ] || [ ${retcode} -ne 0 ]; then
     >&2 echo
     >&2 echo "ERROR: \`git rebase\` failed (${retcode}):"
     >&2 echo
