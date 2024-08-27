@@ -61,6 +61,12 @@
 
 put_wise_identify_rebase_boundary_and_remotes () {
   local action_desc="$1"
+  # This fcn. will exit if the boundary cannot be identified and the
+  # commits are not sorted & signed, or will return nonzero instead
+  # if this option is enabled.
+  # - Note that put-wise doesn't use this option, but another project
+  #   does: git-bump-version-tag.
+  local inhibit_exit_if_unidentified="${2:-false}"
 
   # Caller vars set below:
   branch_name="$(git_branch_name)"
@@ -282,6 +288,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
         sort_from_commit=""
       else
         ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
+
+        ! ${inhibit_exit_if_unidentified:-false} || return 1
 
         alert_cannot_identify_rebase_boundary \
           "${branch_name}" \
