@@ -281,7 +281,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
         # no rebase boundary was identified.
         sort_from_commit=""
       else
-        ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
+        ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
 
         alert_cannot_identify_rebase_boundary \
           "${branch_name}" \
