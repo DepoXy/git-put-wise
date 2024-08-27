@@ -203,10 +203,13 @@ verify_scope_boundary_not_older_than () {
       "${private_scope_starts_at}" \
       "${protected_scope_starts_at}" \
   ; then
-    >&2 echo "BWARE: A private commit exists earlier than the first protected commit"
-    >&2 echo "- You'll see a “${PRIVATE_PREFIX}” commit" \
-      "older than the last “${SCOPING_PREFIX}” commit"
-    >&2 echo "- This problem usually solves itself, probably don't sweat it"
+    # ISOFF/2024-08-27: Unnecessary warning, because often followed
+    # by rebase that fixes the issue.
+    #
+    #   >&2 echo "BWARE: A private commit exists earlier than the first protected commit"
+    #   >&2 echo "- You'll see a “${PRIVATE_PREFIX}” commit" \
+    #     "older than the last “${SCOPING_PREFIX}” commit"
+    #   >&2 echo "- This problem usually solves itself, probably don't sweat it"
 
     return 1
   fi
