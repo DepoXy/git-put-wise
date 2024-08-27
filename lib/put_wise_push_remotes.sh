@@ -60,9 +60,11 @@ put_wise_push_remotes_go () {
   >&2 debug "sort_from_commit: ${sort_from_commit}"
 
   if ! git_is_same_commit "${sort_from_commit}" "HEAD"; then
-    # Exits 0/11 if sort_from_commit is HEAD.
-    resort_and_sign_commits_before_push "${sort_from_commit}" \
-      ${_enable_gpg_sign:-true}
+    if [ -n "${sort_from_commit}" ]; then
+      # Exits 0/11 if sort_from_commit is HEAD.
+      resort_and_sign_commits_before_push "${sort_from_commit}" \
+        ${_enable_gpg_sign:-true}
+    fi
   fi
 
   # ***

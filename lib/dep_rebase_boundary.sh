@@ -274,14 +274,22 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # commit and rebase from there?). It's easier to tell the user to
     # make the first push.
     if ! verify_rebase_boundary_exists "${sort_from_commit}"; then
-      ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
+      sort_from_commit="$(git_first_commit_sha)"
+      local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
+      if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}"; then
+        # Tells caller all commits are sorted and signed, and that
+        # no rebase boundary was identified.
+        sort_from_commit=""
+      else
+        ${PW_OPTION_FAIL_ELEVENSES} && exit ${PW_ELEVENSES}
 
-      alert_cannot_identify_rebase_boundary \
-        "${branch_name}" \
-        "${remote_name}" \
-        "${sort_from_commit}"
+        alert_cannot_identify_rebase_boundary \
+          "${branch_name}" \
+          "${remote_name}" \
+          "${sort_from_commit}"
 
-      exit 1
+        exit 1
+      fi
     fi
 
     if ! insist_nothing_tagged_after "${sort_from_commit}"; then
@@ -303,6 +311,11 @@ debug_alert_if_ref_tags_at_or_behind_sort_from_commit () {
   local branch_name="$1"
   local sort_from_commit="$2"
   local applied_tag="$3"
+
+  if [ -z "${sort_from_commit}" ]; then
+
+    return 0
+  fi
 
   local work_tag="$(format_pw_tag_starting "${branch_name}")"
 
@@ -333,6 +346,11 @@ PW_OPTION_FORCE_ORPHAN_TAGS="${PW_OPTION_FORCE_ORPHAN_TAGS:-false}"
 
 insist_nothing_tagged_after () {
   local sort_from_commit="$1"
+
+  if [ -z "${sort_from_commit}" ]; then
+
+    return 0
+  fi
 
   local child_of_sort_from_commit="$( \
     git rev-list "${sort_from_commit}"..HEAD | tail -n 1

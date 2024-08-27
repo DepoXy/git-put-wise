@@ -824,6 +824,23 @@ insist_print_gpg_sign_arg () {
   printf "%s" "${gpg_sign}"
 }
 
+# ***
+
+print_is_gpg_sign_enabled () {
+  local gpg_sign
+  gpg_sign="$( \
+    insist_print_gpg_sign_arg \
+      ${_enable_gpg_sign_if_signingkey:-true} \
+      ${_insist_signing_key:-false}
+  )" || return 1
+
+  if [ -n "${gpg_sign}" ]; then
+    printf "%s" "true"
+  else
+    printf "%s" "false"
+  fi
+}
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # Check that the current branch and its upstream share a common history
