@@ -48,6 +48,7 @@ put_wise_push_remotes_go () {
   local remote_current=""
   local remote_name=""
   local sort_from_commit=""
+  local already_sorted=false
   # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
   put_wise_identify_rebase_boundary_and_remotes "push"
 

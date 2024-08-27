@@ -257,6 +257,7 @@ print_sort_from_commit () {
   local remote_current=""
   local remote_name=""
   local sort_from_commit=""
+  local already_sorted=false
   # BWARE: Calls git-fetch, so not the quickest command.
   >&2 put_wise_identify_rebase_boundary_and_remotes \
     "rebase automatically"
