@@ -362,15 +362,15 @@ insist_nothing_tagged_after () {
   local rev_list_commits
   rev_list_commits="$(print_git_rev_list_commits "${sort_from_commit}")"
 
-  local child_of_sort_from_commit="$( \
+  local child_of_rebase_boundary="$( \
     git rev-list ${rev_list_commits} | tail -n 1
   )"
 
   local version_tag
-  version_tag="$(git_most_recent_version_tag "${child_of_sort_from_commit}")"
+  version_tag="$(git_most_recent_version_tag "${child_of_rebase_boundary}")"
 
   local other_tag
-  other_tag="$(git_most_recent_tag "${child_of_sort_from_commit}")"
+  other_tag="$(git_most_recent_tag "${child_of_rebase_boundary}")"
 
   if [ -n "${version_tag}" ] \
     || [ -n "${other_tag}" ] \
