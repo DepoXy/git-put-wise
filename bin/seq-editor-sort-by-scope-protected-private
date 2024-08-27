@@ -195,8 +195,10 @@ git_rebase_sort_by_scope () {
 
   # ***
 
-  local exec_cmd="$(print_exec_fcn)"
-  # >&2 echo "exec_cmd: ${exec_cmd}"
+  local exec_countdown="$(print_exec_fcn_countdown)"
+  local exec_gpg_sign="$(print_exec_gpg_sign)"
+  # >&2 echo "exec_countdown: ${exec_countdown}"
+  # >&2 echo "exec_gpg_sign: ${exec_gpg_sign}"
 
   # USAGE: Set PW_REBASE_COUNTDOWN_ALWAYS=true to always show countdown.
   # - But on dozens of commits, rebase without exec countdown is almost
@@ -205,11 +207,15 @@ git_rebase_sort_by_scope () {
   #   - So disabled by default, and ENVIRON not advertised/documented.
   #     Will show countdown only when signing, which is a slow op, and
   #     adding progress seems helpful.
-  local enable_exec=0
-  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} \
-    || [ -s "$(print_rebase_options_gpg_sign_file)" ] \
-  ; then
-    enable_exec=1
+  local enable_countdown=0
+  local enable_gpg_sign=0
+  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false}; then
+    enable_countdown=1
+  fi
+
+  if [ -s "$(print_rebase_options_gpg_sign_file)" ]; then
+    enable_gpg_sign=1
+    enable_countdown=1
   fi
 
   # ***
@@ -224,12 +230,16 @@ git_rebase_sort_by_scope () {
       i_prot = 0;
       n_extra_any = 0;
       n_extra_merge = 0;
-      enable_exec = ${enable_exec};
+      enable_countdown = ${enable_countdown};
+      enable_gpg_sign = ${enable_gpg_sign};
     }
 
-    function print_exec_cmd() {
-      if (enable_exec) {
-        print \"exec ${exec_cmd}; sort_by_scope_exec\" > \"/dev/stdout\";
+    function inject_exec_cmds() {
+      if (enable_countdown) {
+        print \"exec ${exec_countdown}; exec_countdown\";
+      }
+      if (enable_gpg_sign) {
+        print \"exec ${exec_gpg_sign}; exec_gpg_sign\";
       }
     }
 
@@ -262,7 +272,7 @@ git_rebase_sort_by_scope () {
     1
 
     \$0 ~ /^pick / {
-      print_exec_cmd();
+      inject_exec_cmds();
     }
 
     ENDFILE {
@@ -273,13 +283,13 @@ git_rebase_sort_by_scope () {
       # Print PROTECTED commits following release commits.
       for (i_todo = 0; i_todo < i_prot; i_todo++) {
         print protected[i_todo];
-        print_exec_cmd();
+        inject_exec_cmds();
       }
 
       # Print PRIVATE commits last, following PROTECTED.
       for (i_todo = 0; i_todo < i_priv; i_todo++) {
         print private[i_todo];
-        print_exec_cmd();
+        inject_exec_cmds();
       }
     }
   " ${rebase_todo_path}
@@ -381,9 +391,17 @@ seq_editor_cleanup_rebase_files () {
 # ***
 
 # Remove forbidden newlines, and condense whitespace for readability.
-print_exec_fcn () {
-  print_exec_fcn_raw \
-  | sed -e '/^ *#/d' \
+print_exec_fcn_countdown () {
+  print_exec_fcn_countdown_raw | sanitize_exec_fcn
+}
+
+print_exec_gpg_sign () {
+  print_exec_gpg_sign_raw | sanitize_exec_fcn
+}
+
+# Remove forbidden newlines, and condense whitespace for readability.
+sanitize_exec_fcn () {
+  sed -e '/^ *#/d' \
   | tr -d '\n' \
   | sed \
     -e 's/ \+/ /g' \
@@ -398,20 +416,12 @@ print_exec_fcn () {
 #     -q : be quiet, else prints, e.g.,
 #          "[detached HEAD 76fc9f4] <message>"
 
-print_exec_fcn_raw () {
+print_exec_fcn_countdown_raw () {
   # E.g., ".git/put-wise-countdown"
   local countdown_f="$(print_rebase_countdown_file)"
 
-  # E.g., ".git/put-wise-opts-gpg-sign"
-  local opts_gpg_sign_f="$(print_rebase_options_gpg_sign_file)"
-
   # E.g., "Sorting commits" or "Signing commits"
   local prog_prefix="$(print_rebase_prog_prefix)"
-
-  local gpg_sign_exec=""
-  if [ -s "${opts_gpg_sign_f}" ]; then
-    gpg_sign_exec="git commit --amend --no-edit --allow-empty --no-verify -S -q;"
-  fi
 
   # SAVVY: Move cursor up one row: \033[1A
   #   So if rebase conflict or error occurs, it prints from
@@ -420,16 +430,24 @@ print_exec_fcn_raw () {
   #   when countdown drops in magnitude, e.g., 100 -> 99, 10 -> 9.
 
   echo '
-    sort_by_scope_exec () {
+    exec_countdown () {
       set -e;
 
       cur_count="$(cat "'"${countdown_f}"'")";
 
       printf "\\r\\033[1A%s%s... \\n" "'"${prog_prefix}"'" "${cur_count}";
 
-      '"${gpg_sign_exec}"'
-
       printf "%s" "$((${cur_count} - 1))" > "'"${countdown_f}"'";
+    }
+  '
+}
+
+print_exec_gpg_sign_raw () {
+  echo '
+    exec_gpg_sign () {
+      set -e;
+
+      git commit --amend --no-edit --allow-empty --no-verify -S -q;
     }
   '
 }
