@@ -907,6 +907,7 @@ git_sort_by_scope () {
 
   _common_source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
+  # CXREF: ~/.kit/git/git-put-wise/bin/git-rebase-sort-by-scope-protected-private
   ${DRY_ECHO} git-rebase-sort-by-scope-protected-private \
     "${sort_from_commit}" \
     "${_magic_starting_ref:-false}" \
