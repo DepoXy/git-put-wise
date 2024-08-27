@@ -304,7 +304,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       exit 1
     fi
 
-    debug_alert_if_ref_tags_at_or_behind_sort_from_commit \
+    debug_alert_if_ref_tags_after_rebase_boundary \
       "${branch_name}" "${sort_from_commit}" "${applied_tag}"
   fi
 }
@@ -314,7 +314,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 # Overzealous UX reporting if diverging from tags, not sure why I care
 # to alert user.
 
-debug_alert_if_ref_tags_at_or_behind_sort_from_commit () {
+debug_alert_if_ref_tags_after_rebase_boundary () {
   local branch_name="$1"
   local sort_from_commit="$2"
   local applied_tag="$3"
