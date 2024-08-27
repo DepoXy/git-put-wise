@@ -36,6 +36,9 @@ put_wise_push_remotes_go () {
 
   # ***
 
+  # Prints errors and exits 1 if no releast boundary can
+  # be identified and the commits are not sorted & signed.
+  # (Or exits 11 without printing errors if -11 option used.)
   # The following vars are set by the sort_from_commit, etc., susser:
   local branch_name=""
   local local_release=""
