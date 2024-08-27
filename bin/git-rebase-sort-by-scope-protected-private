@@ -87,8 +87,7 @@ git-rebase-sort-by-scope-protected-private () {
   rev_count_before_rebase="$(git rev-list HEAD --count)"
 
   local sort_from_commit=""
-  sort_from_commit="$(print_sort_from_commit "${starting_ref}" \
-    "${use_magic_starting_ref}" "${head_sha_before_rebase}")"
+  sort_from_commit="$(print_sort_from_commit "${starting_ref}" "${use_magic_starting_ref}")"
 
   # ***
 
@@ -218,7 +217,6 @@ must_verify_starting_ref () {
 print_sort_from_commit () {
   local starting_ref="$1"
   local use_magic_starting_ref="$2"
-  local head_sha_before_rebase="$3"
 
   if ! ${use_magic_starting_ref:-false}; then
     printf "%s" "${starting_ref}"
@@ -227,7 +225,7 @@ print_sort_from_commit () {
   fi
 
   # Uses: git rev-parse --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
-  if ! git_is_same_commit "${starting_ref}" "${head_sha_before_rebase}"; then
+  if [ -n "${starting_ref}" ] && ! git_is_same_commit "${starting_ref}" "HEAD"; then
     printf "%s" "${starting_ref}"
 
     return 0
