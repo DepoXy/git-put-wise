@@ -246,13 +246,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
       git fetch "${remote_name}"
 
-      if ! ${PW_OPTION_FORCE_PUSH:-false} && git_remote_branch_exists "${remote_current}"; then
+      if git_remote_branch_exists "${remote_current}"; then
         sort_from_commit="${remote_current}"
       fi
-    fi
-
-    if [ -z "${sort_from_commit}" ] && [ -n "${tracking_branch}" ]; then
-      sort_from_commit="${tracking_branch}"
     fi
   fi
 
