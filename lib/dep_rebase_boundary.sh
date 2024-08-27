@@ -285,7 +285,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       sort_from_commit=""
       local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
       # Side-effect: Fcn. sets already_sorted=true|false
-      if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}"; then
+      if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" > /dev/null; then
         # Tells caller all commits are sorted and signed, and that
         # no rebase boundary was identified.
         sort_from_commit=""
