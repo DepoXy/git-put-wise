@@ -129,6 +129,7 @@ git-rebase-sort-by-scope-protected-private () {
     "${sort_from_commit}" \
     "${already_sorted}" \
     "${n_commits}" \
+    "${head_sha_before_rebase}" \
     "${progress_orig_msg}" \
     || retcode=$?
 
@@ -288,7 +289,8 @@ git_prepare_push_resort_scoped_and_sign_commits () {
   local sort_from_commit="$3"
   local already_sorted="$4"
   local n_commits="$5"
-  local progress_orig_msg="$6"
+  local head_sha_before_rebase="$6"
+  local progress_orig_msg="$7"
 
   local retcode=0
 
@@ -319,6 +321,7 @@ git_prepare_push_resort_scoped_and_sign_commits () {
     # SAVVY: This might happen if you put a "break" in the rebase-todo.
     >&2 echo
     >&2 echo "ERROR: \`git rebase\` stopped. Please investigate!"
+    >&2 echo "- Previous HEAD: ${head_sha_before_rebase}"
     >&2 echo
 
     retcode=1
@@ -330,7 +333,8 @@ git_prepare_push_resort_scoped_and_sign_commits () {
       printf "\r${one_line_up}%s\r" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     fi
 
-    print_sorted_and_signed_message "${gpg_sign}" "${already_sorted}" "${n_commits}"
+    print_sorted_and_signed_message "${gpg_sign}" "${already_sorted}" \
+      "${n_commits}" "${head_sha_before_rebase}"
   fi
 
   return ${retcode}

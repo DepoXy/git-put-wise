@@ -771,6 +771,7 @@ print_sorted_and_signed_message () {
   local gpg_sign="$1"
   local already_sorted="$2"
   local n_commits="$3"
+  local head_sha_before_rebase="$4"
 
   local msg_prefix="Sorted "
   if [ -n "${gpg_sign}" ]; then
@@ -785,6 +786,14 @@ print_sorted_and_signed_message () {
   [ ${n_commits} -eq 1 ] || n_commits_inflector="s"
 
   local msg_postfix=" commit${n_commits_inflector}"
+
+  if [ -n "${head_sha_before_rebase}" ]; then
+    local sha_len=7
+    local was_sha="$(shorten_sha "${head_sha_before_rebase}" ${sha_len})"
+    local now_sha="$(shorten_sha "$(git_HEAD_commit_sha)" ${sha_len})"
+
+    msg_postfix="${msg_postfix} [${was_sha} → ${now_sha}]"
+  fi
 
   print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
     "${n_commits}" "${_scoped_count_arg+}"
