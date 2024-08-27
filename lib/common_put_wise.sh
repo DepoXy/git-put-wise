@@ -650,18 +650,18 @@ format_pw_tag_ephemeral_pull () {
 #   so if it's HEAD, there's nothing to push/archive.
 # - Exits nonzero (non-elevenses) if git ref. ahead of HEAD, somehow.
 resort_and_sign_commits_before_push () {
-  local starting_ref="$1"
+  local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
   # The callee will emit "HEAD" if starting_ref diverged from HEAD and --force.
   local starting_sha_or_HEAD
   starting_sha_or_HEAD="$( \
-    must_confirm_shares_history_with_head "${starting_ref}"
+    must_confirm_shares_history_with_head "${rebase_boundary}"
   )" || exit $?
 
   if [ -z "${starting_sha_or_HEAD}" ]; then
     # If called fcn. exited 0 rather than PW_ELEVENSES, it alerted on
-    # stderr that starting_ref is HEAD, and we can continue the exit.
+    # stderr that rebase_boundary is HEAD, and we can continue the exit.
 
     exit 0
   fi
@@ -714,7 +714,7 @@ resort_and_sign_commits_before_push_unless_unnecessary () {
 # Side-effect: Sets already_sorted=true|false
 
 is_already_sorted_and_signed () {
-  local sort_from_commit="$1"
+  local rebase_boundary="$1"
   local enable_gpg_sign="$2"
 
   local retcode=1
@@ -722,18 +722,18 @@ is_already_sorted_and_signed () {
   already_sorted=false
 
   local n_commits
-  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
+  n_commits="$(git rev-list --count ${rebase_boundary}..HEAD)"
 
   local scoped_count
 
-  if scoped_count="$(is_sorted_by_scope "${sort_from_commit}")"; then
+  if scoped_count="$(is_sorted_by_scope "${rebase_boundary}")"; then
     already_sorted=true
 
     local msg_prefix="Verified "
     local msg_postfix=" sorted"
 
     if ! ${enable_gpg_sign} \
-      || git_is_gpg_signed_since_commit "${sort_from_commit}" \
+      || git_is_gpg_signed_since_commit "${rebase_boundary}" \
     ; then
       if ${enable_gpg_sign}; then
         msg_postfix=" sorted & signed"
@@ -919,14 +919,14 @@ must_confirm_shares_history_with_head () {
 
 # Reorder commits in prep. to diff.
 git_sort_by_scope () {
-  local sort_from_commit="$1"
+  local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
   _common_source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
   # CXREF: ~/.kit/git/git-put-wise/bin/git-rebase-sort-by-scope-protected-private
   ${DRY_ECHO} git-rebase-sort-by-scope-protected-private \
-    "${sort_from_commit}" \
+    "${rebase_boundary}" \
     "${_magic_starting_ref:-false}" \
     "${enable_gpg_sign}" \
     "${_insist_signing_key:-false}"
