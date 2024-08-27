@@ -123,24 +123,37 @@ is_sorted_by_scope () {
     return 0
   fi
 
+  local rev_list_scoped
+  rev_list_scoped=$(print_git_rev_list_commits "${scoping_starts_at}^")
+
+  local rev_list_all
+  rev_list_all=$(print_git_rev_list_commits "${starting_ref}")
+
+  local rev_list_private
+  rev_list_private=$(print_git_rev_list_commits "${private_scope_starts_at}^")
+
   local commit_count
   commit_count="$( \
-    git rev-list --count ${scoping_starts_at}^..HEAD
+    git rev-list --count \
+      ${rev_list_scoped}
   )"
 
   local scoped_count
   scoped_count="$( \
-    git rev-list --count --grep "${private_grep}" --grep "${protected_grep}" ${starting_ref}..HEAD
+    git rev-list --count --grep "${private_grep}" --grep "${protected_grep}" \
+      ${rev_list_all}
   )"
 
   local expected_private
   expected_private="$( \
-    git rev-list --count ${private_scope_starts_at}^..HEAD
+    git rev-list --count \
+      ${rev_list_private}
   )"
 
   local private_count
   private_count="$( \
-    git rev-list --count --grep "${private_grep}" ${private_scope_starts_at}^..HEAD
+    git rev-list --count --grep "${private_grep}" \
+      ${rev_list_private}
   )"
 
   printf "%s" "${scoped_count}"
@@ -157,13 +170,18 @@ find_boundary_constrained () {
   local oldest_commit
   oldest_commit="$(find_oldest_commit_by_message "${msg_pattern}")"
 
-  # Because ref_constrain (starting_ref) is not part of the query space,
-  # if the oldest commit w/ matching pattern is ref_constrain or older,
-  # change to the child of ref_constrain.
-  if [ -n "${oldest_commit}" ] \
+  local rev_list_commits
+  rev_list_commits="$(print_git_rev_list_commits "${ref_constrain}")"
+
+  # Because ref_constrain (aka starting_ref, sort_from_commit, rebase_boundary)
+  # is not part of the query space, if the oldest commit w/ matching pattern
+  # is ref_constrain or older, change to the child of ref_constrain. This
+  # ensures that the is_sorted_by_scope --count math (above) is correct.
+  if [ -n "${oldest_commit}" ] && [ -n "${ref_constrain}" ] \
+    && [ "${ref_constrain}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
     && git merge-base --is-ancestor "${oldest_commit}" "${ref_constrain}" \
   ; then
-    oldest_commit="$(git rev-list "${ref_constrain}"..HEAD | tail -n 1)"
+    oldest_commit="$(git rev-list ${rev_list_commits} | tail -n 1)"
   fi
 
   printf "%s" "${oldest_commit}"

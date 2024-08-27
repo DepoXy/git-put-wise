@@ -96,7 +96,8 @@ git-rebase-sort-by-scope-protected-private () {
   # Sets already_sorted=true and returns 1 if sorted but not signed;
   # Or sets already_sorted=false and returns 1 if not sorted; or
   # returns 0 if sorted, and signed if requested.
-  if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" \
+  if [ "${sort_from_commit}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
+    && is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" \
   ; then
     maybe_unstash_changes ${pop_after}
 
@@ -105,8 +106,11 @@ git-rebase-sort-by-scope-protected-private () {
 
   # ***
 
+  local rev_list_commits
+  rev_list_commits=$(print_git_rev_list_commits "${sort_from_commit}^")
+
   local n_commits
-  n_commits="$(git rev-list --count ${sort_from_commit}..HEAD)"
+  n_commits="$(git rev-list --count ${rev_list_commits})"
 
   . "${seq_editor}"
 
@@ -192,6 +196,12 @@ must_verify_starting_ref () {
     >&2 echo "ERROR: Please specify the rebase starting gitref"
 
     return 1
+  fi
+
+  if [ "${starting_ref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    >&2 echo "BWARE: Rebasing all commits"
+
+    return 0
   fi
 
   if ! git rev-parse "${starting_ref}" >/dev/null 2>&1; then
@@ -293,6 +303,10 @@ git_prepare_push_resort_scoped_and_sign_commits () {
   local progress_orig_msg="$7"
 
   local retcode=0
+
+  if [ "${sort_from_commit}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    sort_from_commit="--root"
+  fi
 
   local errs
   errs="$( \

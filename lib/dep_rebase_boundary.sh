@@ -280,7 +280,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # commit and rebase from there?). It's easier to tell the user to
     # make the first push.
     if ! verify_rebase_boundary_exists "${sort_from_commit}"; then
-      sort_from_commit="$(git_first_commit_sha)"
+      # Use empty sort_from_commit so already-sorted checks all commits.
+      sort_from_commit=""
       local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
       if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}"; then
         # Tells caller all commits are sorted and signed, and that
@@ -360,8 +361,11 @@ insist_nothing_tagged_after () {
     return 0
   fi
 
+  local rev_list_commits
+  rev_list_commits="$(print_git_rev_list_commits "${sort_from_commit}")"
+
   local child_of_sort_from_commit="$( \
-    git rev-list "${sort_from_commit}"..HEAD | tail -n 1
+    git rev-list ${rev_list_commits} | tail -n 1
   )"
 
   local version_tag
@@ -403,6 +407,11 @@ verify_rebase_boundary_exists () {
     return 1
   fi
 
+  if [ "${sort_from_commit}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+
+    return 0
+  fi
+
   git_commit_object_name ${sort_from_commit} > /dev/null
 }
 
@@ -430,6 +439,8 @@ alert_cannot_identify_rebase_boundary () {
   >&2 echo "    -S|--starting-ref <ref>"
   >&2 echo "  Or set the associated environ:"
   >&2 echo "    PW_OPTION_STARTING_REF=\"<ref>\""
+  >&2 echo "  To sort & sign all commits, including root, use:"
+  >&2 echo "    PW_OPTION_STARTING_REF=\"ROOT\""
   >&2 echo
   >&2 echo "- OPTION 2: If you want to skip the sort-and-sign"
   >&2 echo "  rebase altogether, set the environ:"

@@ -653,11 +653,15 @@ resort_and_sign_commits_before_push () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
-  # The callee will emit "HEAD" if starting_ref diverged from HEAD and --force.
-  local starting_sha_or_HEAD
-  starting_sha_or_HEAD="$( \
-    must_confirm_shares_history_with_head "${rebase_boundary}"
-  )" || exit $?
+  local starting_sha_or_HEAD="${rebase_boundary}"
+
+  if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    # The callee will emit "HEAD" if rebase_boundary diverged from HEAD
+    # and --force. Otherwise prints rebase_boundary SHA.
+    starting_sha_or_HEAD="$( \
+      must_confirm_shares_history_with_head "${rebase_boundary}"
+    )" || exit $?
+  fi
 
   if [ -z "${starting_sha_or_HEAD}" ]; then
     # If called fcn. exited 0 rather than PW_ELEVENSES, it alerted on
@@ -721,8 +725,11 @@ is_already_sorted_and_signed () {
 
   already_sorted=false
 
+  local rev_list_commits
+  rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}")"
+
   local n_commits
-  n_commits="$(git rev-list --count ${rebase_boundary}..HEAD)"
+  n_commits="$(git rev-list --count ${rev_list_commits})"
 
   local scoped_count
 
@@ -732,8 +739,12 @@ is_already_sorted_and_signed () {
     local msg_prefix="Verified "
     local msg_postfix=" sorted"
 
-    if ! ${enable_gpg_sign} \
-      || git_is_gpg_signed_since_commit "${rebase_boundary}" \
+    local since_commit=""
+    if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+      since_commit="${rebase_boundary}"
+    fi
+
+    if ! ${enable_gpg_sign} || git_is_gpg_signed_since_commit "${since_commit}" \
     ; then
       if ${enable_gpg_sign}; then
         msg_postfix=" sorted & signed"
@@ -747,6 +758,29 @@ is_already_sorted_and_signed () {
   fi
 
   return ${retcode}
+}
+
+# ***
+
+print_git_rev_list_commits () {
+  local rebase_boundary="$1"
+
+  local rev_list_commits="HEAD"
+
+  if [ -n "${rebase_boundary}" ] \
+    && [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
+  ; then
+    local object_name
+    if object_name="$(git rev-parse ${rebase_boundary} 2> /dev/null)"; then
+      rev_list_commits="${object_name}..HEAD"
+    fi
+    # else, caller passed parent-of ref, e.g., <SHA>^ which means <SHA> is
+    # the root commit. So use HEAD (and then git-describe will consider all
+    # commits in the branch). I.e., `$(git_first_commit)..HEAD` excludes
+    # the first commit. But using just `HEAD` includes it.
+  fi
+
+  printf "%s" "${rev_list_commits}"
 }
 
 # ***
