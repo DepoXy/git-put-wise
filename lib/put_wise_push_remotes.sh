@@ -39,7 +39,7 @@ put_wise_push_remotes_go () {
   # Prints errors and exits 1 if no releast boundary can
   # be identified and the commits are not sorted & signed.
   # (Or exits 11 without printing errors if -11 option used.)
-  # The following vars are set by the sort_from_commit, etc., susser:
+  # The following vars are set by the rebase_boundary, etc., susser:
   local branch_name=""
   local local_release=""
   local remote_release=""
@@ -47,7 +47,7 @@ put_wise_push_remotes_go () {
   local remote_protected=""
   local remote_current=""
   local remote_name=""
-  local sort_from_commit=""
+  local rebase_boundary=""
   local already_sorted=false
   # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
   put_wise_identify_rebase_boundary_and_remotes "push"
@@ -56,14 +56,14 @@ put_wise_push_remotes_go () {
 
   # Note that resort_and_sign_commits_before_push checks that
   # sort-from shares history with HEAD:
-  #   must_confirm_commit_at_or_behind_commit "${sort_from_commit}" "HEAD"
+  #   must_confirm_commit_at_or_behind_commit "${rebase_boundary}" "HEAD"
 
-  >&2 debug "sort_from_commit: ${sort_from_commit}"
+  >&2 debug "rebase_boundary: ${rebase_boundary}"
 
-  if ! git_is_same_commit "${sort_from_commit}" "HEAD"; then
-    if [ -n "${sort_from_commit}" ]; then
-      # Exits 0/11 if sort_from_commit is HEAD.
-      resort_and_sign_commits_before_push "${sort_from_commit}" \
+  if ! git_is_same_commit "${rebase_boundary}" "HEAD"; then
+    if [ -n "${rebase_boundary}" ]; then
+      # Exits 0/11 if rebase_boundary is HEAD.
+      resort_and_sign_commits_before_push "${rebase_boundary}" \
         ${_enable_gpg_sign:-true}
     fi
   fi

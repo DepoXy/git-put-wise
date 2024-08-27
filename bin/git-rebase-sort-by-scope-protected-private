@@ -86,8 +86,8 @@ git-rebase-sort-by-scope-protected-private () {
   local rev_count_before_rebase
   rev_count_before_rebase="$(git rev-list HEAD --count)"
 
-  local sort_from_commit=""
-  sort_from_commit="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")"
+  local rebase_boundary=""
+  rebase_boundary="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")"
 
   # ***
 
@@ -96,8 +96,8 @@ git-rebase-sort-by-scope-protected-private () {
   # Sets already_sorted=true and returns 1 if sorted but not signed;
   # Or sets already_sorted=false and returns 1 if not sorted; or
   # returns 0 if sorted, and signed if requested.
-  if [ "${sort_from_commit}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
-    && is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" \
+  if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
+    && is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}" \
   ; then
     maybe_unstash_changes ${pop_after}
 
@@ -107,7 +107,7 @@ git-rebase-sort-by-scope-protected-private () {
   # ***
 
   local rev_list_commits
-  rev_list_commits=$(print_git_rev_list_commits "${sort_from_commit}^")
+  rev_list_commits=$(print_git_rev_list_commits "${rebase_boundary}^")
 
   local n_commits
   n_commits="$(git rev-list --count ${rev_list_commits})"
@@ -130,7 +130,7 @@ git-rebase-sort-by-scope-protected-private () {
   git_prepare_push_resort_scoped_and_sign_commits \
     "${seq_editor}" \
     "${gpg_sign}" \
-    "${sort_from_commit}" \
+    "${rebase_boundary}" \
     "${already_sorted}" \
     "${n_commits}" \
     "${head_sha_before_rebase}" \
@@ -248,7 +248,7 @@ print_rebase_boundary () {
   # Load: put_wise_identify_rebase_boundary_and_remotes
   . "$(print_project_root)/lib/dep_rebase_boundary.sh"
 
-  # The following vars are set by the sort_from_commit, etc., susser:
+  # The following vars are set by the rebase_boundary, etc., susser:
   local branch_name=""
   local local_release=""
   local remote_release=""
@@ -256,13 +256,13 @@ print_rebase_boundary () {
   local remote_protected=""
   local remote_current=""
   local remote_name=""
-  local sort_from_commit=""
+  local rebase_boundary=""
   local already_sorted=false
   # BWARE: Calls git-fetch, so not the quickest command.
   >&2 put_wise_identify_rebase_boundary_and_remotes \
     "rebase automatically"
 
-  printf "%s" "${sort_from_commit}"
+  printf "%s" "${rebase_boundary}"
 }
 
 # ***
@@ -297,7 +297,7 @@ print_rebase_boundary () {
 git_prepare_push_resort_scoped_and_sign_commits () {
   local seq_editor="$1"
   local gpg_sign="$2"
-  local sort_from_commit="$3"
+  local rebase_boundary="$3"
   local already_sorted="$4"
   local n_commits="$5"
   local head_sha_before_rebase="$6"
@@ -305,14 +305,14 @@ git_prepare_push_resort_scoped_and_sign_commits () {
 
   local retcode=0
 
-  if [ "${sort_from_commit}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
-    sort_from_commit="--root"
+  if [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    rebase_boundary="--root"
   fi
 
   local errs
   errs="$( \
     GIT_SEQUENCE_EDITOR="${seq_editor}" \
-      git -c color.advice=always rebase -i --rebase-merges ${sort_from_commit} 3>&1 >&2 2>&3 3>&- \
+      git -c color.advice=always rebase -i --rebase-merges ${rebase_boundary} 3>&1 >&2 2>&3 3>&- \
       | sed \
         -e '/Rebasing ([0-9]\+\/[0-9]\+)/d' \
         -e '/Executing: exec_countdown () { /d' \

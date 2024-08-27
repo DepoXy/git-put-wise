@@ -16,11 +16,11 @@
 #   ref. is the remote HEAD.
 #   - If you have a local 'release' (or 'private') branch, and the remote
 #     branch REMOTE_BRANCH_RELEASE exists (e.g., 'publish/release'), sets
-#       sort_from_commit='publish/release'
+#       rebase_boundary='publish/release'
 #   - For a feature branch (any branch not named 'release' or 'private'),
 #     uses the remote name from the tracking branch, or from the --remote
 #     CLI arg, paired with the feature branch name, e.g.,
-#       sort_from_commit='<remote>/<branch>'
+#       rebase_boundary='<remote>/<branch>'
 # - For a 'private' branch with no remote, uses the pw/private/in tag if
 #   set, which is used by the put-wise-apply command and marks the latest
 #   commit from the patches archive (which lets you move changes between
@@ -46,18 +46,18 @@
 #     remote_current=""
 #     remote_name=""
 #     branch_name=""
-#     sort_from_commit=""
+#     rebase_boundary=""
 # - Other side effects:
 #   - Calls `git fetch` as appropriate to ensure remote branch
 #     ref is accurate/up to date.
 #   - Fails if bad state detected (e.g., diverged branches), or if
-#     the rebase boundary (sort_from_commit) cannot be identified or
+#     the rebase boundary (rebase_boundary) cannot be identified or
 #     verified.
 #
 # BWARE:
-# - This fcn. does not verify sort_from_commit is reachable from HEAD.
+# - This fcn. does not verify rebase_boundary is reachable from HEAD.
 #   - See resort_and_sign_commits_before_push, which will `exit 1` if
-#     sort_from_commit diverges,
+#     rebase_boundary diverges,
 
 put_wise_identify_rebase_boundary_and_remotes () {
   local action_desc="$1"
@@ -76,7 +76,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
   remote_protected=""
   remote_current=""
   remote_name=""
-  sort_from_commit=""
+  # The `git rebase` gitref, prev. called sort_from_commit.
+  rebase_boundary=""
   already_sorted=false
 
   local force_liminal=false
@@ -109,7 +110,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # PROTECTED commits forward. Which we can say is a feature of not having a
     # 'release' branch.
     if git_tag_exists "${applied_tag}"; then
-      sort_from_commit="${applied_tag}"
+      rebase_boundary="${applied_tag}"
     fi
 
     # User can opt-into 'liminal' usage, or if remote branch exists,
@@ -121,9 +122,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
       remote_liminal=""
     fi
 
-    # Unless the 'pw/private/in' tag is set as the sort_from_commit default
+    # Unless the 'pw/private/in' tag is set as the rebase_boundary default
     # (see above), use the protected remote (e.g., 'entrust/scoping') as the
-    # default starting point for the sort-and-sign rebase (sort_from_commit).
+    # default starting point for the sort-and-sign rebase (rebase_boundary).
     # - We'll pick a different starting point below if there's a remote
     #   release branch (e.g., 'publish/release') or if there's a local
     #   release branch (e.g., 'release'), which is the "normal" use case:
@@ -146,8 +147,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #   need to force-push if they bubble up previously pushed PROTECTED
     #   commits).
     if git_remote_branch_exists "${remote_protected}"; then
-      if [ -z "${sort_from_commit}" ]; then
-        sort_from_commit="${remote_protected}"
+      if [ -z "${rebase_boundary}" ]; then
+        rebase_boundary="${remote_protected}"
       fi
 
       # Always fetch the remote, so that our ref is current,
@@ -164,7 +165,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # than walking from pw/work to see when scoping ends, and sorting from
     # there.
     if git_remote_branch_exists "${remote_release}"; then
-      sort_from_commit="${remote_release}"
+      rebase_boundary="${remote_release}"
 
       >&2 echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
 
@@ -177,7 +178,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
     if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
       if git_branch_exists "${local_release}"; then
-        sort_from_commit="${local_release}"
+        rebase_boundary="${local_release}"
       else
         local_release=""
       fi
@@ -188,7 +189,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       fi
     fi
 
-    # else, if sort_from_commit unset, will die after return from if-block.
+    # else, if rebase_boundary unset, will die after return from if-block.
 
     if [ -n "${remote_release}" ] && [ -n "${local_release}" ]; then
       # Verify 'release/release' is at or behind 'release'.
@@ -200,7 +201,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
         # Rebase starting from 'release', which is guaranteed at or further
         # along than 'publish/release'.
-        sort_from_commit="${local_release}"
+        rebase_boundary="${local_release}"
       fi
     fi
 
@@ -247,28 +248,28 @@ put_wise_identify_rebase_boundary_and_remotes () {
       git fetch "${remote_name}"
 
       if git_remote_branch_exists "${remote_current}"; then
-        sort_from_commit="${remote_current}"
+        rebase_boundary="${remote_current}"
       fi
     fi
   fi
 
   # Fallback latest version tag.
-  if [ -z "${sort_from_commit}" ]; then
-    sort_from_commit="$(git_most_recent_version_tag)"
+  if [ -z "${rebase_boundary}" ]; then
+    rebase_boundary="$(git_most_recent_version_tag)"
   fi
 
   if ${PUT_WISE_SKIP_REBASE:-false}; then
-    sort_from_commit=""
+    rebase_boundary=""
   else
     if [ -n "${PW_OPTION_STARTING_REF}" ]; then
-      if [ -z "${sort_from_commit}" ]; then
-        sort_from_commit="(none identified)"
+      if [ -z "${rebase_boundary}" ]; then
+        rebase_boundary="(none identified)"
       fi
       >&2 echo "ALERT: Setting rebase boundary from command line value."
-      >&2 echo "- Ignoring identified boundary: ${sort_from_commit}"
+      >&2 echo "- Ignoring identified boundary: ${rebase_boundary}"
       >&2 echo "- Overriding with user cmd arg: ${PW_OPTION_STARTING_REF}"
 
-      sort_from_commit="${PW_OPTION_STARTING_REF}"
+      rebase_boundary="${PW_OPTION_STARTING_REF}"
     fi
 
     # Because we rebase to reorder scoping commits, we need to identify
@@ -276,15 +277,15 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # we resort everything? Do we find the first PROTECTED or PRIVATE
     # commit and rebase from there?). It's easier to tell the user to
     # make the first push.
-    if ! verify_rebase_boundary_exists "${sort_from_commit}"; then
-      # Use empty sort_from_commit so already-sorted checks all commits.
-      sort_from_commit=""
+    if ! verify_rebase_boundary_exists "${rebase_boundary}"; then
+      # Use empty rebase_boundary so already-sorted checks all commits.
+      rebase_boundary=""
       local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
       # Side-effect: Fcn. sets already_sorted=true|false
-      if is_already_sorted_and_signed "${sort_from_commit}" "${enable_gpg_sign}" > /dev/null; then
+      if is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}" > /dev/null; then
         # Tells caller all commits are sorted and signed, and that
         # no rebase boundary was identified.
-        sort_from_commit=""
+        rebase_boundary=""
       else
         ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
 
@@ -293,19 +294,19 @@ put_wise_identify_rebase_boundary_and_remotes () {
         alert_cannot_identify_rebase_boundary \
           "${branch_name}" \
           "${remote_name}" \
-          "${sort_from_commit}"
+          "${rebase_boundary}"
 
         exit 1
       fi
     fi
 
-    if ! insist_nothing_tagged_after "${sort_from_commit}"; then
+    if ! insist_nothing_tagged_after "${rebase_boundary}"; then
 
       exit 1
     fi
 
     debug_alert_if_ref_tags_after_rebase_boundary \
-      "${branch_name}" "${sort_from_commit}" "${applied_tag}"
+      "${branch_name}" "${rebase_boundary}" "${applied_tag}"
   fi
 }
 
@@ -316,10 +317,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
 debug_alert_if_ref_tags_after_rebase_boundary () {
   local branch_name="$1"
-  local sort_from_commit="$2"
+  local rebase_boundary="$2"
   local applied_tag="$3"
 
-  if [ -z "${sort_from_commit}" ]; then
+  if [ -z "${rebase_boundary}" ]; then
 
     return 0
   fi
@@ -336,7 +337,7 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
 
       if ! $( \
         must_confirm_commit_at_or_behind_commit \
-          "${tag_name}" "${sort_from_commit}" ${divergent_ok} \
+          "${tag_name}" "${rebase_boundary}" ${divergent_ok} \
           "tag-name" "sort-from" \
             > /dev/null 2>&1 \
       ); then
@@ -352,15 +353,15 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
 PW_OPTION_FORCE_ORPHAN_TAGS="${PW_OPTION_FORCE_ORPHAN_TAGS:-false}"
 
 insist_nothing_tagged_after () {
-  local sort_from_commit="$1"
+  local rebase_boundary="$1"
 
-  if [ -z "${sort_from_commit}" ]; then
+  if [ -z "${rebase_boundary}" ]; then
 
     return 0
   fi
 
   local rev_list_commits
-  rev_list_commits="$(print_git_rev_list_commits "${sort_from_commit}")"
+  rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}")"
 
   local child_of_rebase_boundary="$( \
     git rev-list ${rev_list_commits} | tail -n 1
@@ -383,7 +384,7 @@ insist_nothing_tagged_after () {
     >&2 echo "${msg_fiver}: Tag(s) found after sort-from reference"
     >&2 echo "- Ver. tag: ${version_tag}"
     >&2 echo "- Oth. tag: ${other_tag}"
-    >&2 echo "- Target rebase ref: ${sort_from_commit}"
+    >&2 echo "- Target rebase ref: ${rebase_boundary}"
 
     if ${PW_OPTION_FORCE_ORPHAN_TAGS:-false}; then
       >&2 echo "- USAGE: Set PW_OPTION_FORCE_ORPHAN_TAGS=false to fail on this check"
@@ -398,19 +399,19 @@ insist_nothing_tagged_after () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 verify_rebase_boundary_exists () {
-  local sort_from_commit="$1"
+  local rebase_boundary="$1"
 
-  if [ -z "${sort_from_commit}" ]; then
+  if [ -z "${rebase_boundary}" ]; then
 
     return 1
   fi
 
-  if [ "${sort_from_commit}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+  if [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
 
     return 0
   fi
 
-  git_commit_object_name ${sort_from_commit} > /dev/null
+  git_commit_object_name ${rebase_boundary} > /dev/null
 }
 
 # ***
@@ -418,7 +419,7 @@ verify_rebase_boundary_exists () {
 alert_cannot_identify_rebase_boundary () {
   local branch_name="$1"
   local tracking_remote_name="$2"
-  local sort_from_commit="$3"
+  local rebase_boundary="$3"
 
   local is_gpw_itself=false
   if [ "$(basename -- "$0")" = "git-put-wise" ]; then
