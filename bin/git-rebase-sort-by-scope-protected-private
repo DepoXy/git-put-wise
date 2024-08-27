@@ -316,6 +316,7 @@ git_prepare_push_resort_scoped_and_sign_commits () {
       # - Move to first column (\r), and one_line_up).
       printf "\r${one_line_up}%s\r" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     fi
+
     print_sorted_and_signed_message "${gpg_sign}" "${already_sorted}" "${n_commits}"
   fi
 
