@@ -337,7 +337,8 @@ prompt_user_to_continue_update_remotes () {
   done
 
   if ! ${something_tagged}; then
-    >&2 echo "ABORT: Cannot push, because no remote branch identified from candidates:"
+    >&2 echo "ABORT: Cannot push, because no remote branch identified"
+    >&2 echo "- Expected to find one or more of the following remote branches"
     >&2 echo -e "${remote_names}"
     >&2 echo "- Hint: If you have not pushed yet, do so manually the first time"
     >&2 echo "  - Or, if this is a private repo without a push remote,"
