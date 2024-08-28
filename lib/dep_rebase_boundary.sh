@@ -83,12 +83,14 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   local applied_tag="$(format_pw_tag_applied "${branch_name}")"
 
+  local is_hyper_branch=false
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
     || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
   ; then
-    local_release="${LOCAL_BRANCH_RELEASE}"
-    remote_release="${REMOTE_BRANCH_RELEASE}"
-    remote_protected="${REMOTE_BRANCH_SCOPING}"
+    is_hyper_branch=true
+  fi
+
+# ***
 
     # The pw/in tag signifies the final patch from the latest --apply command.
     # It's the remote's HEAD, essentially (minus PRIVATE commits). This is the
@@ -180,17 +182,20 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
     local remote_ref=""
 
+    local scoping_branch="${SCOPING_REMOTE_BRANCH}"
+    ${is_hyper_branch} || scoping_branch="${branch_name}"
+
     if remote_ref="$( \
       fetch_and_check_branch_exists_or_remote_online \
         "${SCOPING_REMOTE_NAME}" \
-        "${SCOPING_REMOTE_BRANCH}" \
+        "${scoping_branch}" \
     )"; then
+      remote_protected="${SCOPING_REMOTE_NAME}/${scoping_branch}"
+      # Prefer pw/in over scoping boundary
       if [ -z "${rebase_boundary}" ]; then
-        # May be empty string if remote exists and remote branch absent (first push).
+        # Might be empty string if remove exists but not branch (first push).
         rebase_boundary="${remote_ref}"
       fi
-    else
-      remote_protected=""
     fi
 
     # Prefer sorting from local or remote 'release' branch.
@@ -199,39 +204,58 @@ put_wise_identify_rebase_boundary_and_remotes () {
         "${RELEASE_REMOTE_NAME}" \
         "${RELEASE_REMOTE_BRANCH}" \
     )"; then
+      remote_release="${REMOTE_BRANCH_RELEASE}"
       # May be empty string if remote exists and remote branch absent (first push).
       rebase_boundary="${remote_ref}"
-    else
-      remote_release=""
     fi
 
-    if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
-      if git_branch_exists "${local_release}"; then
-        rebase_boundary="${local_release}"
-      else
-        local_release=""
+    if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+      if git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
+        local_release="${LOCAL_BRANCH_RELEASE}"
+        rebase_boundary="${LOCAL_BRANCH_RELEASE}"
       fi
     elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
+      local_release="${LOCAL_BRANCH_RELEASE}"
       if git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; then
         warn "ALERT: Working from branch '${LOCAL_BRANCH_RELEASE}'," \
           "but '${LOCAL_BRANCH_PRIVATE}' branch also exists"
       fi
     fi
 
-    # else, if rebase_boundary unset, will die after return from if-block.
-
     if [ -n "${remote_release}" ] && [ -n "${local_release}" ]; then
       # Verify 'release/release' is at or behind 'release'.
       local divergent_ok=false
 
+      # Exits on error.
       must_confirm_commit_at_or_behind_commit "${remote_release}" "${local_release}" \
         ${divergent_ok} "remote-release" "local-release"
 
-      if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
-        # Rebase starting from 'release', which is guaranteed at or further
-        # along than 'publish/release'.
-        rebase_boundary="${local_release}"
+      if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+        if git merge-base --is-ancestor "${local_release}" "${branch_name}"; then
+          # Rebase starting from 'release', which is guaranteed at or further
+          # along than 'publish/release'.
+          rebase_boundary="${local_release}"
+        elif ${is_hyper_branch}; then
+          warn "ALERT: '${local_release}' not ancestor of '${branch_name}'"
+        else
+          # This is a feature branch, and there's no rule about 'release'
+          # being an ancestor. It's merely a courteousy/convenience that
+          # we support it.
+          local_release=""
+          remote_release=""
+        fi
       fi
+    elif ! ${is_hyper_branch}; then
+      # On push feature branch, 'release' only pushed to remote 'release',
+      # so if both don't exist nothing to do.
+      local_release=""
+      remote_release=""
+    fi
+
+    # On force-push feature branch, don't include 'release' branches.
+    if ${PW_OPTION_FORCE_PUSH:-false} && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+      local_release=""
+      remote_release=""
     fi
 
     # NOTE: If resorting since 'release' or 'publish/release', it means
@@ -242,10 +266,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
 
-  else
+    if ! ${is_hyper_branch}; then
     # ${branch_name} not 'release' or 'private'.
     # - Note that push.default defaults to 'simple', which pushes to upstream
-    #   tracking branch when pushing to that remote, otherwise works like
+    #   tracking branch when pushing to that remote. This code works like
     #   push.default 'current', which uses same name for pushing.
     #   - For feature branches, I like to track the trunk, so git-pull
     #     rebases appropriately. But I like push.default 'current', so
@@ -255,24 +279,22 @@ put_wise_identify_rebase_boundary_and_remotes () {
     tracking_branch="$(git_tracking_branch)" \
       || true
 
+    # Honor PW_OPTION_REMOTE, but not PW_OPTION_BRANCH (use branch_name).
     remote_name="${PW_OPTION_REMOTE}"
 
     if [ -z "${remote_name}" ] && [ -n "${tracking_branch}" ]; then
       remote_name="$(git_upstream_parse_remote_name "${tracking_branch}")"
     fi
 
-    # Note we don't use PW_OPTION_BRANCH here, but the current branch.
-    remote_current="${remote_name}/${branch_name}"
-
-    if git_remote_exists "${remote_name}"; then
-      >&2 echo_announce "Fetch from ‘${remote_name}’"
-
-      # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      git fetch "${remote_name}"
-
-      if git_remote_branch_exists "${remote_current}"; then
-        rebase_boundary="${remote_current}"
-      fi
+    if remote_ref="$( \
+      fetch_and_check_branch_exists_or_remote_online \
+        "${remote_name}" \
+        "${branch_name}" \
+    )"; then
+      # Note we don't use PW_OPTION_BRANCH here, but the current branch.
+      remote_current="${remote_name}/${branch_name}"
+      # Might be empty string if remove exists but not branch.
+      rebase_boundary="${remote_ref}"
     fi
   fi
 

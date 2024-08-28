@@ -88,7 +88,7 @@ put_wise_push_remotes_go () {
   )"
 
   local release_boundary_or_HEAD="${scoping_boundary_or_HEAD}"
-  if [ -n "${remote_current}" ]; then
+  if [ -n "${remote_name}" ]; then
     # Current branch is a feature branch (not 'release' or 'private').
     # - In this workflow, user self-manages the local 'release' pointer,
     #   which we'll push if ahead of publish/release. But we won't move
@@ -248,30 +248,12 @@ bind generic r +<sh -c \" \\
       >&2 echo "${PW_USER_CANCELED_GOODBYE}"
     fi
 
-    if ${keep_going} && ! ${restrict_release}; then
-      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_protected}"; then
-        echo_announce_push "${SCOPING_REMOTE_BRANCH}"
-        ${DRY_ECHO} git push "${SCOPING_REMOTE_NAME}" \
-          "${protected_boundary_or_HEAD}:refs/heads/${SCOPING_REMOTE_BRANCH}" ${git_push_force} \
-            || handle_push_failed "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
-      fi
-
-      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
-        echo_announce_push "${branch_name}"
-        ${DRY_ECHO} git push "${remote_name}" \
-          "${scoping_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
-            || handle_push_failed "${remote_name}/${branch_name}"
-      fi
+    if ! ${restrict_release}; then
+      prompt_push "${remote_protected}" "${protected_boundary_or_HEAD}" ${git_push_force}
+      prompt_push "${remote_current}" "${scoping_boundary_or_HEAD}" ${git_push_force}
     fi
 
-    if ${keep_going}; then
-      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
-        echo_announce_push "${RELEASE_REMOTE_BRANCH}"
-        ${DRY_ECHO} git push "${RELEASE_REMOTE_NAME}" \
-          "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
-            || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
-      fi
-    fi
+    prompt_push "${remote_release}" "${release_boundary_or_HEAD}" ${git_push_force}
   fi
 
   if ! ${keep_going}; then
@@ -296,6 +278,30 @@ bind generic r +<sh -c \" \\
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+prompt_push () {
+  local upstream_remote="$1"
+  local boundary_or_HEAD="$2"
+  local git_push_force="$3"
+
+  if ! prompt_user_to_continue_push_remote_branch \
+    ${keep_going} "${upstream_remote}"\
+  ; then
+
+    return 0
+  fi
+
+  local remote_name
+  local branch_name
+  remote_name="$(git_upstream_parse_remote_name "${upstream_remote}")"
+  branch_name="$(git_upstream_parse_branch_name "${upstream_remote}")"
+
+  echo_announce_push "${branch_name}"
+
+  ${DRY_ECHO} git push "${remote_name}" \
+    "${boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
+      || handle_push_failed "${remote_name}/${branch_name}"
+}
 
 echo_announce_push () {
   local branch="$1"
