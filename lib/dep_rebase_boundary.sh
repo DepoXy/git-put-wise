@@ -90,7 +90,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
     is_hyper_branch=true
   fi
 
-# ***
+  local remote_ref=""
+
+  # ***
 
   # The pw/in tag signifies the final patch from the latest --apply command.
   # It's the remote's HEAD, essentially (minus PRIVATE commits). This is the
@@ -178,8 +180,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
       return 1
     fi
   }
-
-  local remote_ref=""
 
   local scoping_branch="${SCOPING_REMOTE_BRANCH}"
   ${is_hyper_branch} || scoping_branch="${branch_name}"
