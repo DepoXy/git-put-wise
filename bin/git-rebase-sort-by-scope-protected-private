@@ -89,6 +89,13 @@ git-rebase-sort-by-scope-protected-private () {
   local rebase_boundary=""
   rebase_boundary="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")"
 
+  if [ -z "${rebase_boundary}" ]; then
+    # Means no rebase boundary identified, but all commits sorted/signed.
+    maybe_unstash_changes ${pop_after}
+
+    return 0
+  fi
+
   # ***
 
   local already_sorted=false
