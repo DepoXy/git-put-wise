@@ -80,27 +80,39 @@ put_wise_push_remotes_go () {
     identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
   )"
 
-  # It's assumed you control the 'release' branch and that you wouldn't
-  # be using this script otherwise, which is why we just move this pointer.
-  if [ -n "${local_release}" ]; then
-    # local_release non-empty iff current branch is LOCAL_BRANCH_PRIVATE
-    # (so this if-check always passes).
-    if [ "$(git_branch_name)" != "${LOCAL_BRANCH_RELEASE}" ]; then
-      if git merge-base --is-ancestor \
-        "${LOCAL_BRANCH_RELEASE}" "${scoping_boundary_or_HEAD}" \
-      ; then
-        echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
+  local release_boundary_or_HEAD="${scoping_boundary_or_HEAD}"
+  if [ -n "${remote_current}" ]; then
+    # Current branch is a feature branch (not 'release' or 'private').
+    # - In this workflow, user self-manages the local 'release' pointer,
+    #   which we'll push if ahead of publish/release. But we won't move
+    #   the 'release' branch like we do from 'release'/'private' branch.
+    # - UCASE: User manages 'release' pointer manually from feature
+    #   branch. (Though not a common use case.)
+    release_boundary_or_HEAD="${LOCAL_BRANCH_RELEASE}"
+  fi
 
-        git_force_branch "${LOCAL_BRANCH_RELEASE}" "${scoping_boundary_or_HEAD}"
-        # MAYBE/2023-12-03: Restore branch pointer if git-push canceled/fails?
-      else
-        # See also: must_confirm_commit_at_or_behind_commit
-        >&2 warn "BWARE: Not moving ‘${LOCAL_BRANCH_RELEASE}’ HEAD, because it is"
-        >&2 warn "  not an ancestor of the release boundary:"
-        >&2 warn "    ${scoping_boundary_or_HEAD}"
-        >&2 warn "- This means the ‘${LOCAL_BRANCH_RELEASE}’ branch includes scoped commits!"
-        >&2 warn "  - I.e., commit messages that start with \"${SCOPING_PREFIX}\" or \"${PRIVATE_PREFIX}\""
-      fi
+  # If a local 'release' branch exists and it's not the current branch,
+  # and if the local 'release' branch is behind the scoping boundary,
+  # move the 'release' branch HEAD to the scoping boundary. This is part
+  # of the "main" git-put-wise-push use case, which sorts & signs, moves
+  # the 'release' pointer ahead (if 'release' exists), and then pushes the
+  # same commit (the scoping boundary) to the 'publish/release' remote.
+  if [ -n "${local_release}" ] \
+    && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ] \
+    && ! git_is_same_commit "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}" \
+  ; then
+    if git merge-base --is-ancestor "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}" \
+    ; then
+      echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
+
+      git_force_branch "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}"
+    else
+      # See also: must_confirm_commit_at_or_behind_commit
+      >&2 warn "BWARE: Not moving ‘${LOCAL_BRANCH_RELEASE}’ HEAD, because it is"
+      >&2 warn "  not an ancestor of the release boundary:"
+      >&2 warn "    ${release_boundary_or_HEAD}"
+      >&2 warn "- This means the ‘${LOCAL_BRANCH_RELEASE}’ branch includes scoped commits!"
+      >&2 warn "  - I.e., commit messages that start with \"${SCOPING_PREFIX}\" or \"${PRIVATE_PREFIX}\""
     fi
   fi
 
@@ -170,7 +182,10 @@ put_wise_push_remotes_go () {
   fi
 
   if [ -n "${remote_release}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${scoping_boundary_or_HEAD}" > /dev/null
+    # For 'release' and 'private' branches, moves 'release' to the scoping
+    # boundary and pushes. For feature branch (remote_current), doesn't move
+    # 'release', but pushes 'release' to 'publish/release', if latter behind.
+    git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${release_boundary_or_HEAD}" > /dev/null
     tagged_release="${PW_TAG_SCOPE_PUSHES_RELEASE}"
   fi
 
@@ -259,7 +274,7 @@ bind generic r +<sh -c \" \\
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
         echo_announce_push "${RELEASE_REMOTE_BRANCH}"
         ${DRY_ECHO} git push "${RELEASE_REMOTE_NAME}" \
-          "${scoping_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
+          "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
     fi
