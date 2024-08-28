@@ -140,7 +140,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
   #   need to force-push if they bubble up previously pushed PROTECTED
   #   commits).
 
+  # If hyper branch, use conventional name, e.g., 'entrust/scoping'
   local scoping_branch="${SCOPING_REMOTE_BRANCH}"
+  # If feature branch, use current branch name, e.g., 'entrust/<feature>'
   ${is_hyper_branch} || scoping_branch="${branch_name}"
 
   if remote_ref="$( \
@@ -212,19 +214,24 @@ put_wise_identify_rebase_boundary_and_remotes () {
     remote_release=""
   fi
 
-  # On force-push feature branch, don't include 'release' branches.
-  if ${PW_OPTION_FORCE_PUSH:-false} && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+  # On force-push branch, don't include remote 'release' branch.
+  # ALTLY: We could allow force-push from 'private' branch, e.g.,
+  #   if ${PW_OPTION_FORCE_PUSH:-false} && ! ${is_hyper_branch}; ...
+  # - But this should be a rare event, so require user to use
+  #   local 'release' branch to force-push to remote 'release'.
+  if ${PW_OPTION_FORCE_PUSH:-false} \
+    && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ] \
+  ; then
     local_release=""
     remote_release=""
   fi
 
-  # ***
+  # NOTE: If rebase_boundary is 'release' or 'publish/release', it might
+  #       mean user needs to `push --force` 'entrust/scoping', and then
+  #       on another host, they'll need to rebase on pull. Just how it
+  #       works when working with scoped commits.
 
-  # NOTE: If resorting since 'release' or 'publish/release', it means
-  #       you will need to push --force 'entrust/scoping', and then
-  #       on the @business device, you need to rebase on pull. Just
-  #       how it works because you're managing so many unshareable
-  #       forks.
+  # ***
 
   if ! ${is_hyper_branch}; then
     # ${branch_name} not 'release' or 'private'.
