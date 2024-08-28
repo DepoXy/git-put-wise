@@ -92,181 +92,178 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
 # ***
 
-    # The pw/in tag signifies the final patch from the latest --apply command.
-    # It's the remote's HEAD, essentially (minus PRIVATE commits). This is the
-    # fallback sort-from, in case there's no remote branch or local 'release'
-    # branch. Note that this will move PRIVATE commits toward HEAD, but it'll
-    # leave behind PROTECTED commits that may precede pw/work. (The pw/work tag
-    # is the merge-base from the latest --apply command. It's what the patches
-    # were based from, and it signifies what this host pushed before that the
-    # remote added work to. I.e., when this host pushed pw/work, it had just
-    # resorted, and PROTECTED commits were bubbled toward pw/work. So if we
-    # wanted to move those commits forward now, we'd have to set sort-from to a
-    # commit preceding pw/work. Fortunately, we can use the 'release' branch,
-    # which precedes these PROTECTED commits, as the sort-from base. Using this
-    # tag is just a fallback, but note that it means we won't move earlier
-    # PROTECTED commits forward. Which we can say is a feature of not having a
-    # 'release' branch.
-    if git_tag_exists "${applied_tag}"; then
-      rebase_boundary="${applied_tag}"
+  # The pw/in tag signifies the final patch from the latest --apply command.
+  # It's the remote's HEAD, essentially (minus PRIVATE commits). This is the
+  # fallback sort-from, in case there's no remote branch or local 'release'
+  # branch. Note that this will move PRIVATE commits toward HEAD, but it'll
+  # leave behind PROTECTED commits that may precede pw/work. (The pw/work tag
+  # is the merge-base from the latest --apply command. It's what the patches
+  # were based from, and it signifies what this host pushed before that the
+  # remote added work to. I.e., when this host pushed pw/work, it had just
+  # resorted, and PROTECTED commits were bubbled toward pw/work. So if we
+  # wanted to move those commits forward now, we'd have to set sort-from to a
+  # commit preceding pw/work. Fortunately, we can use the 'release' branch,
+  # which precedes these PROTECTED commits, as the sort-from base. Using this
+  # tag is just a fallback, but note that it means we won't move earlier
+  # PROTECTED commits forward. Which we can say is a feature of not having a
+  # 'release' branch.
+  if git_tag_exists "${applied_tag}"; then
+    rebase_boundary="${applied_tag}"
+  fi
+
+  # Unless the 'pw/private/in' tag is set as the rebase_boundary default
+  # (see above), use the protected remote (e.g., 'entrust/scoping') as the
+  # default starting point for the sort-and-sign rebase (rebase_boundary).
+  # - We'll pick a different starting point below if there's a remote
+  #   release branch (e.g., 'publish/release') or if there's a local
+  #   release branch (e.g., 'release'), which is the "normal" use case:
+  #   - UCASE: Keep scoped (PROTECTED/PRIVATE) commits *ahead* of the
+  #     'release' branches (so that you never publish scoped commits).
+  #     - This is actually a core concept in put-wise: locally you have
+  #       scoped commits that you never publish to the release remote.
+  #       - PRIVATE commits are never pushed/pulled by put-wise (though
+  #         you might sync them between personal hosts using SSH remotes
+  #         and git-fetch).
+  #       - PROTECTED commits are only shared via --archive or via
+  #         --push to a protected remote (e.g., a private GH repo).
+  # - Here we use the protected remote ('entrust/scoping') as the
+  #   default in case there's no 'release' branch (local or remote).
+  # - Note if this is the only rebase boundary identified, the scoped
+  #   sort will not include PROTECTED commits that were previously
+  #   pushed to the protected remote. Which is fine. User can manually
+  #   sort-by-scope to bubble them up, if they care (and note that the
+  #   protected remote does not guarantee linear history, and user may
+  #   need to force-push if they bubble up previously pushed PROTECTED
+  #   commits).
+  fetch_and_check_branch_exists_or_remote_online () {
+    local remote_name="$1"
+    local branch_name="$2"
+
+    local upstream="${remote_name}/${branch_name}"
+
+    if ! git_remote_exists "${remote_name}"; then
+
+      return 1
     fi
 
-    # Unless the 'pw/private/in' tag is set as the rebase_boundary default
-    # (see above), use the protected remote (e.g., 'entrust/scoping') as the
-    # default starting point for the sort-and-sign rebase (rebase_boundary).
-    # - We'll pick a different starting point below if there's a remote
-    #   release branch (e.g., 'publish/release') or if there's a local
-    #   release branch (e.g., 'release'), which is the "normal" use case:
-    #   - UCASE: Keep scoped (PROTECTED/PRIVATE) commits *ahead* of the
-    #     'release' branches (so that you never publish scoped commits).
-    #     - This is actually a core concept in put-wise: locally you have
-    #       scoped commits that you never publish to the release remote.
-    #       - PRIVATE commits are never pushed/pulled by put-wise (though
-    #         you might sync them between personal hosts using SSH remotes
-    #         and git-fetch).
-    #       - PROTECTED commits are only shared via --archive or via
-    #         --push to a protected remote (e.g., a private GH repo).
-    # - Here we use the protected remote ('entrust/scoping') as the
-    #   default in case there's no 'release' branch (local or remote).
-    # - Note if this is the only rebase boundary identified, the scoped
-    #   sort will not include PROTECTED commits that were previously
-    #   pushed to the protected remote. Which is fine. User can manually
-    #   sort-by-scope to bubble them up, if they care (and note that the
-    #   protected remote does not guarantee linear history, and user may
-    #   need to force-push if they bubble up previously pushed PROTECTED
-    #   commits).
-    fetch_and_check_branch_exists_or_remote_online () {
-      local remote_name="$1"
-      local branch_name="$2"
+    # Always fetch the remote, so that our ref is current,
+    # because this function also does a lot of state validating.
+    >&2 echo_announce "Fetch from ‘${remote_name}’" -n
 
-      local upstream="${remote_name}/${branch_name}"
-
-      if ! git_remote_exists "${remote_name}"; then
-
-        return 1
-      fi
-
-      # Always fetch the remote, so that our ref is current,
-      # because this function also does a lot of state validating.
-      # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      >&2 echo_announce "Fetch from ‘${remote_name}’" -n
-
-      if ! git fetch "${remote_name}" \
-        refs/heads/${branch_name} 2> /dev/null \
-      ; then
-        >&2 echo " ...failed!"
-        if git ls-remote ${remote_name} -q 2> /dev/null; then
-          >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
-          # If case remote branch was deleted, remove local ref.
-          git fetch --prune "${remote_name}"
-
-          return 0
-        else
-          >&2 echo "- Remote unreachable"
-          # We'll still check the branch to see if previously fetched.
-        fi
-      else
-        >&2 echo
-        # Fetched the branch specifically (so final check is a formality).
-      fi
-
-      if git_remote_branch_exists "${upstream}"; then
-        printf "%s" "${upstream}"
+    if ! git fetch "${remote_name}" \
+      refs/heads/${branch_name} 2> /dev/null \
+    ; then
+      >&2 echo " ...failed!"
+      if git ls-remote ${remote_name} -q 2> /dev/null; then
+        >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
+        # If case remote branch was deleted, remove local ref.
+        git fetch --prune "${remote_name}"
 
         return 0
       else
-
-        return 1
+        >&2 echo "- Remote unreachable"
+        # We'll still check the branch to see if previously fetched.
       fi
-    }
-
-    local remote_ref=""
-
-    local scoping_branch="${SCOPING_REMOTE_BRANCH}"
-    ${is_hyper_branch} || scoping_branch="${branch_name}"
-
-    if remote_ref="$( \
-      fetch_and_check_branch_exists_or_remote_online \
-        "${SCOPING_REMOTE_NAME}" \
-        "${scoping_branch}" \
-    )"; then
-      remote_protected="${SCOPING_REMOTE_NAME}/${scoping_branch}"
-      # Prefer pw/in over scoping boundary
-      if [ -z "${rebase_boundary}" ]; then
-        # Might be empty string if remove exists but not branch (first push).
-        rebase_boundary="${remote_ref}"
-      fi
+    else
+      >&2 echo
+      # Fetched the branch specifically (so final check is a formality).
     fi
 
-    # Prefer sorting from local or remote 'release' branch.
-    if remote_ref="$( \
-      fetch_and_check_branch_exists_or_remote_online \
-        "${RELEASE_REMOTE_NAME}" \
-        "${RELEASE_REMOTE_BRANCH}" \
-    )"; then
-      remote_release="${REMOTE_BRANCH_RELEASE}"
-      # May be empty string if remote exists and remote branch absent (first push).
+    if git_remote_branch_exists "${upstream}"; then
+      printf "%s" "${upstream}"
+
+      return 0
+    else
+
+      return 1
+    fi
+  }
+
+  local remote_ref=""
+
+  local scoping_branch="${SCOPING_REMOTE_BRANCH}"
+  ${is_hyper_branch} || scoping_branch="${branch_name}"
+
+  if remote_ref="$( \
+    fetch_and_check_branch_exists_or_remote_online \
+      "${SCOPING_REMOTE_NAME}" \
+      "${scoping_branch}" \
+  )"; then
+    remote_protected="${SCOPING_REMOTE_NAME}/${scoping_branch}"
+    # Prefer pw/in over scoping boundary
+    if [ -z "${rebase_boundary}" ]; then
+      # Might be empty string if remove exists but not branch (first push).
       rebase_boundary="${remote_ref}"
     fi
+  fi
+
+  # Prefer sorting from local or remote 'release' branch.
+  if remote_ref="$( \
+    fetch_and_check_branch_exists_or_remote_online \
+      "${RELEASE_REMOTE_NAME}" \
+      "${RELEASE_REMOTE_BRANCH}" \
+  )"; then
+    remote_release="${REMOTE_BRANCH_RELEASE}"
+    # May be empty string if remote exists and remote branch absent (first push).
+    rebase_boundary="${remote_ref}"
+  fi
+
+  if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+    if git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
+      local_release="${LOCAL_BRANCH_RELEASE}"
+      rebase_boundary="${LOCAL_BRANCH_RELEASE}"
+    fi
+  elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
+    local_release="${LOCAL_BRANCH_RELEASE}"
+    if git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; then
+      warn "ALERT: Working from branch '${LOCAL_BRANCH_RELEASE}'," \
+        "but '${LOCAL_BRANCH_PRIVATE}' branch also exists"
+    fi
+  fi
+
+  if [ -n "${remote_release}" ] && [ -n "${local_release}" ]; then
+    # Verify 'release/release' is at or behind 'release'.
+    local divergent_ok=false
+
+    # Exits on error.
+    must_confirm_commit_at_or_behind_commit "${remote_release}" "${local_release}" \
+      ${divergent_ok} "remote-release" "local-release"
 
     if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
-      if git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
-        local_release="${LOCAL_BRANCH_RELEASE}"
-        rebase_boundary="${LOCAL_BRANCH_RELEASE}"
-      fi
-    elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
-      local_release="${LOCAL_BRANCH_RELEASE}"
-      if git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; then
-        warn "ALERT: Working from branch '${LOCAL_BRANCH_RELEASE}'," \
-          "but '${LOCAL_BRANCH_PRIVATE}' branch also exists"
+      if git merge-base --is-ancestor "${local_release}" "${branch_name}"; then
+        # Rebase starting from 'release', which is guaranteed at or further
+        # along than 'publish/release'.
+        rebase_boundary="${local_release}"
+      elif ${is_hyper_branch}; then
+        warn "ALERT: '${local_release}' not ancestor of '${branch_name}'"
+      else
+        # This is a feature branch, and there's no rule about 'release'
+        # being an ancestor. It's merely a courteousy/convenience that
+        # we support it.
+        local_release=""
+        remote_release=""
       fi
     fi
+  elif ! ${is_hyper_branch}; then
+    # On push feature branch, 'release' only pushed to remote 'release',
+    # so if both don't exist nothing to do.
+    local_release=""
+    remote_release=""
+  fi
 
-    if [ -n "${remote_release}" ] && [ -n "${local_release}" ]; then
-      # Verify 'release/release' is at or behind 'release'.
-      local divergent_ok=false
+  # On force-push feature branch, don't include 'release' branches.
+  if ${PW_OPTION_FORCE_PUSH:-false} && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+    local_release=""
+    remote_release=""
+  fi
 
-      # Exits on error.
-      must_confirm_commit_at_or_behind_commit "${remote_release}" "${local_release}" \
-        ${divergent_ok} "remote-release" "local-release"
+  # NOTE: If resorting since 'release' or 'publish/release', it means
+  #       you will need to push --force 'entrust/scoping', and then
+  #       on the @business device, you need to rebase on pull. Just
+  #       how it works because you're managing so many unshareable
+  #       forks.
 
-      if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
-        if git merge-base --is-ancestor "${local_release}" "${branch_name}"; then
-          # Rebase starting from 'release', which is guaranteed at or further
-          # along than 'publish/release'.
-          rebase_boundary="${local_release}"
-        elif ${is_hyper_branch}; then
-          warn "ALERT: '${local_release}' not ancestor of '${branch_name}'"
-        else
-          # This is a feature branch, and there's no rule about 'release'
-          # being an ancestor. It's merely a courteousy/convenience that
-          # we support it.
-          local_release=""
-          remote_release=""
-        fi
-      fi
-    elif ! ${is_hyper_branch}; then
-      # On push feature branch, 'release' only pushed to remote 'release',
-      # so if both don't exist nothing to do.
-      local_release=""
-      remote_release=""
-    fi
-
-    # On force-push feature branch, don't include 'release' branches.
-    if ${PW_OPTION_FORCE_PUSH:-false} && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
-      local_release=""
-      remote_release=""
-    fi
-
-    # NOTE: If resorting since 'release' or 'publish/release', it means
-    #       you will need to push --force 'entrust/scoping', and then
-    #       on the @business device, you need to rebase on pull. Just
-    #       how it works because you're managing so many unshareable
-    #       forks.
-
-  # fi: very long [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]
-
-    if ! ${is_hyper_branch}; then
+  if ! ${is_hyper_branch}; then
     # ${branch_name} not 'release' or 'private'.
     # - Note that push.default defaults to 'simple', which pushes to upstream
     #   tracking branch when pushing to that remote. This code works like
