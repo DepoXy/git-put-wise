@@ -56,7 +56,6 @@ PW_ACTION_PULL_CLEANUP=${PW_ACTION_PULL_CLEANUP:-false}
 PW_OPTION_NO_CLEANUP=${PW_OPTION_NO_CLEANUP:-false}
 
 PW_OPTION_FORCE_PUSH=${PW_OPTION_FORCE_PUSH:-false}
-PW_OPTION_USE_LIMINAL=${PW_OPTION_USE_LIMINAL:-false}
 PW_OPTION_AUTO_CONFIRM=${PW_OPTION_AUTO_CONFIRM:-false}
 
 PW_OPTION_SKIP_SQUASH=${PW_OPTION_SKIP_SQUASH:-false}
@@ -270,18 +269,6 @@ cli_parse_params () {
         shift
         ;;
 
-      -l | --liminal)
-        PW_OPTION_USE_LIMINAL=true
-
-        shift
-        ;;
-
-      -L | --no-liminal)
-        PW_OPTION_USE_LIMINAL=false
-
-        shift
-        ;;
-
       --explain)
         PW_OPTION_QUICK_TIG=false
 
@@ -472,12 +459,6 @@ cli_parse_params () {
                 ;;
               F)
                 PW_OPTION_FORCE_PUSH=false
-                ;;
-              l)
-                PW_OPTION_USE_LIMINAL=true
-                ;;
-              L)
-                PW_OPTION_USE_LIMINAL=false
                 ;;
               E)
                 PW_OPTION_QUICK_TIG=true

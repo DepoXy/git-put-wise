@@ -41,7 +41,6 @@
 # - This fcn. sets the following vars (its "return" values):
 #     local_release=""
 #     remote_release=""
-#     remote_liminal=""
 #     remote_protected=""
 #     remote_current=""
 #     remote_name=""
@@ -72,7 +71,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
   branch_name="$(git_branch_name)"
   local_release=""
   remote_release=""
-  remote_liminal=""
   remote_protected=""
   remote_current=""
   remote_name=""
@@ -80,8 +78,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
   rebase_boundary=""
   already_sorted=false
   already_signed=false
-
-  local force_liminal=false
 
   local sortless_msg=""
 
@@ -92,7 +88,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
   ; then
     local_release="${LOCAL_BRANCH_RELEASE}"
     remote_release="${REMOTE_BRANCH_RELEASE}"
-    remote_liminal="${REMOTE_BRANCH_LIMINAL}"
     remote_protected="${REMOTE_BRANCH_SCOPING}"
 
     # The pw/in tag signifies the final patch from the latest --apply command.
@@ -112,15 +107,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # 'release' branch.
     if git_tag_exists "${applied_tag}"; then
       rebase_boundary="${applied_tag}"
-    fi
-
-    # User can opt-into 'liminal' usage, or if remote branch exists,
-    # then it's automatic. (User has to manually delete that branch
-    # if you want to disable 'liminal' behavior.)
-    if ${PW_OPTION_USE_LIMINAL:-false} || git_remote_branch_exists "${remote_liminal}"; then
-      force_liminal=true
-    else
-      remote_liminal=""
     fi
 
     # Unless the 'pw/private/in' tag is set as the rebase_boundary default
@@ -246,12 +232,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
         # along than 'publish/release'.
         rebase_boundary="${local_release}"
       fi
-    fi
-
-    # When liminal enabled, we never force-push to 'release'.
-    if ${PW_OPTION_FORCE_PUSH:-false} && ${force_liminal}; then
-      local_release=""
-      remote_release=""
     fi
 
     # NOTE: If resorting since 'release' or 'publish/release', it means
@@ -496,7 +476,6 @@ alert_cannot_identify_rebase_boundary () {
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
     || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
   ; then
-    # NOTED: Not mentioning REMOTE_BRANCH_LIMINAL.
     >&2 echo "  - The local '${branch_name}' branch pushes to the remote"
     >&2 echo "    '${REMOTE_BRANCH_RELEASE}' branch, and also the remote"
     >&2 echo "    '${REMOTE_BRANCH_SCOPING}' branch if it exists, but"

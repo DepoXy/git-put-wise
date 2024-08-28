@@ -43,7 +43,6 @@ put_wise_push_remotes_go () {
   local branch_name=""
   local local_release=""
   local remote_release=""
-  local remote_liminal=""
   local remote_protected=""
   local remote_current=""
   local remote_name=""
@@ -153,15 +152,13 @@ put_wise_push_remotes_go () {
   #     ~/.depoxy/ambers/home/.kit/git/_mrconfig-git-core
   #   - But only 🔴 and 🔵 are visible.
 
-  # Use different flags for different branches: release, liminal, scoping, therest.
+  # Use different flags for different branches: release, scoping, feature.
   # - SAVVY: Test new emoji b/c not all visible in tig ... # ↓↓↓↓↓ These all visible in tig @linux
   #   - On @macOS, below are all visible in tig except: 🧚⛔⛓️
-  PW_TAG_PREFIX_RELEASE="${PW_TAG_PREFIX_RELEASE:-pw-📢}"  # 📢🚀
-  PW_TAG_PREFIX_LIMINAL="${PW_TAG_PREFIX_LIMINAL:-pw-💥}"  # 🔥🌀💥🎯🧚
+  PW_TAG_PREFIX_RELEASE="${PW_TAG_PREFIX_RELEASE:-pw-📢}"  # 📢 🚀 # 💥 # 🔥🌀🎯🧚
   PW_TAG_PREFIX_SCOPING="${PW_TAG_PREFIX_SCOPING:-pw-💪}"  # 🔰💪🔐🔒🔏🔑🔓⛔🙌🤐🛑👇⛓️
   PW_TAG_PREFIX_THEREST="${PW_TAG_PREFIX_THEREST:-pw-🚩}"  # 🚩🏁🔀
   PW_TAG_SCOPE_PUSHES_RELEASE="${PW_TAG_PREFIX_RELEASE}-${RELEASE_REMOTE_BRANCH}"
-  PW_TAG_SCOPE_PUSHES_LIMINAL="${PW_TAG_PREFIX_LIMINAL}-${LIMINAL_REMOTE_BRANCH}"
   PW_TAG_SCOPE_PUSHES_SCOPING="${PW_TAG_PREFIX_SCOPING}-${SCOPING_REMOTE_NAME}"
   PW_TAG_SCOPE_PUSHES_THEREST="${PW_TAG_PREFIX_THEREST}-${branch_name}"
 
@@ -170,18 +167,12 @@ put_wise_push_remotes_go () {
   git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${scoping_boundary_or_HEAD}" > /dev/null
 
   local tagged_release=""
-  local tagged_liminal=""
   local tagged_scoping=""
   local tagged_current=""
 
   if [ -n "${remote_protected}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_SCOPING}" "${protected_boundary_or_HEAD}" > /dev/null
     tagged_scoping="${PW_TAG_SCOPE_PUSHES_SCOPING}"
-  fi
-
-  if [ -n "${remote_liminal}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_LIMINAL}" "${scoping_boundary_or_HEAD}" > /dev/null
-    tagged_liminal="${PW_TAG_SCOPE_PUSHES_LIMINAL}"
   fi
 
   if [ -n "${remote_current}" ]; then
@@ -220,13 +211,15 @@ put_wise_push_remotes_go () {
   if prompt_user_to_continue_update_remotes \
     "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
-    "${tagged_liminal}" "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}" \
     $(test -z "${remote_current}" || printf "%s" "${tagged_current}") \
       $(test -z "${remote_current}" || printf "%s" "${remote_name}/${branch_name}") \
   ; then
     # Add 'r' command to restrict push just to 'release'.
-    # - Useful when 'liminal' or 'entrust' diverged, and
-    #   user didn't use <Ctrl-f> force-push.
+    # - Useful when remote 'feature' or 'scoping' diverged,
+    #   and user doesn't want to see push failure (i.e., they
+    #   could push like normal, and update remote 'release',
+    #   but then the remote/feature or entrust/scoping push
+    #   would fail.
     local restrict_release=false
     # - SAVVY: Override tig's built-in `r` — 'view-refs'
     # - COPYD: Similar to lib/tig/config-put-wise
@@ -263,13 +256,6 @@ bind generic r +<sh -c \" \\
             || handle_push_failed "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
       fi
 
-      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
-        echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
-        ${DRY_ECHO} git push "${LIMINAL_REMOTE_NAME}" \
-          "${scoping_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
-            || handle_push_failed "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}"
-      fi
-
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
         echo_announce_push "${branch_name}"
         ${DRY_ECHO} git push "${remote_name}" \
@@ -302,7 +288,6 @@ bind generic r +<sh -c \" \\
   quietly_delete_tag "${PW_TAG_SCOPE_MARKER_PROTECTED}"
 
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_RELEASE}"
-  quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_LIMINAL}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_SCOPING}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_THEREST}"
 

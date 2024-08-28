@@ -252,7 +252,6 @@ print_rebase_boundary () {
   local branch_name=""
   local local_release=""
   local remote_release=""
-  local remote_liminal=""
   local remote_protected=""
   local remote_current=""
   local remote_name=""

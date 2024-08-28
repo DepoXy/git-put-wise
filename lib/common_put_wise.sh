@@ -64,9 +64,6 @@ export LOCAL_BRANCH_PRIVATE="${LOCAL_BRANCH_PRIVATE:-private}"
 # E.g., 'entrust/scoping'.
 export REMOTE_BRANCH_SCOPING="${REMOTE_BRANCH_SCOPING:-entrust/scoping}"
 
-# E.g., 'publish/liminal'.
-export REMOTE_BRANCH_LIMINAL="${REMOTE_BRANCH_LIMINAL:-publish/liminal}"
-
 # E.g., 'release'.
 export LOCAL_BRANCH_RELEASE="${LOCAL_BRANCH_RELEASE:-release}"
 # E.g., 'publish/release'.
@@ -78,11 +75,6 @@ export REMOTE_BRANCH_RELEASE="${REMOTE_BRANCH_RELEASE:-publish/${LOCAL_BRANCH_RE
 export SCOPING_REMOTE_NAME="$(git_upstream_parse_remote_name "${REMOTE_BRANCH_SCOPING}")"
 # E.g., 'scoping'.
 export SCOPING_REMOTE_BRANCH="$(git_upstream_parse_branch_name "${REMOTE_BRANCH_SCOPING}")"
-
-# E.g., 'publish'.
-export LIMINAL_REMOTE_NAME="$(git_upstream_parse_remote_name "${REMOTE_BRANCH_LIMINAL}")"
-# E.g., 'liminal'.
-export LIMINAL_REMOTE_BRANCH="$(git_upstream_parse_branch_name "${REMOTE_BRANCH_LIMINAL}")"
 
 # E.g., 'publish'.
 export RELEASE_REMOTE_NAME="$(git_upstream_parse_remote_name "${REMOTE_BRANCH_RELEASE}")"
