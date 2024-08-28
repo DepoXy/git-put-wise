@@ -49,6 +49,7 @@ put_wise_push_remotes_go () {
   local remote_name=""
   local rebase_boundary=""
   local already_sorted=false
+  local already_signed=false
   # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
   put_wise_identify_rebase_boundary_and_remotes "push"
 
@@ -65,6 +66,13 @@ put_wise_push_remotes_go () {
       # Exits 0/11 if rebase_boundary is HEAD.
       resort_and_sign_commits_before_push "${rebase_boundary}" \
         ${_enable_gpg_sign:-true}
+    else
+      # Either PUT_WISE_SKIP_REBASE=true, or all commits are already
+      # signed & sorted since the very first commit (i.e., no rebase
+      # boundary was identified).
+      local and_signed=""
+      ! ${already_signed} || and_signed=" & signed"
+      echo_announce "No rebase boundary identified, but all commits confirmed sorted${and_signed}"
     fi
   fi
 

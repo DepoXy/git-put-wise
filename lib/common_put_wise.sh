@@ -724,6 +724,7 @@ is_already_sorted_and_signed () {
   local retcode=1
 
   already_sorted=false
+  already_signed=false
 
   local rev_list_commits
   rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}")"
@@ -747,6 +748,8 @@ is_already_sorted_and_signed () {
     if ! ${enable_gpg_sign} || git_is_gpg_signed_since_commit "${since_commit}" \
     ; then
       if ${enable_gpg_sign}; then
+        already_signed=true
+
         msg_postfix=" sorted & signed"
       fi
 

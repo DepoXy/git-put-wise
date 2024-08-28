@@ -79,6 +79,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # The `git rebase` gitref, prev. called sort_from_commit.
   rebase_boundary=""
   already_sorted=false
+  already_signed=false
 
   local force_liminal=false
 
@@ -281,7 +282,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       # Use empty rebase_boundary so already-sorted checks all commits.
       rebase_boundary=""
       local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
-      # Side-effect: Fcn. sets already_sorted=true|false
+      # Side-effect: Fcn. sets already_sorted=true|false, already_signed=true|false
       if is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}" > /dev/null; then
         # Tells caller all commits are sorted and signed, and that
         # no rebase boundary was identified.

@@ -258,6 +258,7 @@ print_rebase_boundary () {
   local remote_name=""
   local rebase_boundary=""
   local already_sorted=false
+  local already_signed=false
   # BWARE: Calls git-fetch, so not the quickest command.
   >&2 put_wise_identify_rebase_boundary_and_remotes \
     "rebase automatically"
