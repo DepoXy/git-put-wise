@@ -178,7 +178,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
       fi
     }
 
-    local remote_ref
+    local remote_ref=""
+
     if remote_ref="$( \
       fetch_and_check_branch_exists_or_remote_online \
         "${SCOPING_REMOTE_NAME}" \
@@ -193,7 +194,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
     fi
 
     # Prefer sorting from local or remote 'release' branch.
-    local remote_ref
     if remote_ref="$( \
       fetch_and_check_branch_exists_or_remote_online \
         "${RELEASE_REMOTE_NAME}" \
