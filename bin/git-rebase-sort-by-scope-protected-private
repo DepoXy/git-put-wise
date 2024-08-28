@@ -229,7 +229,21 @@ print_rebase_boundary () {
   local starting_ref="$1"
   local use_magic_starting_ref="$2"
 
+  local prog_name="$(basename -- "$0")"
+
   if ! ${use_magic_starting_ref:-false}; then
+    if [ -z "${starting_ref}" ]; then
+      >&2 echo "ERROR: Please specify a starting ref to sort & sign from"
+      >&2 echo "- E.g, specify a gitref:"
+      >&2 echo "    ${prog_name} <REF>"
+      >&2 echo "- Or use the special \"ROOT\" ref to sort & sign all commits:"
+      >&2 echo "    ${prog_name} ROOT"
+      >&2 echo "- Or enable use_magic_starting_ref:"
+      >&2 echo "    ${prog_name} "" true"
+
+      exit 1
+    fi
+
     printf "%s" "${starting_ref}"
 
     return 0
