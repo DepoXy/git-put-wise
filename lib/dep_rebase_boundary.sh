@@ -468,6 +468,8 @@ alert_cannot_identify_rebase_boundary () {
     is_gpw_itself=true
   fi
 
+  local prog_name="$(basename -- "$0")"
+
   >&2 echo "ERROR: Could not identify the rebase boundary"
   >&2 echo
   >&2 echo "- A rebase boundary must be identified as the"
@@ -475,64 +477,60 @@ alert_cannot_identify_rebase_boundary () {
   >&2 echo
   >&2 echo "POSSIBLE SOLUTIONS:"
   >&2 echo
-  >&2 echo "- OPTION 1: If you want to specify the rebase"
-  >&2 echo "  boundary manually, use the command line option:"
-  >&2 echo "    -S|--starting-ref <ref>"
-  >&2 echo "  Or set the associated environ:"
-  >&2 echo "    PW_OPTION_STARTING_REF=\"<ref>\""
-  >&2 echo "  To sort & sign all commits, including root, use:"
-  >&2 echo "    PW_OPTION_STARTING_REF=\"ROOT\""
+  >&2 echo "- OPTION 1: If you want to sign and sort all"
+  >&2 echo "  commits, use the special \"ROOT\" ref, e.g.:"
   >&2 echo
-  >&2 echo "- OPTION 2: If you want to skip the sort-and-sign"
+  >&2 echo "    git put-wise push -S ROOT"
+  >&2 echo
+  >&2 echo "- OPTION 2: If you want to specify a one-time"
+  >&2 echo "  rebase boundary:"
+  >&2 echo "  - Use the environ option:"
+  >&2 echo "      PW_OPTION_STARTING_REF=\"<ref>\""
+  >&2 echo "    E.g.,"
+  >&2 echo "      PW_OPTION_STARTING_REF=<REF> ${prog_name} ..."
+  if ${is_gpw_itself}; then
+    >&2 echo "  - Or use the command line option:"
+    >&2 echo "      -S|--starting-ref <REF>"
+    >&2 echo "    E.g.,"
+    >&2 echo "      git put-wise --starting-ref <REF> ..."
+  fi
+  >&2 echo
+  >&2 echo "- OPTION 3: If you want to skip the sort-and-sign"
   >&2 echo "  rebase altogether, set the environ:"
-  >&2 echo "    PUT_WISE_SKIP_REBASE=true"
+  >&2 echo "    PUT_WISE_SKIP_REBASE=true ${prog_name} ..."
   >&2 echo
-  >&2 echo "- OPTION 3: Create one of the missing references:"
-  >&2 echo "  - You can use a verstion tag to mark the rebase"
-  >&2 echo "    boundary, e.g.,"
-  >&2 echo "      git tag <version> <SHA>"
-
+  >&2 echo "- OPTION 4: If you want the rebase boundary identified"
+  >&2 echo "  automatically, create one of the missing references:"
+  >&2 echo "  - Use a version tag to mark the rebase boundary, e.g.,"
+  >&2 echo "      git tag <version> <REF>"
+  if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+    >&2 echo "  - Create a local branch named '${LOCAL_BRANCH_RELEASE}',"
+    >&2 echo "    e.g.,"
+    >&2 echo "      git checkout -b ${LOCAL_BRANCH_RELEASE} <REF>"
+  fi
+  >&2 echo "  - Push to one of the known remote branches, e.g.,"
   if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
     || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
   ; then
-    >&2 echo "  - The local '${branch_name}' branch pushes to the remote"
-    >&2 echo "    '${REMOTE_BRANCH_RELEASE}' branch, and also the remote"
-    >&2 echo "    '${REMOTE_BRANCH_SCOPING}' branch if it exists, but"
-    >&2 echo "    neither of those remote branches exist."
-    >&2 echo "    - You can use either as the rebase boundary, e.g.,:"
-    >&2 echo "        git push ${RELEASE_REMOTE_NAME} <SHA>:refs/heads/${RELEASE_REMOTE_BRANCH}"
-    >&2 echo "    or:"
-    >&2 echo "        git push ${SCOPING_REMOTE_NAME} <SHA>:refs/heads/${SCOPING_REMOTE_BRANCH}"
-    if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
-      >&2 echo "  - The local '${LOCAL_BRANCH_PRIVATE}' branch can also use"
-      >&2 echo "    another local branch, '${LOCAL_BRANCH_RELEASE}', as a"
-      >&2 echo "    reference, but that branch does not exist, either, e.g.:"
-      >&2 echo "      git checkout -b ${LOCAL_BRANCH_RELEASE} <SHA>"
-    fi
-    >&2 echo "  - The local branch '${branch_name}' can also use a tag,"
-    >&2 echo "    '${applied_tag}', to mark the rebase boundary."
-    >&2 echo "    - This tag is usually managed by the"
-    >&2 echo "      git-put-wise-apply command, but you"
-    >&2 echo "      can set it manually for this purpose,"
-    >&2 echo "      e.g.:"
-    >&2 echo "        git tag ${applied_tag} <SHA>"
+    >&2 echo "      git push ${RELEASE_REMOTE_NAME} <REF>:refs/heads/${RELEASE_REMOTE_BRANCH}"
+    >&2 echo "      git push ${SCOPING_REMOTE_NAME} <REF>:refs/heads/${SCOPING_REMOTE_BRANCH}"
   else
-    >&2 echo "  - The local '${branch_name}' branch pushes to"
-    >&2 echo "    the remote '${remote_current}' branch, but that branch"
-    >&2 echo "    does not exist"
-    >&2 echo "  - The remote name is determined from the tracking branch, e.g.,"
-    >&2 echo "      git branch -u <remote>/<branch>"
+    >&2 echo "      git push ${tracking_remote_name} <REF>:refs/heads/${branch_name}"
+    >&2 echo "    - The remote name is determined from the tracking branch, e.g.,"
+    >&2 echo "        git branch -u <remote>/<branch>"
     if ${is_gpw_itself}; then
-      >&2 echo "    Which you can override using the --remote CLI option,"
-      >&2 echo "    or using the PW_OPTION_REMOTE environ."
+      >&2 echo "      Which you can override using the --remote CLI option,"
+      >&2 echo "      or using the PW_OPTION_REMOTE environ."
     else
-      >&2 echo "    Which you can override using the PW_OPTION_REMOTE environ."
+      >&2 echo "      Which you can override using the PW_OPTION_REMOTE environ."
     fi
-    >&2 echo
-    >&2 echo "- OPTION 4: If you don't plan to publish this project,"
-    >&2 echo "  change the branch name to '${LOCAL_BRANCH_PRIVATE}' and use the"
-    >&2 echo "  '${applied_tag}' tag to mark the rebase boundary"
   fi
+  >&2 echo "  - Set a tag named '${applied_tag}'"
+  >&2 echo "    - This tag is set by the git-put-wise-apply"
+  >&2 echo "      command, but you can set it manually for"
+  >&2 echo "      this purpose, e.g.,"
+  >&2 echo "        git tag ${applied_tag} <REF>"
+  >&2 echo "  Then please try your command again."
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
