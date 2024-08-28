@@ -65,13 +65,13 @@ put_wise_push_remotes_go () {
       # Exits 0/11 if rebase_boundary is HEAD.
       resort_and_sign_commits_before_push "${rebase_boundary}" \
         ${_enable_gpg_sign:-true}
-    else
-      # Either PUT_WISE_SKIP_REBASE=true, or all commits are already
-      # signed & sorted since the very first commit (i.e., no rebase
-      # boundary was identified).
+    elif ! ${PUT_WISE_SKIP_REBASE:-false}; then
+      # No rebase boundary identified, but all commits are already
+      # signed & sorted.
       local and_signed=""
       ! ${already_signed} || and_signed=" & signed"
-      echo_announce "No rebase boundary identified, but all commits confirmed sorted${and_signed}"
+      echo_announce "$(echo "No rebase boundary identified," \
+        "but all commits confirmed sorted${and_signed}")"
     fi
   fi
 
