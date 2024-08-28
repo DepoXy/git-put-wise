@@ -70,8 +70,8 @@ put_wise_push_remotes_go () {
 
   # ***
 
-  local release_boundary_or_HEAD
-  release_boundary_or_HEAD="$( \
+  local scoping_boundary_or_HEAD
+  scoping_boundary_or_HEAD="$( \
     identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
   )"
 
@@ -87,17 +87,17 @@ put_wise_push_remotes_go () {
     # (so this if-check always passes).
     if [ "$(git_branch_name)" != "${LOCAL_BRANCH_RELEASE}" ]; then
       if git merge-base --is-ancestor \
-        "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}" \
+        "${LOCAL_BRANCH_RELEASE}" "${scoping_boundary_or_HEAD}" \
       ; then
         echo_announce "Move ‘${LOCAL_BRANCH_RELEASE}’ HEAD"
 
-        git_force_branch "${LOCAL_BRANCH_RELEASE}" "${release_boundary_or_HEAD}"
+        git_force_branch "${LOCAL_BRANCH_RELEASE}" "${scoping_boundary_or_HEAD}"
         # MAYBE/2023-12-03: Restore branch pointer if git-push canceled/fails?
       else
         # See also: must_confirm_commit_at_or_behind_commit
         >&2 warn "BWARE: Not moving ‘${LOCAL_BRANCH_RELEASE}’ HEAD, because it is"
         >&2 warn "  not an ancestor of the release boundary:"
-        >&2 warn "    ${release_boundary_or_HEAD}"
+        >&2 warn "    ${scoping_boundary_or_HEAD}"
         >&2 warn "- This means the ‘${LOCAL_BRANCH_RELEASE}’ branch includes scoped commits!"
         >&2 warn "  - I.e., commit messages that start with \"${SCOPING_PREFIX}\" or \"${PRIVATE_PREFIX}\""
       fi
@@ -147,7 +147,7 @@ put_wise_push_remotes_go () {
 
   # Skip ${DRY_ECHO}, tags no biggie, and user wants to see in tig.
   git tag -f "${PW_TAG_SCOPE_MARKER_PRIVATE}" "${protected_boundary_or_HEAD}" > /dev/null
-  git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${release_boundary_or_HEAD}" > /dev/null
+  git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${scoping_boundary_or_HEAD}" > /dev/null
 
   local tagged_release=""
   local tagged_liminal=""
@@ -155,12 +155,12 @@ put_wise_push_remotes_go () {
   local tagged_current=""
 
   if [ -n "${remote_release}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${release_boundary_or_HEAD}" > /dev/null
+    git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${scoping_boundary_or_HEAD}" > /dev/null
     tagged_release="${PW_TAG_SCOPE_PUSHES_RELEASE}"
   fi
 
   if [ -n "${remote_liminal}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_LIMINAL}" "${release_boundary_or_HEAD}" > /dev/null
+    git tag -f "${PW_TAG_SCOPE_PUSHES_LIMINAL}" "${scoping_boundary_or_HEAD}" > /dev/null
     tagged_liminal="${PW_TAG_SCOPE_PUSHES_LIMINAL}"
   fi
 
@@ -170,7 +170,7 @@ put_wise_push_remotes_go () {
   fi
 
   if [ -n "${remote_current}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_THEREST}" "${release_boundary_or_HEAD}" > /dev/null
+    git tag -f "${PW_TAG_SCOPE_PUSHES_THEREST}" "${scoping_boundary_or_HEAD}" > /dev/null
     tagged_current="${remote_name}/${branch_name}"
   fi
 
@@ -236,7 +236,7 @@ bind generic r +<sh -c \" \\
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
         echo_announce_push "${RELEASE_REMOTE_BRANCH}"
         ${DRY_ECHO} git push "${RELEASE_REMOTE_NAME}" \
-          "${release_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
+          "${scoping_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
     fi
@@ -245,7 +245,7 @@ bind generic r +<sh -c \" \\
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
         echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
         ${DRY_ECHO} git push "${LIMINAL_REMOTE_NAME}" \
-          "${release_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
+          "${scoping_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
             || handle_push_failed "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}"
       fi
 
@@ -259,7 +259,7 @@ bind generic r +<sh -c \" \\
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
         echo_announce_push "${branch_name}"
         ${DRY_ECHO} git push "${remote_name}" \
-          "${release_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
+          "${scoping_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
             || handle_push_failed "${remote_name}/${branch_name}"
       fi
     fi
