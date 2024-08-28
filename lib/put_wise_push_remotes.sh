@@ -70,14 +70,14 @@ put_wise_push_remotes_go () {
 
   # ***
 
-  local scoping_boundary_or_HEAD
-  scoping_boundary_or_HEAD="$( \
-    identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
-  )"
-
   local protected_boundary_or_HEAD
   protected_boundary_or_HEAD="$( \
     identify_scope_ends_at "^${PRIVATE_PREFIX}" \
+  )"
+
+  local scoping_boundary_or_HEAD
+  scoping_boundary_or_HEAD="$( \
+    identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
   )"
 
   # It's assumed you control the 'release' branch and that you wouldn't
@@ -154,9 +154,9 @@ put_wise_push_remotes_go () {
   local tagged_scoping=""
   local tagged_current=""
 
-  if [ -n "${remote_release}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${scoping_boundary_or_HEAD}" > /dev/null
-    tagged_release="${PW_TAG_SCOPE_PUSHES_RELEASE}"
+  if [ -n "${remote_protected}" ]; then
+    git tag -f "${PW_TAG_SCOPE_PUSHES_SCOPING}" "${protected_boundary_or_HEAD}" > /dev/null
+    tagged_scoping="${PW_TAG_SCOPE_PUSHES_SCOPING}"
   fi
 
   if [ -n "${remote_liminal}" ]; then
@@ -164,14 +164,14 @@ put_wise_push_remotes_go () {
     tagged_liminal="${PW_TAG_SCOPE_PUSHES_LIMINAL}"
   fi
 
-  if [ -n "${remote_protected}" ]; then
-    git tag -f "${PW_TAG_SCOPE_PUSHES_SCOPING}" "${protected_boundary_or_HEAD}" > /dev/null
-    tagged_scoping="${PW_TAG_SCOPE_PUSHES_SCOPING}"
-  fi
-
   if [ -n "${remote_current}" ]; then
     git tag -f "${PW_TAG_SCOPE_PUSHES_THEREST}" "${scoping_boundary_or_HEAD}" > /dev/null
     tagged_current="${remote_name}/${branch_name}"
+  fi
+
+  if [ -n "${remote_release}" ]; then
+    git tag -f "${PW_TAG_SCOPE_PUSHES_RELEASE}" "${scoping_boundary_or_HEAD}" > /dev/null
+    tagged_release="${PW_TAG_SCOPE_PUSHES_RELEASE}"
   fi
 
   # ***
@@ -195,9 +195,9 @@ put_wise_push_remotes_go () {
   # but the latter matches the git-push command, so using that for matchability.
 
   if prompt_user_to_continue_update_remotes \
+    "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
     "${tagged_release}" "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}" \
     "${tagged_liminal}" "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}" \
-    "${tagged_scoping}" "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}" \
     $(test -z "${remote_current}" || printf "%s" "${tagged_current}") \
       $(test -z "${remote_current}" || printf "%s" "${remote_name}/${branch_name}") \
   ; then
@@ -232,23 +232,7 @@ bind generic r +<sh -c \" \\
       >&2 echo "${PW_USER_CANCELED_GOODBYE}"
     fi
 
-    if ${keep_going}; then
-      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
-        echo_announce_push "${RELEASE_REMOTE_BRANCH}"
-        ${DRY_ECHO} git push "${RELEASE_REMOTE_NAME}" \
-          "${scoping_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
-            || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
-      fi
-    fi
-
     if ${keep_going} && ! ${restrict_release}; then
-      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
-        echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
-        ${DRY_ECHO} git push "${LIMINAL_REMOTE_NAME}" \
-          "${scoping_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
-            || handle_push_failed "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}"
-      fi
-
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_protected}"; then
         echo_announce_push "${SCOPING_REMOTE_BRANCH}"
         ${DRY_ECHO} git push "${SCOPING_REMOTE_NAME}" \
@@ -256,11 +240,27 @@ bind generic r +<sh -c \" \\
             || handle_push_failed "${SCOPING_REMOTE_NAME}/${SCOPING_REMOTE_BRANCH}"
       fi
 
+      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_liminal}"; then
+        echo_announce_push "${LIMINAL_REMOTE_BRANCH}"
+        ${DRY_ECHO} git push "${LIMINAL_REMOTE_NAME}" \
+          "${scoping_boundary_or_HEAD}:refs/heads/${LIMINAL_REMOTE_BRANCH}" ${git_push_force} \
+            || handle_push_failed "${LIMINAL_REMOTE_NAME}/${LIMINAL_REMOTE_BRANCH}"
+      fi
+
       if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_current}"; then
         echo_announce_push "${branch_name}"
         ${DRY_ECHO} git push "${remote_name}" \
           "${scoping_boundary_or_HEAD}:refs/heads/${branch_name}" ${git_push_force} \
             || handle_push_failed "${remote_name}/${branch_name}"
+      fi
+    fi
+
+    if ${keep_going}; then
+      if prompt_user_to_continue_push_remote_branch ${keep_going} "${remote_release}"; then
+        echo_announce_push "${RELEASE_REMOTE_BRANCH}"
+        ${DRY_ECHO} git push "${RELEASE_REMOTE_NAME}" \
+          "${scoping_boundary_or_HEAD}:refs/heads/${RELEASE_REMOTE_BRANCH}" ${git_push_force} \
+            || handle_push_failed "${RELEASE_REMOTE_NAME}/${RELEASE_REMOTE_BRANCH}"
       fi
     fi
   fi
