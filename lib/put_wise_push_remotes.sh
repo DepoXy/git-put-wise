@@ -356,8 +356,15 @@ prompt_user_to_continue_update_remotes () {
       something_tagged=true
     fi
 
+    local remote_name
+    remote_name="$(git_upstream_parse_remote_name "${remote_branch_nickname}")"
+    local remote_status=""
+    if ! git_remote_exists "${remote_name}"; then
+      remote_status=" (missing remote)"
+    fi
+
     [ -z "${remote_names}" ] || remote_names="${remote_names}\n"
-    remote_names="${remote_names}    ${remote_branch_nickname}"
+    remote_names="${remote_names}    ${remote_branch_nickname}${remote_status}"
   done
 
   if ! ${something_tagged}; then
