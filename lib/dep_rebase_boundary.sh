@@ -113,6 +113,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
     rebase_boundary="${applied_tag}"
   fi
 
+  # ***
+
   # Unless the 'pw/private/in' tag is set as the rebase_boundary default
   # (see above), use the protected remote (e.g., 'entrust/scoping') as the
   # default starting point for the sort-and-sign rebase (rebase_boundary).
@@ -137,49 +139,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
   #   protected remote does not guarantee linear history, and user may
   #   need to force-push if they bubble up previously pushed PROTECTED
   #   commits).
-  fetch_and_check_branch_exists_or_remote_online () {
-    local remote_name="$1"
-    local branch_name="$2"
-
-    local upstream="${remote_name}/${branch_name}"
-
-    if ! git_remote_exists "${remote_name}"; then
-
-      return 1
-    fi
-
-    # Always fetch the remote, so that our ref is current,
-    # because this function also does a lot of state validating.
-    >&2 echo_announce "Fetch from ‘${remote_name}’" -n
-
-    if ! git fetch "${remote_name}" \
-      refs/heads/${branch_name} 2> /dev/null \
-    ; then
-      >&2 echo " ...failed!"
-      if git ls-remote ${remote_name} -q 2> /dev/null; then
-        >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
-        # If case remote branch was deleted, remove local ref.
-        git fetch --prune "${remote_name}"
-
-        return 0
-      else
-        >&2 echo "- Remote unreachable"
-        # We'll still check the branch to see if previously fetched.
-      fi
-    else
-      >&2 echo
-      # Fetched the branch specifically (so final check is a formality).
-    fi
-
-    if git_remote_branch_exists "${upstream}"; then
-      printf "%s" "${upstream}"
-
-      return 0
-    else
-
-      return 1
-    fi
-  }
 
   local scoping_branch="${SCOPING_REMOTE_BRANCH}"
   ${is_hyper_branch} || scoping_branch="${branch_name}"
@@ -196,6 +155,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
       rebase_boundary="${remote_ref}"
     fi
   fi
+
+  # ***
 
   # Prefer sorting from local or remote 'release' branch.
   if remote_ref="$( \
@@ -257,6 +218,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
     remote_release=""
   fi
 
+  # ***
+
   # NOTE: If resorting since 'release' or 'publish/release', it means
   #       you will need to push --force 'entrust/scoping', and then
   #       on the @business device, you need to rebase on pull. Just
@@ -295,10 +258,14 @@ put_wise_identify_rebase_boundary_and_remotes () {
     fi
   fi
 
+  # ***
+
   # Fallback latest version tag.
   if [ -z "${rebase_boundary}" ]; then
     rebase_boundary="$(git_most_recent_version_tag)"
   fi
+
+  # ***
 
   if ${PUT_WISE_SKIP_REBASE:-false}; then
     rebase_boundary=""
@@ -388,6 +355,52 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
       fi
     fi
   done
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+fetch_and_check_branch_exists_or_remote_online () {
+  local remote_name="$1"
+  local branch_name="$2"
+
+  local upstream="${remote_name}/${branch_name}"
+
+  if ! git_remote_exists "${remote_name}"; then
+
+    return 1
+  fi
+
+  # Always fetch the remote, so that our ref is current,
+  # because this function also does a lot of state validating.
+  >&2 echo_announce "Fetch from ‘${remote_name}’" -n
+
+  if ! git fetch "${remote_name}" \
+    refs/heads/${branch_name} 2> /dev/null \
+  ; then
+    >&2 echo " ...failed!"
+    if git ls-remote ${remote_name} -q 2> /dev/null; then
+      >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
+      # If case remote branch was deleted, remove local ref.
+      git fetch --prune "${remote_name}"
+
+      return 0
+    else
+      >&2 echo "- Remote unreachable"
+      # We'll still check the branch to see if previously fetched.
+    fi
+  else
+    >&2 echo
+    # Fetched the branch specifically (so final check is a formality).
+  fi
+
+  if git_remote_branch_exists "${upstream}"; then
+    printf "%s" "${upstream}"
+
+    return 0
+  else
+
+    return 1
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
