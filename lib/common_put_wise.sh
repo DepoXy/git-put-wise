@@ -1866,11 +1866,11 @@ pick_which_option_based_on_key_pressed () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 echo_announce () {
-  echo "$(fg_lightblue)$(bg_myrtle)${1}$(attr_reset)"
+  echo $2 "$(fg_lightblue)$(bg_myrtle)${1}$(attr_reset)"
 }
 
 echo_alert () {
-  echo "$(attr_bold)$(fg_black)$(bg_lightorange)${1}$(attr_reset)"
+  echo $2 "$(attr_bold)$(fg_black)$(bg_lightorange)${1}$(attr_reset)"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
