@@ -206,17 +206,15 @@ put_wise_identify_rebase_boundary_and_remotes () {
       remote_protected=""
     fi
 
-    # Prefer sorting from local or remote 'release' branch. This is easier
-    # than walking from pw/work to see when scoping ends, and sorting from
-    # there.
-    if git_remote_branch_exists "${remote_release}"; then
-      rebase_boundary="${remote_release}"
-
-      >&2 echo_announce "Fetch from ‘${RELEASE_REMOTE_NAME}’"
-
-      # So that merge-base is accurate.
-      # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      git fetch "${RELEASE_REMOTE_NAME}"
+    # Prefer sorting from local or remote 'release' branch.
+    local remote_ref
+    if remote_ref="$( \
+      fetch_remote_and_check_branch_exists \
+        "${RELEASE_REMOTE_NAME}" \
+        "${RELEASE_REMOTE_BRANCH}" \
+    )"; then
+      # May be empty string if remote exists and remote branch absent (first push).
+      rebase_boundary="${remote_ref}"
     else
       remote_release=""
     fi
