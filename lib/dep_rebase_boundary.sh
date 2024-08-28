@@ -147,17 +147,61 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #   protected remote does not guarantee linear history, and user may
     #   need to force-push if they bubble up previously pushed PROTECTED
     #   commits).
-    if git_remote_branch_exists "${remote_protected}"; then
-      if [ -z "${rebase_boundary}" ]; then
-        rebase_boundary="${remote_protected}"
+    fetch_remote_and_check_branch_exists () {
+      local remote_name="$1"
+      local branch_name="$2"
+
+      local upstream="${remote_name}/${branch_name}"
+
+      if ! git_remote_exists "${remote_name}"; then
+
+        return 1
       fi
 
       # Always fetch the remote, so that our ref is current,
       # because this function also does a lot of state validating.
       # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-      >&2 echo_announce "Fetch from ‘${SCOPING_REMOTE_NAME}’"
+      >&2 echo_announce "Fetch from ‘${remote_name}’" -n
 
-      git fetch "${SCOPING_REMOTE_NAME}"
+      if ! git fetch "${remote_name}" \
+        refs/heads/${branch_name} 2> /dev/null \
+      ; then
+        >&2 echo " ...failed!"
+        if git ls-remote ${remote_name} -q 2> /dev/null; then
+          >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
+          # If case remote branch was deleted, remove local ref.
+          git fetch --prune "${remote_name}"
+
+          return 0
+        else
+          >&2 echo "- Remote unreachable"
+          # We'll still check the branch to see if previously fetched.
+        fi
+      else
+        >&2 echo
+        # Fetched the branch specifically (so final check is a formality).
+      fi
+
+      if git_remote_branch_exists "${upstream}"; then
+        printf "%s" "${upstream}"
+
+        return 0
+      else
+
+        return 1
+      fi
+    }
+
+    local remote_ref
+    if remote_ref="$( \
+      fetch_remote_and_check_branch_exists \
+        "${SCOPING_REMOTE_NAME}" \
+        "${SCOPING_REMOTE_BRANCH}" \
+    )"; then
+      if [ -z "${rebase_boundary}" ]; then
+        # May be empty string if remote exists and remote branch absent (first push).
+        rebase_boundary="${remote_ref}"
+      fi
     else
       remote_protected=""
     fi
