@@ -133,7 +133,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #   protected remote does not guarantee linear history, and user may
     #   need to force-push if they bubble up previously pushed PROTECTED
     #   commits).
-    fetch_remote_and_check_branch_exists () {
+    fetch_and_check_branch_exists_or_remote_online () {
       local remote_name="$1"
       local branch_name="$2"
 
@@ -180,7 +180,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
     local remote_ref
     if remote_ref="$( \
-      fetch_remote_and_check_branch_exists \
+      fetch_and_check_branch_exists_or_remote_online \
         "${SCOPING_REMOTE_NAME}" \
         "${SCOPING_REMOTE_BRANCH}" \
     )"; then
@@ -195,7 +195,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # Prefer sorting from local or remote 'release' branch.
     local remote_ref
     if remote_ref="$( \
-      fetch_remote_and_check_branch_exists \
+      fetch_and_check_branch_exists_or_remote_online \
         "${RELEASE_REMOTE_NAME}" \
         "${RELEASE_REMOTE_BRANCH}" \
     )"; then
