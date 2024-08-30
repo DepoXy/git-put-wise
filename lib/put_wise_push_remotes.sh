@@ -38,7 +38,7 @@ put_wise_push_remotes_go () {
 
   # Prints errors and exits 1 if no releast boundary can
   # be identified and the commits are not sorted & signed.
-  # (Or exits 11 without printing errors if -11 option used.)
+  # (Or exits 11 w/o errors if --fail-elevenses option used.)
   # The following vars are set by the rebase_boundary, etc., susser:
   local branch_name=""
   local local_release=""

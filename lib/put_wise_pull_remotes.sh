@@ -54,6 +54,8 @@ put_wise_pull_remotes_go () {
   local pick_from=""
   pick_from="$(git_tag_object_name "${pw_tag_archived}")" || true
 
+  # Exit 1 if missing remote or remote branch, or
+  # exit 11 if branch up-to-date/ahead of remote.
   if [ -z "${pick_from}" ]; then
     put_wise_pull_unspecially "${branch_name}" "${pw_tag_archived}"
   else
@@ -67,6 +69,8 @@ put_wise_pull_unspecially () {
   local branch_name="$1"
   local pw_tag_archived="$2"
 
+  # Exit 1 if missing remote or remote branch, or
+  # exit 11 if branch up-to-date/ahead of remote.
   local tracking_upstream=""
   tracking_upstream="$(must_locate_tracking_upstream "${branch_name}")" || exit $?
 
@@ -141,6 +145,8 @@ put_wise_pull_complicated () {
 
   # ***
 
+  # Exit 1 if missing remote or remote branch, or
+  # exit 11 if branch up-to-date/ahead of remote.
   local tracking_upstream=""
   tracking_upstream="$(must_locate_tracking_upstream "${branch_name}")" || exit $?
   local reset_ref="refs/remotes/${tracking_upstream}"
@@ -465,6 +471,8 @@ must_locate_tracking_upstream () {
     [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; \
   then
     if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
+      # Exit 1 if no remote branch; exit 1 if diverged;
+      # or exit 11 if up-to-date or ahead of remote.
       if git_remote_exists "${SCOPING_REMOTE_NAME}" && \
         must_ensure_protected_remote_branch_exists; \
       then
@@ -477,9 +485,11 @@ must_locate_tracking_upstream () {
     if [ -z "${tracking_upstream}" ]; then
       if git_remote_exists "${RELEASE_REMOTE_NAME}"; then
         # Look instead for refs/remotes/publish/release.
+        # - Exit 1 if diverged, or exit 11 if up-to-date or ahead of remote.
         must_ensure_ready_to_rebase_onto_remote_release_branch
         tracking_upstream="${REMOTE_BRANCH_RELEASE}"
       else
+        # - Exit 11 if no release remote (e.g., 'publish').
         ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
 
         >&2 echo "ERROR: Please setup an appropriate remote for '${branch_name}':" \
@@ -490,6 +500,7 @@ must_locate_tracking_upstream () {
     fi
   else
     # Arbitrary, non-special (not 'private' or 'release') branch.
+    # - Exit 1/11 if no tracking branch.
     tracking_upstream="$(must_have_git_tracking_branch_or_exit)" || exit $?
 
     # MAYBE/2023-01-18: GIT_FETCH: Use -q?
@@ -523,6 +534,7 @@ must_ensure_protected_remote_branch_exists () {
     exit 1
   fi
 
+  # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
   must_confirm_upstream_shares_history_with_head \
     "${REMOTE_BRANCH_SCOPING}" "${remote_sha}"
 }
@@ -565,6 +577,7 @@ must_ensure_ready_to_rebase_onto_remote_release_branch () {
     fatal_report_missing_local_release_branch
   fi
 
+  # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
   must_confirm_upstream_shares_history_with_head \
     "${REMOTE_BRANCH_RELEASE}" "${remote_sha}"
 }
