@@ -262,7 +262,7 @@ print_starting_ref_or_upstream_branch () {
         # which is the commit to which the other host will reset).
         # - The caller verifies starting_sha visible from HEAD, which
         #   will verify it's not the upstream the diverged from HEAD.
-        >&2 echo "NOTICE: The '${pw_tag_applied}' tag and '${upstream_ref}'" \
+        >&2 echo "ALERT: The '${pw_tag_applied}' tag and '${upstream_ref}'" \
           "upstream have diverged."
         >&2 echo "- Most likely, you rebased past '${pw_tag_applied}'" \
           "and then pushed, totally fine."
