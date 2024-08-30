@@ -268,6 +268,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
       remote_name="$(git_upstream_parse_remote_name "${tracking_branch}")"
     fi
 
+    if [ -z "${remote_name}" ]; then
+      remote_name="${RELEASE_REMOTE_NAME}"
+    fi
+
     if remote_ref="$( \
       fetch_and_check_branch_exists_or_remote_online \
         "${remote_name}" \
