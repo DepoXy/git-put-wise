@@ -353,8 +353,8 @@ cli_parse_params () {
         ;;
 
       # The "elevenses" feature is only used internally (otherwise it'd
-      # be more tellingly named). It's quietly exposed for testing (you
-      # won't see it in the --help).
+      # be more tellingly named). You won't see it in the --help.
+      # - SAVVY: Calls from code use --fail-elevenses. -11 is for devs.
       -11 | --fail-elevenses)
         PW_OPTION_FAIL_ELEVENSES=true
 
