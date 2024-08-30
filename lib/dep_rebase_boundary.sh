@@ -174,6 +174,11 @@ put_wise_identify_rebase_boundary_and_remotes () {
     )"; then
       remote_release="${REMOTE_BRANCH_RELEASE}"
       # May be empty string if remote exists and remote branch absent (first push).
+      # - Note this unsets rebase_boundary if remote release branch is absent.
+      #   Otherwise the boundary is pw/private/in or entrust/scoping, meaning
+      #   we might not bubble-up protected commits if they're not all sorted.
+      #   So better error on side of caution and check all commits (or we'll
+      #   set to local 'release' next if we find a local 'release' branch).
       if ${is_hyper_branch}; then
         rebase_boundary="${remote_ref}"
       fi
