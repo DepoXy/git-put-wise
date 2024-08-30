@@ -203,8 +203,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
     local divergent_ok=false
 
     # Exits on error.
-    must_confirm_commit_at_or_behind_commit "${remote_release}" "${local_release}" \
-      ${divergent_ok} "remote-release" "local-release"
+    must_confirm_commit_at_or_behind_commit \
+      "${remote_release}" "${local_release}" ${divergent_ok} \
+      "remote-release" "local-release"
 
     if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
       if git merge-base --is-ancestor "${local_release}" "${branch_name}"; then
