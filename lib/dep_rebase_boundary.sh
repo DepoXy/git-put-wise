@@ -76,6 +76,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
   remote_name=""
   # The `git rebase` gitref, prev. called sort_from_commit.
   rebase_boundary=""
+  # These are only set if no rebase_boundary identified, and
+  # *all* commits scanned as fallback.
   already_sorted=false
   already_signed=false
 
