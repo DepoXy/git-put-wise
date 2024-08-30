@@ -3,3 +3,5 @@
 # Project: https://github.com/DepoXy/git-put-wise#🥨
 # License: MIT
 
+/coverage/
+
