@@ -54,26 +54,7 @@ put_wise_push_remotes_go () {
 
   # ***
 
-  # Note that resort_and_sign_commits_before_push checks that
-  # sort-from shares history with HEAD:
-  #   must_confirm_commit_at_or_behind_commit "${rebase_boundary}" "HEAD"
-
-  >&2 debug "rebase_boundary: ${rebase_boundary}"
-
-  if ! git_is_same_commit "${rebase_boundary}" "HEAD"; then
-    if [ -n "${rebase_boundary}" ]; then
-      # Exits 0/11 if rebase_boundary is HEAD.
-      resort_and_sign_commits_before_push "${rebase_boundary}" \
-        ${_enable_gpg_sign:-true}
-    elif ! ${PUT_WISE_SKIP_REBASE:-false}; then
-      # No rebase boundary identified, but all commits are already
-      # signed & sorted.
-      local and_signed=""
-      ! ${already_signed} || and_signed=" & signed"
-      echo_announce "$(echo "No rebase boundary identified," \
-        "but all commits confirmed sorted${and_signed}")"
-    fi
-  fi
+  resort_and_sign_commits_before_push_maybe "${rebase_boundary}" "${already_signed}"
 
   # ***
 
@@ -275,6 +256,34 @@ bind generic r +<sh -c \" \\
 
   # Indicate success/failure.
   ${keep_going}
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+resort_and_sign_commits_before_push_maybe () {
+  local rebase_boundary="$1"
+  local already_signed="$2"
+
+  # Note that resort_and_sign_commits_before_push checks that
+  # sort-from shares history with HEAD:
+  #   must_confirm_commit_at_or_behind_commit "${rebase_boundary}" "HEAD"
+
+  >&2 debug "rebase_boundary: ${rebase_boundary}"
+
+  if ! git_is_same_commit "${rebase_boundary}" "HEAD"; then
+    if [ -n "${rebase_boundary}" ]; then
+      # Exits 0/11 if rebase_boundary is HEAD.
+      resort_and_sign_commits_before_push "${rebase_boundary}" \
+        ${_enable_gpg_sign:-true}
+    elif ! ${PUT_WISE_SKIP_REBASE:-false}; then
+      # No rebase boundary identified, but all commits are already
+      # signed & sorted.
+      local and_signed=""
+      ! ${already_signed} || and_signed=" & signed"
+      echo_announce "$(echo "No rebase boundary identified," \
+        "but all commits confirmed sorted${and_signed}")"
+    fi
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
