@@ -294,7 +294,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     )"; then
       # Note we don't use PW_OPTION_BRANCH here, but the current branch.
       remote_current="${remote_name}/${branch_name}"
-      # Might be empty string if remove exists but not branch.
+      # Might be empty string if remote exists but not branch.
       rebase_boundary="${remote_ref}"
     fi
   fi
