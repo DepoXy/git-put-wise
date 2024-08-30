@@ -69,6 +69,7 @@ put_wise_push_remotes_go () {
   )"
 
   local release_boundary_or_HEAD="${scoping_boundary_or_HEAD}"
+  # remote_name is set only if remote_current is set only if feature branch.
   if [ -n "${remote_name}" ]; then
     # Current branch is a feature branch (not 'release' or 'private').
     # - In this workflow, user self-manages the local 'release' pointer,
@@ -325,7 +326,8 @@ resort_and_sign_commits_before_push_maybe () {
 
   if ! git_is_same_commit "${rebase_boundary}" "HEAD"; then
     if [ -n "${rebase_boundary}" ]; then
-      # Exits 0/11 if rebase_boundary is HEAD.
+      # Sort & sign commits. Unless exit 0/11 if rebase_boundary → HEAD
+      # (because no-op); or exit 1 if ahead of HEAD, or diverged.
       resort_and_sign_commits_before_push "${rebase_boundary}" \
         ${_enable_gpg_sign:-true}
     elif ! ${PUT_WISE_SKIP_REBASE:-false}; then
