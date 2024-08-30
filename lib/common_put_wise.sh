@@ -886,9 +886,9 @@ print_is_gpg_sign_enabled () {
 #  needs to sort-by-scope manually, and then pass us a starting gitref).
 # CXREF: must_confirm_commit_at_or_behind_commit
 must_confirm_shares_history_with_head () {
-  local gitref="$1"
+  local rebase_boundary="$1"
 
-  if git_is_same_commit "${gitref}" "HEAD"; then
+  if git_is_same_commit "${rebase_boundary}" "HEAD"; then
     # Check that this isn't just a one-commit pony.
     if [ $(git_number_of_commits) -eq 1 ]; then
       # It is just a one-commit pony!
@@ -907,35 +907,35 @@ must_confirm_shares_history_with_head () {
     #   also by git-sort-by-scope rebaser.
     # - This function is not called to work on more than one project, so
     #   exiting here is fine (albeit a little short-circuity, I admit).
-    >&2 echo "Nothing to do: Already up-to-date with “${gitref}”"
+    >&2 echo "Nothing to do: Already up-to-date with “${rebase_boundary}”"
 
     ${PW_OPTION_FAIL_ELEVENSES:-false} \
       && exit ${PW_ELEVENSES} \
       || exit 0
   fi
 
-  if git merge-base --is-ancestor "${gitref}" "HEAD"; then
-    # The common ancestor is ${ref_sha}, i.e., gitref behind HEAD.
+  if git merge-base --is-ancestor "${rebase_boundary}" "HEAD"; then
+    # The common ancestor is ${ref_sha}, i.e., rebase_boundary behind HEAD.
     #
-    # Print gitref's SHA.
-    git merge-base "${gitref}" "HEAD"
+    # Print rebase_boundary's SHA.
+    git merge-base "${rebase_boundary}" "HEAD"
 
     return 0
-  elif git merge-base --is-ancestor "HEAD" "${gitref}"; then
-    # gitref ahead of HEAD. *How *did* we get here?*
+  elif git merge-base --is-ancestor "HEAD" "${rebase_boundary}"; then
+    # rebase_boundary ahead of HEAD. *How *did* we get here?*
     #
-    # The gitref might be a local or remote branch name, or a tag name.
+    # The rebase_boundary might be a local or remote branch name, or a tag name.
     # But it's very unlikely a local branch or tag would be ahead of the
     # current branch, unless the user is outside the normal workflow. So
-    # we'll assume the gitref is a remote branch and print related hint.
-    >&2 echo "ERROR: The object “${gitref}” is ahead of the current branch."
+    # we'll assume the rebase_boundary is a remote branch and print related hint.
+    >&2 echo "ERROR: The object “${rebase_boundary}” is ahead of the current branch."
     >&2 echo "- HINT: Pull or rebase upstream changes, and then try again."
 
     exit 1
   else
     # Diverged!
     if ! ${PW_OPTION_FORCE_PUSH:-false}; then
-      >&2 echo "ERROR: The object “${gitref}” does not share history with HEAD."
+      >&2 echo "ERROR: The object “${rebase_boundary}” does not share history with HEAD."
       >&2 echo "- HINT: You probably rebased one of them."
       >&2 echo "  - You may need to call sort-by-scope with a specific SHA."
       >&2 echo "  - Then you probably need to force-push changes."
@@ -944,7 +944,7 @@ must_confirm_shares_history_with_head () {
 
       exit 1
     else
-      >&2 info "FORCE: The object “${gitref}” is divergent!"
+      >&2 info "FORCE: The object “${rebase_boundary}” is divergent!"
 
       echo "HEAD"
 
