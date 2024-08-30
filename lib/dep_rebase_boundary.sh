@@ -153,7 +153,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     remote_protected="${SCOPING_REMOTE_NAME}/${scoping_branch}"
     # Prefer pw/in over scoping boundary
     if [ -z "${rebase_boundary}" ]; then
-      # Might be empty string if remove exists but not branch (first push).
+      # Might be empty string if remote exists but not branch (first push).
       rebase_boundary="${remote_ref}"
     fi
   fi
