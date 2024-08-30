@@ -86,6 +86,8 @@ git-rebase-sort-by-scope-protected-private () {
   local rev_count_before_rebase
   rev_count_before_rebase="$(git rev-list HEAD --count)"
 
+  # ***
+
   local rebase_boundary=""
   rebase_boundary="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")"
 
@@ -95,8 +97,6 @@ git-rebase-sort-by-scope-protected-private () {
 
     return 0
   fi
-
-  # ***
 
   local already_sorted=false
 
