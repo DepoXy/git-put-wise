@@ -51,12 +51,13 @@
 #     ref is accurate/up to date.
 #   - Fails if bad state detected (e.g., diverged branches), or if
 #     the rebase boundary (rebase_boundary) cannot be identified or
-#     verified.
+#     verified and not all commits are sorted & signed.
 #
 # BWARE:
 # - This fcn. does not verify rebase_boundary is reachable from HEAD.
-#   - See resort_and_sign_commits_before_push, which will `exit 1` if
-#     rebase_boundary diverges,
+#   - The caller is expected to call resort_and_sign_commits_before_push,
+#     or to call must_confirm_shares_history_with_head directly, which
+#     will `exit 1` if rebase_boundary ahead or divergent.
 
 put_wise_identify_rebase_boundary_and_remotes () {
   local action_desc="$1"
