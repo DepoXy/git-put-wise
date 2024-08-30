@@ -467,15 +467,15 @@ must_locate_tracking_upstream () {
 
   local tracking_upstream=""
 
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] ||
-    [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; \
-  then
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
+    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+  ; then
     if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
       # Exit 1 if no remote branch; exit 1 if diverged;
       # or exit 11 if up-to-date or ahead of remote.
       if git_remote_exists "${SCOPING_REMOTE_NAME}" && \
-        must_ensure_protected_remote_branch_exists; \
-      then
+        must_ensure_protected_remote_branch_exists \
+      ; then
         tracking_upstream="${REMOTE_BRANCH_SCOPING}"
       fi
       # else, no scoping remote, so might be a 'private' branch with
