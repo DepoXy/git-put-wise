@@ -163,14 +163,21 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # ***
 
   # Prefer sorting from local or remote 'release' branch.
-  if remote_ref="$( \
-    fetch_and_check_branch_exists_or_remote_online \
-      "${RELEASE_REMOTE_NAME}" \
-      "${RELEASE_REMOTE_BRANCH}" \
-  )"; then
-    remote_release="${REMOTE_BRANCH_RELEASE}"
-    # May be empty string if remote exists and remote branch absent (first push).
-    rebase_boundary="${remote_ref}"
+  # - Skip for feature branch unless local 'release' exists, to not waste
+  #   time pinging it (or showing progress messages), because feature
+  #   branch won't use it unless local 'release' branch exists.
+  if ${is_hyper_branch} || git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
+    if remote_ref="$( \
+      fetch_and_check_branch_exists_or_remote_online \
+        "${RELEASE_REMOTE_NAME}" \
+        "${RELEASE_REMOTE_BRANCH}" \
+    )"; then
+      remote_release="${REMOTE_BRANCH_RELEASE}"
+      # May be empty string if remote exists and remote branch absent (first push).
+      if ${is_hyper_branch}; then
+        rebase_boundary="${remote_ref}"
+      fi
+    fi
   fi
 
   if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
