@@ -260,6 +260,59 @@ bind generic r +<sh -c \" \\
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# Internal "elevenses" short-circuit used by `pw out` brevity
+# command (./bin/putwisely): Exit 11 on client --push if it
+# no-ops because private-private project, and --archive instead.
+#
+# The internal, unadvertised "elevenses" feature [a Futurama ref.
+# to a British English term, though author has no idea how widely
+# used in AUS, NZ, GB, etc.] allows for a quick break from put-wise
+# without full error output. It can be used to implement an action-
+# less put-wise wrapper (which the author shortens further, e.g.,
+# alias pw=putwisely) that behaves as follows.
+#
+# CXREF: ~/.kit/git/git-put-wise/bin/putwisely
+# `pw`:     @client: --pull  --fail-elevenses || --archive
+# `pw`:     @leader: --apply --fail-elevenses || --push
+# `pw in`:  @client: --pull  --fail-elevenses || --apply
+# `pw in`:  @leader: --apply
+# `pw out`: @client: --archive
+# `pw out`: @leader: --push  --fail-elevenses || --archive
+#
+# Use case: The barebones `pw` command lets you run the same command
+# throughout the GPW workflow, whether it's when you start work on a
+# host after having been on a different host, or whether it's when
+# you want to publish your changes.
+# - The first command (pull or apply) ensures the local
+#   working directory is up to date with the other host.
+#   And the next time you run it, and pull or apply
+#   indicates no-op/up-to-date, it'll publish instead.
+# - WORDS: This is the GPW "pretzel" workflow.
+
+# This fcn. exits 11 if new repo and user just hasn't setup a remote yet,
+# even if they don't intend for it to be private-private.
+# - Can't really guess user's intent, so assumes every new project is
+#   private-private until user signals otherwise. Not really a big deal.
+# WORDS: "private-private" is shorthand for a project user only syncs
+# via the archive/apply mechanisms, and that user never pushes to Git
+# remote (at least not using GPW).
+
+# INPUT: Expects local vars. from put_wise_identify_rebase_boundary_and_remotes
+must_exit_elevenses_if_private_private_project () {
+  if ${PW_OPTION_FAIL_ELEVENSES:-false} \
+    && [ -z "${local_release}" ] \
+    && [ -z "${remote_release}" ] \
+    && [ -z "${remote_protected}" ] \
+    && [ -z "${remote_current}" ] \
+    && [ -z "${remote_name}" ] \
+  ; then
+
+    exit ${PW_ELEVENSES}
+  fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 resort_and_sign_commits_before_push_maybe () {
   local rebase_boundary="$1"
   local already_signed="$2"

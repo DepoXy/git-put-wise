@@ -302,8 +302,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
         # no rebase boundary was identified.
         rebase_boundary=""
       else
-        ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
-
         # For third-party apps: Non-exit falsey return without alert message.
         ! ${inhibit_exit_if_unidentified:-false} || return 1
 
