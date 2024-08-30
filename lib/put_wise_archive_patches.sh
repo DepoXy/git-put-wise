@@ -67,6 +67,7 @@ put_wise_archive_patches_go () {
   local commit_range_end
   identify_commit_range_end
 
+  # Exit 0/11 is archive bounds unchanged since last --archive.
   must_have_non_empty_rev_range_not_already_tagged "${starting_ref}" \
     "${commit_range_end}" "${pw_tag_applied}" "${pw_tag_archived}"
 
@@ -82,6 +83,7 @@ put_wise_archive_patches_go () {
   local crypt_name
   compose_filenames "${starting_ref}" "${projpath_sha}"
 
+  # Exit 0/11 is archive already exists.
   must_not_already_be_archived "${crypt_name}" \
     "${hostname_sha}" "${projpath_sha}" \
     "${starting_sha}" "${endingat_sha}"
@@ -317,8 +319,6 @@ identify_first_upstream_branch () {
 
     git_remote_exists "${remote_name}" || return 1
 
-    # I really want to --prune here, but also feels oversteppy.
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
     git fetch "${remote_name}"
 
     if git_remote_branch_exists "${remote_ref}"; then
@@ -332,7 +332,7 @@ identify_first_upstream_branch () {
     fi
   }
 
-  # First first put-wise upstream: Check first for
+  # Identify first put-wise upstream: Check first for
   # REMOTE_BRANCH_SCOPING, then REMOTE_BRANCH_RELEASE, then RELEASE.
   if [ -z "${upstream_ref}" ]; then
     if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
