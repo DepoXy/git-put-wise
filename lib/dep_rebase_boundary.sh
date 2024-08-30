@@ -288,11 +288,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
       rebase_boundary="${PW_OPTION_STARTING_REF}"
     fi
 
-    # Because we rebase to reorder scoping commits, we need to identify
-    # a starting ref. Without a starting ref, it gets complicated (do
-    # we resort everything? Do we find the first PROTECTED or PRIVATE
-    # commit and rebase from there?). It's easier to tell the user to
-    # make the first push.
+    # If no rebase boundary was identified, check if *all* commits already
+    # sorted & signed. If not, while we *could* rebase all commits, it's
+    # also a ripe opportunity to print an instructive "error" message that
+    # tells user how to proceed (with easiest option being to use ROOT ref).
     if ! verify_rebase_boundary_exists "${rebase_boundary}"; then
       # Use empty rebase_boundary so already-sorted checks all commits.
       rebase_boundary=""
@@ -305,6 +304,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       else
         ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
 
+        # For third-party apps: Non-exit falsey return without alert message.
         ! ${inhibit_exit_if_unidentified:-false} || return 1
 
         alert_cannot_identify_rebase_boundary \
@@ -381,6 +381,7 @@ fetch_and_check_branch_exists_or_remote_online () {
   # because this function also does a lot of state validating.
   >&2 echo_announce "Fetch from ‘${remote_name}’" -n
 
+  # git-fetch prints progress to stderr, which we ignore ('-q' also works).
   if ! git fetch "${remote_name}" \
     refs/heads/${branch_name} 2> /dev/null \
   ; then
