@@ -1775,15 +1775,15 @@ branch_name_path_decode () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 badger_user_rebase_failed () {
-  echo "============================================"
-  echo
-  echo "Uffda! You got work to do ☝ ☝ ☝."
-  echo
+  >&2 echo "============================================"
+  >&2 echo
+  >&2 echo "Uffda! You got work to do ☝ ☝ ☝."
+  >&2 echo
   # Note that `git put-wise --continue` just calls `git rebase --continue`.
   # - But `git rebase --abort` calls `git abort`, to run `exec` callbacks.  #git-abort
-  echo "  🚨 $(echo_alert "ALERT") 🚨"
-  echo "  Resolve conflicts and call \`git put-wise --continue\`"
-  echo "   — or call \`git put-wise --abort\` to revert changes."
+  >&2 echo "  🚨 $(echo_alert "ALERT") 🚨"
+  >&2 echo "  Resolve conflicts and call \`git put-wise --continue\`"
+  >&2 echo "   — or call \`git put-wise --abort\` to revert changes."
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
