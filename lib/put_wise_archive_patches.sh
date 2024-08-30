@@ -59,7 +59,7 @@ put_wise_archive_patches_go () {
 
   # Note: This calls must_confirm_shares_history_with_head, which
   # exit's 0 or 11 if starting_ref → HEAD (because no-op).
-  resort_and_sign_commits_before_push "${starting_ref}" \
+  resort_and_sign_commits_before_push "${_rebase_boundary:-${starting_ref}}" \
     ${_enable_gpg_sign:-false}
 
   # Determine the extent of the diff range.
