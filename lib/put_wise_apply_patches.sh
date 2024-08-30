@@ -103,8 +103,9 @@ put_wise_apply_patches_apply_one () {
 
       exit 0
     fi
+    # Exits 0/11 if none found, or exits 1 if multiple archives found.
     gpgf="$(must_find_one_patches_archive_for_project_path_and_print)" || exit $?
-    # The last function also exit's 0 and prints nothing, handled separately.
+    # Because exit 0 is truthy, we need to propagate the exit 0.
     [ -n "${gpgf}" ] || exit 0
     unpack_target_is_not_nonempty_else_info_stderr "${gpgf}" || patch_dir_exists=true
   elif [ -f "${PW_PROJECT_PATH}" ]; then
