@@ -95,7 +95,7 @@ put_wise_apply_patches_apply_one () {
   if [ -z "${PW_PROJECT_PATH}" ] || [ -d "${PW_PROJECT_PATH}" ]; then
     # User wants to apply patches to a specific project, so we
     # need to find a patch archive file for that project path
-    # (which defaults to current directory ".".
+    # (which defaults to current directory ".").
     must_verify_project_path_and_not_patches_repo
     if [ -n "${PW_OPTION_REGENERATE_RECEIPTS}" ]; then
       # Egregious short-circuit return (exit!) branch, my bad.
