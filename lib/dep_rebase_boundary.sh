@@ -272,6 +272,21 @@ put_wise_identify_rebase_boundary_and_remotes () {
       remote_name="${RELEASE_REMOTE_NAME}"
     fi
 
+    # For feature branch, rebase boundary may have been set above:
+    # - ✓ Defaults pw/<branch>/in tag, if exists
+    # - ✓ Changes to 'entrust/<branch>' if found
+    # - ✗ Ignores 'publish/release' for feature branches
+    # - ✓ Finally prefers local 'release' branch if found
+    # Here we override with tracking branch or same-named counterpart.
+
+    # Prefer tracking branch rebase boundary to any previous choice.
+    # - Use case: Create a new feature branch and set its upstream
+    #   tracking branch to the mainline, but haven't created/pushed
+    #   to remote feature branch yet.
+    if [ -n "${tracking_branch}" ]; then
+      rebase_boundary="${tracking_branch}"
+    fi
+
     if remote_ref="$( \
       fetch_and_check_branch_exists_or_remote_online \
         "${remote_name}" \
