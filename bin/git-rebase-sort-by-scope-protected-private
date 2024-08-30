@@ -102,9 +102,7 @@ git-rebase-sort-by-scope-protected-private () {
   # sets already_sorted=false and returns 1 if not sorted; or
   # returns 0 if sorted, and signed (if requested).
   local already_sorted=false
-  if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
-    && is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}" \
-  ; then
+  if is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}"; then
     maybe_unstash_changes ${pop_after}
 
     return 0
