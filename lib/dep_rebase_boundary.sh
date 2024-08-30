@@ -207,7 +207,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       "${remote_release}" "${local_release}" ${divergent_ok} \
       "remote-release" "local-release"
 
-    if [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ]; then
+    if [ "${branch_name}" != "${local_release}" ]; then
       if git merge-base --is-ancestor "${local_release}" "${branch_name}"; then
         # Rebase starting from 'release', which is guaranteed at or further
         # along than 'publish/release'.
