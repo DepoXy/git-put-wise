@@ -95,6 +95,13 @@ is_sorted_by_scope () {
 
   # ***
 
+  if git_is_same_commit "${starting_ref}" "HEAD"; then
+
+    return 0
+  fi
+
+  # ***
+
   local private_scope_starts_at
   private_scope_starts_at="$( \
     find_boundary_constrained "${private_grep}" "${starting_ref}"
