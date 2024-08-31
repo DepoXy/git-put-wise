@@ -533,10 +533,12 @@ insist_nothing_tagged_after () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
 
-  if [ -z "${rebase_boundary}" ]; then
-
-    return 0
-  fi
+  # ISOFF/2024-08-30: Should be okay to check all commits.
+  #
+  #   if [ -z "${rebase_boundary}" ]; then
+  #
+  #     return 0
+  #   fi
 
   local rev_list_commits
   rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}")"
