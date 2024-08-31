@@ -69,8 +69,8 @@
 #   you here.
 
 # USER CONTROLS:
-# - Set PW_OPTION_SKIP_REBASE=true to probe the remote branches,
-#   and to ignore rebase_boundary (sets it to empty string).
+# - Set PW_OPTION_SKIP_REBASE=true (--skip-rebase) to probe the remote
+#   branches, and to ignore rebase_boundary (sets it to empty string).
 # - Set PW_OPTION_STARTING_REF=<REF> (-S | --starting-ref) to pick
 #   your own rebase boundary.
 #   - Use special ref named "ROOT" to rebase all commits.
