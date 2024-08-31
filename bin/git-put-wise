@@ -121,6 +121,7 @@ main () {
     ${PW_ACTION_PUSH} ||
     ${PW_ACTION_PULL} ||
     ${PW_ACTION_PULL_CLEANUP} ||
+    ${PW_ACTION_REBASE_BOUNDARY} ||
     ${PW_ACTION_SCOPE} ||
     ${PW_ACTION_SHA} ||
   false); then
@@ -157,6 +158,9 @@ main () {
       ;;
     ${PW_ACTION_RESET})
       put_wise_reset_patches_repo
+      ;;
+    ${PW_ACTION_REBASE_BOUNDARY})
+      put_wise_print_rebase_boundary
       ;;
     ${PW_ACTION_SCOPE})
       put_wise_print_scoping_boundary_sha

@@ -466,7 +466,45 @@ project_path_same_as_patches_repo () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# `put-wise --scope`
+# `put-wise --rebase-boundary` / PW_ACTION_REBASE_BOUNDARY=true
+
+put_wise_print_rebase_boundary () {
+  local branch_name=""
+  local local_release=""
+  local remote_release=""
+  local remote_liminal=""
+  local remote_protected=""
+  local remote_current=""
+  local remote_name=""
+  local rebase_boundary=""
+  local already_sorted=false
+  local already_signed=false
+  if ! put_wise_identify_rebase_boundary_and_remotes \
+    "${_action_desc:-probe}" "${_inhibit_exit_if_unidentified:-true}" \
+  ; then
+    # Cound not identify rebase boundary, and commits not sorted/signed.
+    rebase_boundary="<unknown!>"
+  fi
+
+  for var in \
+    rebase_boundary \
+    branch_name \
+    local_release \
+    remote_release \
+    remote_liminal \
+    remote_protected \
+    remote_current \
+    remote_name \
+    already_sorted \
+    already_signed \
+  ; do
+    echo "${var}: ${!var}"
+  done
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# `put-wise --scope` / PW_ACTION_SCOPE=true
 
 put_wise_print_scoping_boundary_sha () {
   local protected_boundary_or_HEAD
