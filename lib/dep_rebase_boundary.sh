@@ -10,26 +10,85 @@
 
 # Determines rebase ref. commit, and identifies one or more push remotes.
 #
+# The rebase ref. (née sort-from-commit; also called the "rebase boundary"):
 # - The rebase ref. is the youngest published commit, i.e., we can rebase
 #   commits since this ref. and not worry about rewriting public history.
 # - In the most basic use case where there's a single remote, the rebase
 #   ref. is the remote HEAD.
 #   - If you have a local 'release' (or 'private') branch, and the remote
-#     branch REMOTE_BRANCH_RELEASE exists (e.g., 'publish/release'), sets
+#     branch REMOTE_BRANCH_RELEASE exists (e.g., 'publish/release'), uses
 #       rebase_boundary='publish/release'
 #   - For a feature branch (any branch not named 'release' or 'private'),
 #     uses the remote name from the tracking branch, or from the --remote
 #     CLI arg, paired with the feature branch name, e.g.,
 #       rebase_boundary='<remote>/<branch>'
-# - For a 'private' branch with no remote, uses the pw/private/in tag if
-#   set, which is used by the put-wise-apply command and marks the latest
-#   commit from the patches archive (which lets you move changes between
-#   hosts using an encrypted patch archive, useful when you cannot use SSH
-#   to git-fetch and still you want your data E2E encrypted between hosts).
-# - May also baulk if a version or other tag is identified amongst the
-#   rebase commits.
+# - If there's no remote release or feature branch, uses the remote scoping
+#   branch if it exists (which is where git put-wise push pushes protected
+#   commits). The remote scoping branch varies:
+#   - For a local 'release' or 'private' branch, uses REMOTE_BRANCH_SCOPING
+#     (e.g., 'entrust/scoping').
+#   - For a local feature branch, uses SCOPING_REMOTE_NAME/<branch>
+#     (e.g., 'entrust/feature').
+# - If no remote branch found at all, uses the pw/<branch>/in tag if set
+#   (e.g., 'pw/private/in', 'pw/feature/in', etc.). This tag is used by the
+#   put-wise-apply command and marks the latest commit from the patches
+#   archive (which lets you move changes between hosts using an encrypted
+#   patch archive, useful when you cannot use SSH to git-fetch and still
+#   you want your data E2E encrypted between hosts).
+#   - Note this is somewhat off-label usage for the pw/in tag, but w/e.
+# - If still no reference found, falls back to latest version tag, if
+#   found.
 #
-# - Also used by put-wise-push to suss other remote and branch vars.
+# Be aware the suss fails if a version or other tag is amongst the rebase commits.
+# - LATER/2024-08-30: Tho subject to change, after we see how it works in practice.
+#
+# In addition to the rebase boundary, the function also identifies the
+# push remotes.
+# - These are the remotes described above that are probed when determining
+#   the rebase boundary, e.g.,:
+#     'publish/release' or 'publish/feature' (remote release or feature branch)
+#     'entrust/scoping' or 'entrust/feature' (remote scoping branch)
+# - If a remote branch exists, it'll be included.
+# - If a remote is reachable, but the remote branch cannot be fetched,
+#   it'll be included — this lets the user use `put-wise push` to make
+#   their first push.
+#   - If the remote branch cannot be fetched, the remote is pruned,
+#     in case the branch was recently deleted, so that any obsolete
+#     local ref is discarded.
+# - If a remote is not defined, or if it cannot be reached and there's
+#   no local ref to the remote branch, the remote branch is excluded.
+#
+# If no rebase boundary is identified, the function checks to see if
+# *all* commits are already sorted & signed (sorted so that 'protected'
+# and 'private' commits are bubbled-up, and signed if signing enabled).
+# - If commits are not sorted or signed as expected, it'll print an
+#   exhaustive list of actions the user can take to make the command
+#   work (and there are lots of options!).
+# - Otherwise the function returns truthy with rebase_boundary set
+#   to the empty string, which tells the caller exactly what we told
+#   you here.
+
+# USER CONTROLS:
+# - Set PUT_WISE_SKIP_REBASE=true to probe the remote branches,
+#   and to ignore rebase_boundary (sets it to empty string).
+# - Set PW_OPTION_STARTING_REF=<REF> (-S | --starting-ref) to pick
+#   your own rebase boundary.
+#   - Use special ref named "ROOT" to rebase all commits.
+# - Set other environs to change the convention branch and remote names:
+#     LOCAL_BRANCH_PRIVATE
+#     LOCAL_BRANCH_RELEASE
+#     SCOPING_REMOTE_NAME, SCOPING_REMOTE_BRANCH
+#     RELEASE_REMOTE_NAME, RELEASE_REMOTE_BRANCH
+#   - Set PW_OPTION_REMOTE=<REMOTE> (-r | --remote) to specify the feature
+#     branch remote.
+# - If PW_OPTION_FORCE_PUSH=true (-f | --force, tells put-wise to
+#   force-push), sets local_release="" and remote_release="" so that
+#   the caller will ignore the release branches (and not force-push
+#   to remote release branch).
+# - Set PW_OPTION_FORCE_ORPHAN_TAGS=true to not exit nonzero if
+#   tags found within the rebase area.
+# - Use PW_ACTION_REBASE_BOUNDARY=true (--rebase-boundary) to call
+#   this function from the command line, and to print its results.
 
 # SORRY:
 # - I don't generally like to "abuse" `local` like this. It seems
