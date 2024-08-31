@@ -752,6 +752,7 @@ exit_elevenses () {
 is_already_sorted_and_signed () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
+  local until_ref="${3:-HEAD}"
 
   local retcode=1
 
@@ -759,14 +760,14 @@ is_already_sorted_and_signed () {
   already_signed=false
 
   local rev_list_commits
-  rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}")"
+  rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}" "${until_ref}")"
 
   local n_commits
   n_commits="$(git rev-list --count ${rev_list_commits})"
 
   local scoped_count
 
-  if scoped_count="$(is_sorted_by_scope "${rebase_boundary}")"; then
+  if scoped_count="$(is_sorted_by_scope "${rebase_boundary}" "${until_ref}")"; then
     already_sorted=true
 
     local msg_prefix="Verified "
@@ -777,7 +778,8 @@ is_already_sorted_and_signed () {
       since_commit="${rebase_boundary}"
     fi
 
-    if ! ${enable_gpg_sign} || git_is_gpg_signed_since_commit "${since_commit}" \
+    if ! ${enable_gpg_sign} \
+      || git_is_gpg_signed_since_commit "${since_commit}" "${until_ref}" \
     ; then
       if ${enable_gpg_sign}; then
         already_signed=true
@@ -799,15 +801,16 @@ is_already_sorted_and_signed () {
 
 print_git_rev_list_commits () {
   local rebase_boundary="$1"
+  local until_ref="${2:-HEAD}"
 
-  local rev_list_commits="HEAD"
+  local rev_list_commits="${until_ref}"
 
   if [ -n "${rebase_boundary}" ] \
     && [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
   ; then
     local object_name
     if object_name="$(git rev-parse ${rebase_boundary} 2> /dev/null)"; then
-      rev_list_commits="${object_name}..HEAD"
+      rev_list_commits="${object_name}..${until_ref}"
     fi
     # else, caller passed parent-of ref, e.g., <SHA>^ which means <SHA> is
     # the root commit. So use HEAD (and then git-describe will consider all

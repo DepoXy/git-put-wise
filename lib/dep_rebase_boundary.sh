@@ -392,6 +392,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
   if ${PW_OPTION_SKIP_REBASE:-false}; then
     rebase_boundary=""
   else
+    local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
+
     if [ -n "${PW_OPTION_STARTING_REF}" ]; then
       if [ -z "${rebase_boundary}" ]; then
         rebase_boundary="(none identified)"
@@ -410,7 +412,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if ! verify_rebase_boundary_exists "${rebase_boundary}"; then
       # Use empty rebase_boundary so already-sorted checks all commits.
       rebase_boundary=""
-      local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
       # Side-effect: Fcn. sets already_sorted=true|false, already_signed=true|false
       if is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}" > /dev/null; then
         # Tells caller all commits are sorted and signed, and that
@@ -429,7 +430,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       fi
     fi
 
-    if ! insist_nothing_tagged_after "${rebase_boundary}"; then
+    if ! insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"; then
 
       exit 1
     fi
@@ -530,6 +531,7 @@ PW_OPTION_ORPHAN_TAGS="${PW_OPTION_ORPHAN_TAGS:-false}"
 
 insist_nothing_tagged_after () {
   local rebase_boundary="$1"
+  local enable_gpg_sign="$2"
 
   if [ -z "${rebase_boundary}" ]; then
 
@@ -557,17 +559,42 @@ insist_nothing_tagged_after () {
       msg_fiver="ALERT"
     fi
 
+    # ***
+
+    # Check if sorted/signed from rebase_boundary
+    # to the tag, and allow if that's the case.
+    local tags_will_not_be_orphaned=false
+
+    local older_tag="${version_tag}"
+    if git merge-base --is-ancestor "${other_tag}" "${version_tag}"; then
+      older_tag="${other_tag}"
+    fi
+
+    if is_already_sorted_and_signed \
+      "${rebase_boundary}" "${enable_gpg_sign}" "${older_tag}" \
+    ; then
+      tags_will_not_be_orphaned=true
+
+      msg_fiver="ALERT"
+    fi
+
+    # ***
+
     >&2 echo "${msg_fiver}: Tag(s) found after sort-from reference"
     >&2 echo "- Ver. tag: ${version_tag}"
     >&2 echo "- Oth. tag: ${other_tag}"
     >&2 echo "- Target rebase ref: ${rebase_boundary}"
 
-    if ${PW_OPTION_ORPHAN_TAGS:-false}; then
-      >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false to fail on this check"
+    if ${tags_will_not_be_orphaned}; then
+      >&2 echo "- But these tag(s) will not be orphaned on rebase"
     else
-      >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true to disable this check"
+      if ${PW_OPTION_ORPHAN_TAGS:-false}; then
+        >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false to fail on this check"
+      else
+        >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true to disable this check"
 
-      exit 1
+        exit 1
+      fi
     fi
   fi
 }
@@ -590,7 +617,7 @@ verify_rebase_boundary_exists () {
   git_commit_object_name ${rebase_boundary} > /dev/null
 }
 
-# ***
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 alert_cannot_identify_rebase_boundary () {
   local branch_name="$1"

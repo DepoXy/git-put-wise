@@ -89,13 +89,14 @@ identify_scope_ends_at () {
 
 is_sorted_by_scope () {
   local starting_ref="$1"
+  local until_ref="${2:-HEAD}"
 
   local private_grep="^${PRIVATE_PREFIX}"
   local protected_grep="^${SCOPING_PREFIX}"
 
   # ***
 
-  if git_is_same_commit "${starting_ref}" "HEAD"; then
+  if git_is_same_commit "${starting_ref}" "${until_ref}"; then
 
     return 0
   fi
@@ -131,13 +132,13 @@ is_sorted_by_scope () {
   fi
 
   local rev_list_scoped
-  rev_list_scoped=$(print_git_rev_list_commits "${scoping_starts_at}^")
+  rev_list_scoped=$(print_git_rev_list_commits "${scoping_starts_at}^" "${until_ref}")
 
   local rev_list_all
-  rev_list_all=$(print_git_rev_list_commits "${starting_ref}")
+  rev_list_all=$(print_git_rev_list_commits "${starting_ref}" "${until_ref}")
 
   local rev_list_private
-  rev_list_private=$(print_git_rev_list_commits "${private_scope_starts_at}^")
+  rev_list_private=$(print_git_rev_list_commits "${private_scope_starts_at}^" "${until_ref}")
 
   local commit_count
   commit_count="$( \
