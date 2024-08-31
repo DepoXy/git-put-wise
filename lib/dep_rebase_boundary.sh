@@ -366,10 +366,17 @@ put_wise_identify_rebase_boundary_and_remotes () {
       #   verify all commits, which seems like it makes sense for the
       #   inaugural push.
       #
-      # SAVVY: If remote_current is not old enough, and user intends to
-      # force-push, they'll have to specify an explicit rebase boundary,
-      # or skip it on push.
-      rebase_boundary="${remote_ref}"
+      # On force-push, use tracking branch as rebase boundary.
+      # - This supports workflow where tracking branch is immutable canon,
+      #   but remote_current is liminal feature branch, and user doesn't
+      #   care about feature branch history since diverged from tracking.
+      # - Note that scoped commits likely ahead of remote_current.
+      #   - The rebase_boundary really only to resign commits.
+      # - Note also won't change commits before remote_current unless
+      #   user changed them since previous remote_current push.
+      if ! ${PW_OPTION_FORCE_PUSH:-false} || [ -z "${rebase_boundary}" ]; then
+        rebase_boundary="${remote_ref}"
+      fi
     fi
   fi
 
