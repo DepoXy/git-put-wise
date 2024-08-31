@@ -317,6 +317,13 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #     rebases appropriately. But I like push.default 'current', so
     #     that push uses the same feature branch name that I use locally.
     # - The following effectively mimics 'current'.
+    # Note that `git branch -u foo/bar` sets two config values:
+    #   [branch "feature"]
+    #     remote = foo
+    #     merge = refs/heads/bar
+    # - REFER: man git-config:
+    #     branch.<name>.merge
+    #     branch.<name>.remote -> remote.pushDefault -> branch.<name>.pushRemote
     local tracking_branch
     tracking_branch="$(git_tracking_branch)" \
       || true
@@ -355,6 +362,13 @@ put_wise_identify_rebase_boundary_and_remotes () {
       # Note we don't use PW_OPTION_BRANCH here, but the current branch.
       remote_current="${remote_name}/${branch_name}"
       # Might be empty string if remote exists but not branch.
+      # - And unsets rebase boundary if so, which forces sort & sign to
+      #   verify all commits, which seems like it makes sense for the
+      #   inaugural push.
+      #
+      # SAVVY: If remote_current is not old enough, and user intends to
+      # force-push, they'll have to specify an explicit rebase boundary,
+      # or skip it on push.
       rebase_boundary="${remote_ref}"
     fi
   fi
