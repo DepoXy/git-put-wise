@@ -89,7 +89,7 @@ put_wise_archive_patches_go () {
     "${starting_sha}" "${endingat_sha}"
 
   # Create the patch directory.
-  must_produce_nonempty_patch "${starting_ref}"
+  must_produce_nonempty_patch "${starting_ref}" "${commit_range_end}" "${patch_dir}"
 
   # Archive and encrypt the format-patch directory.
   local cleartext_name
@@ -606,6 +606,8 @@ compose_filenames () {
 
 must_produce_nonempty_patch () {
   local starting_ref="$1"
+  local commit_range_end="$2"
+  local patch_dir="$3"
 
   git -c diff.noprefix=false format-patch -q -o "${patch_dir}" \
     ${starting_ref}..${commit_range_end}
