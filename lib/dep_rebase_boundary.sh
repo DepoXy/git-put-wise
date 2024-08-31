@@ -565,14 +565,14 @@ insist_nothing_tagged_after () {
     git rev-list ${rev_list_commits} | tail -n 1
   )"
 
-  local version_tag
-  version_tag="$(git_most_recent_version_tag "${child_of_rebase_boundary}")"
+  local recent_ver
+  recent_ver="$(git_most_recent_version_tag "${child_of_rebase_boundary}")"
 
-  local other_tag
-  other_tag="$(git_most_recent_tag "${child_of_rebase_boundary}")"
+  local recent_tag
+  recent_tag="$(git_most_recent_tag "${child_of_rebase_boundary}")"
 
-  if [ -n "${version_tag}" ] \
-    || [ -n "${other_tag}" ] \
+  if [ -n "${recent_ver}" ] \
+    || [ -n "${recent_tag}" ] \
   ; then
     local msg_fiver="ERROR"
     if ${PW_OPTION_ORPHAN_TAGS:-false}; then
@@ -581,13 +581,13 @@ insist_nothing_tagged_after () {
 
     # ***
 
-    # Check if sorted/signed from rebase_boundary
-    # to the tag, and allow if that's the case.
+    # Check if sorted/signed from rebase_boundary to
+    # the tag, and allow if that's the case.
     local tags_will_not_be_orphaned=false
 
-    local older_tag="${version_tag}"
-    if git merge-base --is-ancestor "${other_tag}" "${version_tag}"; then
-      older_tag="${other_tag}"
+    local older_tag="${recent_ver}"
+    if git merge-base --is-ancestor "${recent_tag}" "${recent_ver}"; then
+      older_tag="${recent_tag}"
     fi
 
     if is_already_sorted_and_signed \
@@ -600,13 +600,13 @@ insist_nothing_tagged_after () {
 
     # ***
 
-    >&2 echo "${msg_fiver}: Tag(s) found after sort-from reference"
-    >&2 echo "- Ver. tag: ${version_tag}"
-    >&2 echo "- Oth. tag: ${other_tag}"
-    >&2 echo "- Target rebase ref: ${rebase_boundary}"
+    >&2 echo "${msg_fiver}: Tag(s) found within rebase range"
+    >&2 echo "- Ver. tag: ${recent_ver}"
+    >&2 echo "- Oth. tag: ${recent_tag}"
+    >&2 echo "- Boundary: ${rebase_boundary}"
 
     if ${tags_will_not_be_orphaned}; then
-      >&2 echo "- But these tag(s) will not be orphaned on rebase"
+      >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"
     else
       if ${PW_OPTION_ORPHAN_TAGS:-false}; then
         >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false to fail on this check"
