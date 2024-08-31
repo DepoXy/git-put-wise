@@ -673,9 +673,22 @@ insist_single_author_used_since () {
       "${rebase_boundary}" "${enable_gpg_sign}" "${latest_other_commit}" \
       > /dev/null \
     ; then
-      commits_will_not_be_changed=true
+      # Also check nothing scoped, otherwise if rev range ends with 1+
+      # scoped commits, and later commit is not scoped, or lesser scope,
+      # than technically this rev range not sorted. (And doesn't seem
+      # worth it to check commits after are equal or greater scope, though
+      # technically that would make this check less exclusive.)
+      local scoping_boundary_or_HEAD
+      scoping_boundary_or_HEAD="$( \
+        identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
+      )"
 
-      msg_fiver="ALERT"
+      if ! git merge-base --is-ancestor "${scoping_boundary_or_HEAD}" "${latest_other_commit}" \
+      ; then
+        commits_will_not_be_changed=true
+
+        msg_fiver="ALERT"
+      fi
     fi
 
     # ***
