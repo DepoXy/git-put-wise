@@ -222,7 +222,7 @@ print_starting_ref_or_upstream_branch () {
     pw_tag_ref="$(git_tag_object_name "${pw_tag_applied}")"
 
     if [ -z "${pw_tag_ref}" ]; then
-      >&2 echo "ERROR: Unexpected DEV error:" \
+      >&2 echo "GAFFE: Unexpected DEV error:" \
         "git_tag_object_name \"${pw_tag_applied}\" failed"
 
       exit 1

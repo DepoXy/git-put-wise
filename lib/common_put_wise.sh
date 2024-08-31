@@ -1145,7 +1145,7 @@ must_confirm_commit_at_or_behind_commit () {
 
   if [ -z "${early_commit}" ]; then
     # Somewhat overzealous check, because callers also check.
-    >&2 echo "GAFFE: Missing early_commit [DEV error]"
+    >&2 echo "GAFFE: Missing early_commit [must_confirm_commit_at_or_behind_commit]"
 
     exit 1
   elif ! git merge-base --is-ancestor "${early_commit}" "${later_commit}"; then
@@ -1162,7 +1162,7 @@ must_confirm_commit_at_or_behind_commit () {
       # local branch (which might be 'private').
       #
       # 2023-01-16: I don't think code is designed to flow through here.
-      >&2 echo "ERROR?: later_commit (${later}) not --is-ancestor HEAD"
+      >&2 echo "GAFFE: Unexpected: later_commit (${later}) not --is-ancestor HEAD"
 
       exit 1
     fi
@@ -1187,7 +1187,7 @@ must_confirm_commit_at_or_behind_commit () {
     # ancestor), therefore later <> early (they've diverged).
 
     if git merge-base --is-ancestor "${early_commit}" "HEAD"; then
-      >&2 echo "ERROR: Impossible: ${early} <> ${later} but each <= HEAD ?? [DEV error]"
+      >&2 echo "GAFFE: Impossible: ${early} <> ${later} but each <= HEAD ??"
 
       exit 1
     elif ! ${divergent_ok}; then
