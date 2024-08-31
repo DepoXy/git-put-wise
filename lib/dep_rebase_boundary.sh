@@ -145,12 +145,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   local applied_tag="$(format_pw_tag_applied "${branch_name}")"
 
-  local is_hyper_branch=false
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
-    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
-  ; then
-    is_hyper_branch=true
-  fi
+  # true if branch_name is 'release' or 'private'.
+  local is_hyper_branch
+  is_hyper_branch="$(print_is_hyper_branch "${branch_name}")"
 
   local remote_ref=""
 
@@ -443,6 +440,21 @@ put_wise_identify_rebase_boundary_and_remotes () {
     debug_alert_if_ref_tags_after_rebase_boundary \
       "${branch_name}" "${rebase_boundary}" "${applied_tag}"
   fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+print_is_hyper_branch () {
+  local branch_name="$1"
+
+  local is_hyper_branch=false
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
+    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+  ; then
+    is_hyper_branch=true
+  fi
+
+  printf "%s" "${is_hyper_branch}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
