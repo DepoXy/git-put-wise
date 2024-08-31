@@ -13,6 +13,11 @@ DRY_ECHO=""
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# REFER: `printf '' | git hash-object -t tree --stdin`
+local GIT_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 put_wise_archive_patches () {
   ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
@@ -206,7 +211,6 @@ print_starting_ref_or_upstream_branch () {
   # ***
 
   local upstream_ref=""
-  local checked_remotes_named=""
   identify_first_upstream_branch
 
   local upstream_ref_ref
@@ -271,31 +275,48 @@ print_starting_ref_or_upstream_branch () {
       fi
     fi
   else
-    local remote_check=""
-    [ -z "${checked_remotes_named}" ] ||
-      remote_check="- no special remote(s) (${checked_remotes_named})\n"
-    remote_check="${remote_check}- no upstream branch set (git branch -u <upstream>)\n"
-    remote_check="${remote_check}- no '${PW_OPTION_REMOTE:-origin}' remote (PW_OPTION_REMOTE) default branch"
+    # Either or neither but not both pw_tag and upstream_ref.
 
-    if [ -n "${pw_tag_ref}" ]; then
-      >&2 echo "Start identified by '${pw_tag_applied}' tag"
+    # Report why starting_ref picked.
+    local picked_because=""
 
-      starting_ref="${pw_tag_ref}"
-    elif [ -n "${upstream_ref_ref}" ]; then
+    if [ -n "${upstream_ref_ref}" ]; then
       >&2 echo "Start identified by upstream '${upstream_ref}' branch"
-      remote_check="- no '${pw_tag_applied}' tag"
+      picked_because="- no '${pw_tag_applied}' tag"
       starting_ref="${upstream_ref_ref}"
     else
-      # Most likely, this is a new private-private project (like DepoXy Client),
-      # and this is the first time the user is running this command.
-      # - Unless this issue happens for other reasons, shouldn't need to
-      #   exit confirm with user if okay to continue.
-      >&2 echo "ALERT: Archiving from very first revision (root commit)"
-      remote_check="- no '${pw_tag_applied}' tag\n${remote_check}"
-      starting_ref="$(git_first_commit_sha)"
+      local scoping_branch="${SCOPING_REMOTE_BRANCH}"
+      # If feature branch, use current branch name, e.g., 'entrust/<feature>'
+      ${is_hyper_branch} || scoping_branch="${branch_name}"
+
+      picked_because="- no remote branch '${SCOPING_REMOTE_NAME}/${scoping_branch}'"
+      if ! ${is_hyper_branch}; then
+        picked_because="${picked_because}\n- no remote branch '${remote_name}/${branch_name}'"
+      fi
+      picked_because="${picked_because}\n- no remote branch '${REMOTE_BRANCH_RELEASE}'"
+      picked_because="${picked_because}\n- no local branch '${LOCAL_BRANCH_RELEASE}'"
+
+      if [ -n "${pw_tag_ref}" ]; then
+        >&2 echo "Start identified by '${pw_tag_applied}' tag"
+
+        starting_ref="${pw_tag_ref}"
+      else
+        # Most likely, this is a new private-private project (like DepoXy Client),
+        # and this is the first time the user is running this command.
+        # - Unless this issue happens for other reasons, shouldn't need to
+        #   confirm with user if okay to continue.
+        >&2 echo "ALERT: Archiving from very first revision (root commit)"
+        picked_because="- no '${pw_tag_applied}' tag\n${picked_because}"
+
+        # CALSO: See also ${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}
+        # - But here we'll use the magic empty Git tree SHA.
+        # - Note using $(git_first_commit_sha) won't work, because lhs
+        #   commit in revision range passed to format-patch is exclusive.
+        starting_ref="${GIT_EMPTY_TREE}"
+      fi
     fi
 
-    >&2 info "Start identified because:\n${remote_check}"
+    >&2 info "Start identified because:\n${picked_because}"
   fi
 
   echo "${starting_ref}"
@@ -304,95 +325,49 @@ print_starting_ref_or_upstream_branch () {
 # ***
 
 identify_first_upstream_branch () {
+  # "Return" variable.
   upstream_ref=""
-  checked_remotes_named=""
 
-  local branch_name="$(git_branch_name)"
+  local branch_name=""
+  local local_release=""
+  local remote_release=""
+  local remote_protected=""
+  local remote_current=""
+  local remote_name=""
+  local rebase_boundary=""
+  local already_sorted=false
+  local already_signed=false
+  # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
+  if put_wise_identify_rebase_boundary_and_remotes \
+    "${_action_desc:-archive}" "${_inhibit_exit_if_unidentified:-true}" \
+  ; then
+    # Identify first put-wise upstream: Check first for remote scoping
+    # branch, then remote feature branch, then remote release branch,
+    # then local release branch.
 
-  must_identify_upstream_ref () {
-    local remote_ref="$1"
+    # Note the identify fcn. sets remote strings if remote exists but
+    # branch absent, i.e., if user can create new branch on push. So
+    # here we also check if branch actually exists.
+    if git_remote_branch_exists "${remote_protected}"; then
+      # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
+      must_confirm_upstream_shares_history_with_head "${remote_protected}"
 
-    local remote_name=""
-    remote_name="$(git_upstream_parse_remote_name "${remote_ref}")"
-    local remote_branch=""
-    remote_branch="$(git_upstream_parse_branch_name "${remote_ref}")"
+      upstream_ref="${remote_protected}"
+    elif git_remote_branch_exists "${remote_current}"; then
+      must_confirm_upstream_shares_history_with_head "${remote_current}"
 
-    git_remote_exists "${remote_name}" || return 1
+      upstream_ref="${remote_current}"
+    elif git_remote_branch_exists "${remote_release}"; then
+      # MAYBE: Ignore for feature branch if diverges from HEAD.
+      must_confirm_upstream_shares_history_with_head "${remote_release}"
 
-    git fetch "${remote_name}"
+      upstream_ref="${remote_release}"
+    elif git_branch_exists "${local_release}"; then
+      # MAYBE: Ignore for feature branch if diverges from HEAD.
+      must_confirm_upstream_shares_history_with_head "${local_release}"
 
-    if git_remote_branch_exists "${remote_ref}"; then
-      upstream_ref="${remote_ref}"
-    else
-      # This remote exists for one purpose, which is this branch.
-      >&2 echo "ERROR: There's no '${remote_branch}' branch" \
-        "on the '${remote_name}' remote."
-
-      exit 1
+      upstream_ref="${local_release}"
     fi
-  }
-
-  # Identify first put-wise upstream: Check first for
-  # REMOTE_BRANCH_SCOPING, then REMOTE_BRANCH_RELEASE, then RELEASE.
-  if [ -z "${upstream_ref}" ]; then
-    if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
-      checked_remotes_named="'${REMOTE_BRANCH_SCOPING}'"
-      if must_identify_upstream_ref "${REMOTE_BRANCH_SCOPING}"; then
-        >&2 info "Expected remote upstream verified: '${upstream_ref}'"
-      else
-        checked_remotes_named="${checked_remotes_named} and "
-      fi
-    fi
-  fi
-
-  if [ -z "${upstream_ref}" ]; then
-    if [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
-      || [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; \
-    then
-      checked_remotes_named="${checked_remotes_named}'${REMOTE_BRANCH_RELEASE}'"
-      if must_identify_upstream_ref "${REMOTE_BRANCH_RELEASE}"; then
-        >&2 info "Expected remote upstream verified: '${upstream_ref}'"
-      elif git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
-        upstream_ref="${LOCAL_BRANCH_RELEASE}"
-        >&2 info "Default local remote upstream verified: '${upstream_ref}'"
-      fi
-    fi
-  fi
-
-  # If no put-wise upstream, check for configured upstream, or origin/<default>.
-  if [ -z "${upstream_ref}" ]; then
-    # Determine the upstream branch name.
-    upstream_ref="$(git_tracking_branch_safe)"
-    if [ -n "${upstream_ref}" ]; then
-      >&2 info "Upstream identified via config: '${upstream_ref}'"
-    else
-      local remote_name="${PW_OPTION_REMOTE:-origin}"
-      if git_remote_exists "${remote_name}"; then
-        local remote_default
-        remote_default="$(git_remote_default_branch "${remote_name}")"
-        upstream_ref="${remote_name}/${remote_default}"
-        >&2 info "Upstream guessed from remotes/${remote_name}/HEAD: '${upstream_ref}'"
-        >&2 warn "You should configure an upstream tracking branch for this branch."
-      fi
-    fi
-    if [ -n "${upstream_ref}" ]; then
-      maybe_fetch_upstream_remote "${upstream_ref}"
-    fi
-  fi
-}
-
-# ***
-
-maybe_fetch_upstream_remote () {
-  local br_upstream="$1"
-
-  # Fetch <remote> if tracking branch is on one.
-  local remote_name
-  remote_name="$(git_upstream_parse_remote_name "${br_upstream}")"
-
-  if [ -n "${remote_name}" ]; then
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    git fetch "${remote_name}"
   fi
 }
 
@@ -609,12 +584,20 @@ must_produce_nonempty_patch () {
   local commit_range_end="$2"
   local patch_dir="$3"
 
-  git -c diff.noprefix=false format-patch -q -o "${patch_dir}" \
-    ${starting_ref}..${commit_range_end}
+  # ALTLY: To include root commit in format-patch:
+  # - Use magic empty tree SHA:
+  #     ${GIT_EMPTY_TREE}..${commit_range_end}
+  # - Or use --root option:
+  #     --root ${commit_range_end}
+  # Because git-diff doesn't have a --root option, caller sets
+  # starting_ref to empty tree SHA if root should be included.
+  local rev_range="${starting_ref}..${commit_range_end}"
+
+  git -c diff.noprefix=false format-patch -q -o "${patch_dir}" ${rev_range}
 
   if [ -z "$(command ls -A "${patch_dir}")" ]; then
     >&2 echo -e "Unexpected: Nothing archived! Try:\n" \
-      " git diff ${starting_ref}..${commit_range_end}"
+      " git diff ${rev_range}"
 
     exit 1
   fi
