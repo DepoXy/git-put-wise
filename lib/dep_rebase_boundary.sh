@@ -462,6 +462,11 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
     "$(format_pw_tag_archived "${branch_name}")" \
     "${work_tag}" \
   ; do
+    if ! git_tag_exists "${tag_name}"; then
+
+      continue
+    fi
+
     if $(must_confirm_shares_history_with_head "${tag_name}" > /dev/null 2>&1); then
       local divergent_ok=false
 
