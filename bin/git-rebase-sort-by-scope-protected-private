@@ -201,9 +201,9 @@ must_verify_starting_ref () {
   local starting_ref="$1"
 
   if [ -z "${starting_ref}" ]; then
-    >&2 echo "ERROR: Please specify the rebase starting gitref"
+    # Will verify further in print_rebase_boundary
 
-    return 1
+    return 0
   fi
 
   if [ "${starting_ref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
