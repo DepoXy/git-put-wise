@@ -364,6 +364,9 @@ resort_and_sign_commits_before_push_maybe () {
         "but all commits confirmed sorted${and_signed}")"
     fi
   fi
+  # else, rebase_boundary is HEAD. Could mean, e.g.,
+  # - Local release is HEAD, and we may/may not need to push remote release;
+  # - Etc.
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
