@@ -470,7 +470,7 @@ fetch_and_check_branch_exists_or_remote_online () {
     if git ls-remote ${remote_name} -q 2> /dev/null; then
       >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
       # If case remote branch was deleted, remove local ref.
-      git fetch --prune "${remote_name}"
+      git fetch -q --prune "${remote_name}"
 
       return 0
     else
