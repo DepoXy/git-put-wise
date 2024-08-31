@@ -58,6 +58,7 @@ PW_OPTION_NO_CLEANUP=${PW_OPTION_NO_CLEANUP:-false}
 
 PW_OPTION_FORCE_PUSH=${PW_OPTION_FORCE_PUSH:-false}
 PW_OPTION_ORPHAN_TAGS=${PW_OPTION_ORPHAN_TAGS:-false}
+PW_OPTION_IGNORE_AUTHOR=${PW_OPTION_IGNORE_AUTHOR:-false}
 PW_OPTION_SKIP_REBASE=${PW_OPTION_SKIP_REBASE:-false}
 PW_OPTION_AUTO_CONFIRM=${PW_OPTION_AUTO_CONFIRM:-false}
 
@@ -290,6 +291,18 @@ cli_parse_params () {
         shift
         ;;
 
+      --ignore-author)
+        PW_OPTION_IGNORE_AUTHOR=true
+
+        shift
+        ;;
+
+      --no-ignore-author)
+        PW_OPTION_IGNORE_AUTHOR=false
+
+        shift
+        ;;
+
       --skip-rebase)
         PW_OPTION_SKIP_REBASE=true
 
@@ -445,6 +458,7 @@ cli_parse_params () {
               #   PW_ACTION_REBASE_ABORT=true
               #   PW_ACTION_PULL_CLEANUP=true
               #   PW_OPTION_ORPHAN_TAGS=false|true
+              #   PW_OPTION_IGNORE_AUTHOR=false|true
               #   PW_OPTION_SKIP_REBASE=false|true
               J)
                 option_value_must_be_specified "-J" "$@"

@@ -435,6 +435,11 @@ put_wise_identify_rebase_boundary_and_remotes () {
       exit 1
     fi
 
+    if ! insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"; then
+
+      exit 1
+    fi
+
     debug_alert_if_ref_tags_after_rebase_boundary \
       "${branch_name}" "${rebase_boundary}" "${applied_tag}"
   fi
@@ -617,6 +622,100 @@ insist_nothing_tagged_after () {
         >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false to fail on this check"
       else
         >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true to disable this check"
+
+        exit 1
+      fi
+    fi
+  fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# Verify contiguous author used since rebase boundary.
+#
+# - In case user hasn't been consistent with their name, use only email,
+#   excluding name, to identify author, e.g.,
+#
+#     git log -n 1 --perl-regexp --author='^(?!(.*<user@dom>)).*$'
+#
+#   Vs.
+#
+#     git log -n 1 --perl-regexp --author='^(?!(User Name <user@dom>)).*$'
+#
+# - REFER/2024-08-29 01:26: man git-log:
+#   --author=<pattern>, --committer=<pattern>
+#     Limit the commits output to ones with author/committer header lines
+#     that match the specified pattern (regular expression). With more than
+#     one --author=<pattern>, commits whose author matches any of the given
+#     patterns are chosen (similarly for multiple --committer=<pattern>).
+#   - For the ?! negative lookahead:
+#     -P, --perl-regexp
+#       Consider the limiting patterns to be Perl-compatible regular
+#       expressions. Support for these types of regular expressions is
+#       an optional compile-time dependency. If Git wasn’t compiled with
+#       support for them providing this option will cause it to die.
+#
+# - Multiple authors:
+#
+#     --author='^(?!(author1|author2)).*$'
+#
+# - Not really sure why .* needed but it is.
+
+insist_single_author_used_since () {
+  local rebase_boundary="$1"
+  local enable_gpg_sign="$2"
+
+  local latest_author_email
+  latest_author_email="$(git log -1 --format=%ae)"
+
+  local latest_other_commit
+  latest_other_commit="$( \
+    git log -n 1 --format="%H" --perl-regexp --author="^(?!(.*<${latest_author_email}>)).*\$"
+  )"
+
+  if [ -z "${latest_other_commit}" ]; then
+    # Mono-authorship.
+
+    return 0
+  fi
+
+  if git merge-base --is-ancestor "${rebase_boundary}" "${latest_other_commit}" \
+  ; then
+    local msg_fiver="ERROR"
+    if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
+      msg_fiver="ALERT"
+    fi
+
+    # ***
+
+    # Check if sorted/signed from rebase_boundary to
+    # the author commit, and allow if that's the case.
+    local commits_will_not_be_changed=false
+
+    if is_already_sorted_and_signed \
+      "${rebase_boundary}" "${enable_gpg_sign}" "${latest_other_commit}" \
+      > /dev/null \
+    ; then
+      commits_will_not_be_changed=true
+
+      msg_fiver="ALERT"
+    fi
+
+    # ***
+
+    >&2 echo "${msg_fiver}: Commits found within rebase range from other author(s)"
+    >&2 echo "- Latest author email: ${latest_author_email}"
+    >&2 echo "- Latest other commit: ${latest_other_commit}"
+    >&2 echo "- Other commit email: $(git log -1 --format=%ae ${latest_other_commit})"
+    >&2 echo "- Rebase boundary: ${rebase_boundary}"
+
+    if ${commits_will_not_be_changed}; then
+      >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"
+    else
+      if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
+        >&2 echo "- USAGE: Set PW_OPTION_IGNORE_AUTHOR=false (--no-ignore-author) to fail on this check"
+      else
+        >&2 echo "- USAGE: Set PW_OPTION_IGNORE_AUTHOR=true (--ignore-author) to disable this check"
 
         exit 1
       fi
