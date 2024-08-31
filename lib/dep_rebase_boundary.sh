@@ -488,6 +488,7 @@ fetch_and_check_branch_exists_or_remote_online () {
     else
       >&2 echo "- Remote unreachable"
       # We'll still check the branch to see if previously fetched.
+      # MAYBE: Might still want to fail because ref. might be stale.
     fi
   else
     >&2 echo
@@ -499,6 +500,7 @@ fetch_and_check_branch_exists_or_remote_online () {
 
     return 0
   else
+    # Remote not reachable, and no branch.
 
     return 1
   fi
