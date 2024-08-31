@@ -645,9 +645,16 @@ insist_single_author_used_since () {
   local latest_author_email
   latest_author_email="$(git log -1 --format=%ae)"
 
+  local author_pattern
+  if [ -z "${PW_OPTION_AUTHOR_PATTERN}" ]; then
+    author_pattern=".*<${latest_author_email}>"
+  else
+    author_pattern="${PW_OPTION_AUTHOR_PATTERN}"
+  fi
+
   local latest_other_commit
   latest_other_commit="$( \
-    git log -n 1 --format="%H" --perl-regexp --author="^(?!(.*<${latest_author_email}>)).*\$"
+    git log -n 1 --format="%H" --perl-regexp --author="^(?!(${author_pattern})).*\$"
   )"
 
   if [ -z "${latest_other_commit}" ]; then
@@ -702,10 +709,11 @@ insist_single_author_used_since () {
     if ${commits_will_not_be_changed}; then
       >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"
     else
+      >&2 echo "- USAGE: Set PW_OPTION_AUTHOR_PATTERN=\".*<name@dom>|.*<user@tld>|...\" to ignore authors"
       if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
-        >&2 echo "- USAGE: Set PW_OPTION_IGNORE_AUTHOR=false (--no-ignore-author) to fail on this check"
+        >&2 echo "- ALTLY: Set PW_OPTION_IGNORE_AUTHOR=false (--no-ignore-author) to fail on this check"
       else
-        >&2 echo "- USAGE: Set PW_OPTION_IGNORE_AUTHOR=true (--ignore-author) to disable this check"
+        >&2 echo "- ALTLY: Set PW_OPTION_IGNORE_AUTHOR=true (--ignore-author) to disable this check"
 
         exit 1
       fi
