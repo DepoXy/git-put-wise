@@ -85,8 +85,8 @@
 #   force-push), sets local_release="" and remote_release="" so that
 #   the caller will ignore the release branches (and not force-push
 #   to remote release branch).
-# - Set PW_OPTION_FORCE_ORPHAN_TAGS=true to not exit nonzero if
-#   tags found within the rebase area.
+# - Set PW_OPTION_ORPHAN_TAGS=true (--orphan-tags) to not exit nonzero
+#   if tags found within the rebase area.
 # - Use PW_ACTION_REBASE_BOUNDARY=true (--rebase-boundary) to call
 #   this function from the command line, and to print its results.
 
@@ -526,7 +526,7 @@ fetch_and_check_branch_exists_or_remote_online () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-PW_OPTION_FORCE_ORPHAN_TAGS="${PW_OPTION_FORCE_ORPHAN_TAGS:-false}"
+PW_OPTION_ORPHAN_TAGS="${PW_OPTION_ORPHAN_TAGS:-false}"
 
 insist_nothing_tagged_after () {
   local rebase_boundary="$1"
@@ -553,7 +553,7 @@ insist_nothing_tagged_after () {
     || [ -n "${other_tag}" ] \
   ; then
     local msg_fiver="ERROR"
-    if ${PW_OPTION_FORCE_ORPHAN_TAGS:-false}; then
+    if ${PW_OPTION_ORPHAN_TAGS:-false}; then
       msg_fiver="ALERT"
     fi
 
@@ -562,10 +562,10 @@ insist_nothing_tagged_after () {
     >&2 echo "- Oth. tag: ${other_tag}"
     >&2 echo "- Target rebase ref: ${rebase_boundary}"
 
-    if ${PW_OPTION_FORCE_ORPHAN_TAGS:-false}; then
-      >&2 echo "- USAGE: Set PW_OPTION_FORCE_ORPHAN_TAGS=false to fail on this check"
+    if ${PW_OPTION_ORPHAN_TAGS:-false}; then
+      >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false to fail on this check"
     else
-      >&2 echo "- USAGE: Set PW_OPTION_FORCE_ORPHAN_TAGS=true to disable this check"
+      >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true to disable this check"
 
       exit 1
     fi
