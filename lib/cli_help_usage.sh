@@ -84,6 +84,9 @@ Additional options
   -f|--force                With --push, uses git push --force-with-lease
   -F|--no-force             With --push, don’t --force-with-lease [default]
 
+  --skip-rebase             With --push, skip sort & sign
+  --no-skip-rebase          With --push, don’t --skip-rebase [default]
+
   --explain                 With --push, explain how tig prompt works [default]
   -E|--no-explain           With --push, don’t explain how tig prompt works
 
@@ -134,6 +137,8 @@ Environment variables you can use instead of options above:
   --reset-author            PW_OPTION_RESET_AUTHOR_DISABLE=false
 
   -f|--force/-F|--no-force  PW_OPTION_FORCE_PUSH=true|false
+  --skip-rebase/--no-skip-rebase
+                            PW_OPTION_SKIP_REBASE=true|false
   --explain/-E|--no-explain PW_OPTION_QUICK_TIG=false|true
   --yes/-y|--no-yes         PW_OPTION_AUTO_CONFIRM=true|false
 

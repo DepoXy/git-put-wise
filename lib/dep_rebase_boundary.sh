@@ -69,7 +69,7 @@
 #   you here.
 
 # USER CONTROLS:
-# - Set PUT_WISE_SKIP_REBASE=true to probe the remote branches,
+# - Set PW_OPTION_SKIP_REBASE=true to probe the remote branches,
 #   and to ignore rebase_boundary (sets it to empty string).
 # - Set PW_OPTION_STARTING_REF=<REF> (-S | --starting-ref) to pick
 #   your own rebase boundary.
@@ -389,7 +389,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   # ***
 
-  if ${PUT_WISE_SKIP_REBASE:-false}; then
+  if ${PW_OPTION_SKIP_REBASE:-false}; then
     rebase_boundary=""
   else
     if [ -n "${PW_OPTION_STARTING_REF}" ]; then
@@ -631,7 +631,7 @@ alert_cannot_identify_rebase_boundary () {
   >&2 echo
   >&2 echo "- OPTION 3: If you want to skip the sort-and-sign"
   >&2 echo "  rebase altogether, set the environ:"
-  >&2 echo "    PUT_WISE_SKIP_REBASE=true ${prog_name} ..."
+  >&2 echo "    PW_OPTION_SKIP_REBASE=true ${prog_name} ..."
   >&2 echo
   >&2 echo "- OPTION 4: If you want the rebase boundary identified"
   >&2 echo "  automatically, create one of the missing references:"

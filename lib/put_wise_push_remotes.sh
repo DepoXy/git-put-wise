@@ -335,7 +335,7 @@ resort_and_sign_commits_before_push_maybe () {
       # (because no-op); or exit 1 if ahead of HEAD, or diverged.
       resort_and_sign_commits_before_push "${rebase_boundary}" \
         ${_enable_gpg_sign:-true}
-    elif ! ${PUT_WISE_SKIP_REBASE:-false}; then
+    elif ! ${PW_OPTION_SKIP_REBASE:-false}; then
       # No rebase boundary identified, but all commits are already
       # signed & sorted.
       local and_signed=""
