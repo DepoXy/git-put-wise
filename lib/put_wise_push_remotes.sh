@@ -112,6 +112,26 @@ put_wise_push_remotes_go () {
 
   # ***
 
+  remote_absent_or_branch_at_ref () {
+    local remote_ref="$1"
+    local local_ref="$2"
+
+    [ -z "${remote_ref}" ] \
+      || git_is_same_commit "${remote_ref}" "${local_ref}"
+  }
+
+  if true \
+    && remote_absent_or_branch_at_ref "${remote_protected}" "${protected_boundary_or_HEAD}" \
+    && remote_absent_or_branch_at_ref "${remote_current}" "${scoping_boundary_or_HEAD}" \
+    && remote_absent_or_branch_at_ref "${remote_release}" "${release_boundary_or_HEAD}" \
+  ; then
+    >&2 echo "Nothing to push: All remote branches up-to-date"
+
+    exit 0
+  fi
+
+  # ***
+
   # Temporary pw-private/pw-protected scoping tags. For user, not for code.
   # - Note that some characters will not claim their full width in the
   #   terminal (including tig) such as 🛡 or 🛡️. Odder, some might show up

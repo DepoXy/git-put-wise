@@ -533,7 +533,7 @@ must_confirm_upstream_shares_history_with_head () {
   head_sha="$(git rev-parse HEAD)"
 
   if git_is_same_commit "${remote_ref}" "${head_sha}"; then
-    >&2 echo "Nothing to do: Already up-to-date with “${remote_ref}”"
+    >&2 echo "Nothing to pull: Already up-to-date with “${remote_ref}”"
 
     ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
   fi
