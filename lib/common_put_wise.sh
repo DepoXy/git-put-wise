@@ -888,41 +888,39 @@ print_is_gpg_sign_enabled () {
 must_confirm_shares_history_with_head () {
   local gitref="$1"
 
-  if git merge-base --is-ancestor "${gitref}" "HEAD"; then
-    # The common ancestor is ${ref_sha} and/or HEAD.
-    if git merge-base --is-ancestor "HEAD" "${gitref}"; then
-      # gitref *is* HEAD.
-
-      # Check that this isn't just a one-commit pony.
-      if [ $(git_number_of_commits) -eq 1 ]; then
-        # It is just a one-commit pony!
-        #
-        # Return happily, so caller can finish the push/archive.
-        echo "HEAD"
-
-        return 0
-      fi
-      # else  nope, more than one commit, so caller's starting-ref is at
-      #       HEAD, which means nothing to push/archive.
-
-      # We finish the app here:
-      # - This function is called when pulling changes for a single project,
-      #   or when pushing changes or archiving patches for a single project.
-      # - This function is not called to work on more than one project, so
-      #   exiting here is fine (albeit a little short-circuity, I admit).
-      >&2 echo "Nothing to do: Already up-to-date with “${gitref}”"
-
-      ${PW_OPTION_FAIL_ELEVENSES:-false} \
-        && exit ${PW_ELEVENSES} \
-        || exit 0
-    else
-      # gitref def behind HEAD.
+  if git_is_same_commit "${gitref}" "HEAD"; then
+    # Check that this isn't just a one-commit pony.
+    if [ $(git_number_of_commits) -eq 1 ]; then
+      # It is just a one-commit pony!
       #
-      # Print gitref's SHA.
-      git merge-base "${gitref}" "HEAD"
+      # Return happily, so caller can finish the push/archive.
+      echo "HEAD"
 
       return 0
     fi
+    # else  nope, more than one commit, so caller's starting-ref is at
+    #       HEAD, which means nothing to push/archive.
+
+    # We complete the command here:
+    # - This function is called when pulling changes for a single project,
+    #   or when pushing changes or archiving patches for a single project,
+    #   also by git-sort-by-scope rebaser.
+    # - This function is not called to work on more than one project, so
+    #   exiting here is fine (albeit a little short-circuity, I admit).
+    >&2 echo "Nothing to do: Already up-to-date with “${gitref}”"
+
+    ${PW_OPTION_FAIL_ELEVENSES:-false} \
+      && exit ${PW_ELEVENSES} \
+      || exit 0
+  fi
+
+  if git merge-base --is-ancestor "${gitref}" "HEAD"; then
+    # The common ancestor is ${ref_sha}, i.e., gitref behind HEAD.
+    #
+    # Print gitref's SHA.
+    git merge-base "${gitref}" "HEAD"
+
+    return 0
   elif git merge-base --is-ancestor "HEAD" "${gitref}"; then
     # gitref ahead of HEAD. *How *did* we get here?*
     #
