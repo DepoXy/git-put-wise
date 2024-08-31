@@ -495,6 +495,7 @@ must_identify_rebase_base () {
 
       upstream_ref="${remote_current}"
     elif git_remote_branch_exists "${remote_release}"; then
+      # MAYBE: Ignore for feature branch if diverges from HEAD.
       must_confirm_upstream_shares_history_with_head "${remote_release}"
 
       upstream_ref="${remote_release}"
