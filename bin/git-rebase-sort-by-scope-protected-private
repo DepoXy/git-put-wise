@@ -247,7 +247,7 @@ print_rebase_boundary () {
       >&2 echo "- Or use the special \"ROOT\" ref to sort & sign all commits:"
       >&2 echo "    ${prog_name} ROOT"
       >&2 echo "- Or enable use_magic_starting_ref:"
-      >&2 echo "    ${prog_name} "" true"
+      >&2 echo "    ${prog_name} \"\" true"
 
       exit 1
     fi
