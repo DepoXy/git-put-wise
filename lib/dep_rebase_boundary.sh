@@ -552,9 +552,13 @@ insist_nothing_tagged_after () {
     # the tag, and allow if that's the case.
     local tags_will_not_be_orphaned=false
 
-    local older_tag="${recent_ver}"
-    if git merge-base --is-ancestor "${recent_tag}" "${recent_ver}"; then
-      older_tag="${recent_tag}"
+    local newer_tag="${recent_ver}"
+    if [ -n "${recent_tag}" ]; then
+      if [ -z "${recent_ver}" ] \
+        || git merge-base --is-ancestor "${recent_ver}" "${recent_tag}" \
+      ; then
+        newer_tag="${recent_tag}"
+      fi
     fi
 
     if is_already_sorted_and_signed \
