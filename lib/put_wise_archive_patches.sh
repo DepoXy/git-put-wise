@@ -81,7 +81,7 @@ put_wise_archive_patches_go () {
   local patch_dir
   local patch_name
   local crypt_name
-  compose_filenames "${starting_ref}" "${projpath_sha}"
+  compose_filenames "${starting_ref}" "${projpath_sha}" "${commit_range_end}"
 
   # Exit 0/11 is archive already exists.
   must_not_already_be_archived "${crypt_name}" \
@@ -576,6 +576,7 @@ must_have_non_empty_rev_range_not_already_tagged () {
 compose_filenames () {
   local starting_ref="$1"
   local projpath_sha="$2"
+  local commit_range_end="$3"
 
   hostname_sha="$(print_sha "$(hostname)")"
 
