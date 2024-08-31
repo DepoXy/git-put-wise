@@ -98,6 +98,10 @@ git-rebase-sort-by-scope-protected-private () {
     return 0
   fi
 
+  # Verify rebase_boundary. Called fcn. echoes rebase_boundary, or prints "HEAD".
+  must_confirm_shares_history_with_head "${rebase_boundary}" > /dev/null \
+    || exit $?
+
   # Sets already_sorted=true and returns 1 if sorted but not signed; or
   # sets already_sorted=false and returns 1 if not sorted; or
   # returns 0 if sorted, and signed (if requested).

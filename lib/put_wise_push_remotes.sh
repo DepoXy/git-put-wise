@@ -54,6 +54,11 @@ put_wise_push_remotes_go () {
 
   # ***
 
+  # If called via `putwisely out`, short-circuit so caller calls --archive.
+  must_exit_elevenses_if_private_private_project
+
+  # ***
+
   resort_and_sign_commits_before_push_maybe "${rebase_boundary}" "${already_signed}"
 
   # ***

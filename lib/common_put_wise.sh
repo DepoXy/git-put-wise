@@ -634,54 +634,46 @@ format_pw_tag_ephemeral_pull () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# - Returns zero if the git ref. is in the current branch history,
-#   and if it's not HEAD.
-#   - If git ref. ancestor of HEAD (not diverged), resorts scoped commits.
-# - Exits 0 (or elevenses) if the git ref. is HEAD, because caller
-#   (push or archive) passed us the last commit they pushed/archived,
-#   so if it's HEAD, there's nothing to push/archive.
-# - Exits nonzero (non-elevenses) if git ref. ahead of HEAD, somehow.
+# Sorts & signs commits since rebase_boundary.
+# - This fcn. is used by PW_ACTION_PUSH and PW_ACTION_ARCHIVE.
+# - Exits 1 if boundary is ahead of HEAD or diverged.
+# - Exits 0/11 if boundary is same as HEAD, i.e., no-op.
 resort_and_sign_commits_before_push () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
-  local starting_sha_or_HEAD="${rebase_boundary}"
-
-  if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
-    # The callee will emit "HEAD" if rebase_boundary diverged from HEAD
-    # and --force. Otherwise prints rebase_boundary SHA.
-    starting_sha_or_HEAD="$( \
-      must_confirm_shares_history_with_head "${rebase_boundary}"
-    )" || exit $?
-  fi
-
-  if [ -z "${starting_sha_or_HEAD}" ]; then
-    # If called fcn. exited 0 rather than PW_ELEVENSES, it alerted on
-    # stderr that rebase_boundary is HEAD, and we can continue the exit.
-
-    exit 0
-  fi
+  local starting_sha_or_HEAD
+  starting_sha_or_HEAD="$( \
+    must_confirm_shares_history_with_head "${rebase_boundary}"
+  )" || exit $?
 
   if [ "${starting_sha_or_HEAD}" = "HEAD" ]; then
-    echo_announce "Not resorting! Divergent, or first commit"
+    >&2 echo "Nothing to do: Already up-to-date with “${rebase_boundary}”"
 
-    return 0
+    exit_elevenses
   fi
 
-  echo_announce "Scoped resort (${starting_sha_or_HEAD})"
+  # ***
+
+  local and_sign=""
+  ! ${enable_gpg_sign} || and_sign=" & sign"
+
+  echo_announce "Scoped sort${and_sign} (${starting_sha_or_HEAD})"
+
+  # ***
 
   resort_and_sign_commits_before_push_unless_unnecessary \
     "${starting_sha_or_HEAD}" "${enable_gpg_sign}"
 }
 
 resort_and_sign_commits_before_push_unless_unnecessary () {
-  local starting_sha="$1"
+  local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
   local retcode=0
 
   # Sort commits by "scope" (according to message prefixes).
-  git_sort_by_scope "${starting_sha}" "${enable_gpg_sign}" \
+  git_sort_by_scope "${rebase_boundary}" "${enable_gpg_sign}" \
     || retcode=$?
 
   if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
@@ -693,6 +685,16 @@ resort_and_sign_commits_before_push_unless_unnecessary () {
 
   # Exit-errexit if sort-by-scope failed.
   return ${retcode}
+}
+
+exit_elevenses () {
+  if ${PW_OPTION_FAIL_ELEVENSES:-false}; then
+
+    exit ${PW_ELEVENSES:-11}
+  else
+
+    exit 0
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -881,76 +883,93 @@ print_is_gpg_sign_enabled () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# Check that the current branch and its upstream share a common history
-# (i.e., you haven't rebased work you previously pushed, otherwise user
-#  needs to sort-by-scope manually, and then pass us a starting gitref).
-# CXREF: must_confirm_commit_at_or_behind_commit
+# Verify that the rebase boundary is an ancestor of the current branch.
+# CXREF: See similar fcn:
+#   must_confirm_commit_at_or_behind_commit
+# USERS: Called by:
+# - put-wise archive, and git-wise push
+#     (via resort_and_sign_commits_before_push)
+# - git-rebase-sort-by-scope, and git-bump-version-tag
+#     (via directly)
 must_confirm_shares_history_with_head () {
   local rebase_boundary="$1"
 
   if git_is_same_commit "${rebase_boundary}" "HEAD"; then
-    # Check that this isn't just a one-commit pony.
-    if [ $(git_number_of_commits) -eq 1 ]; then
-      # It is just a one-commit pony!
-      #
-      # Return happily, so caller can finish the push/archive.
-      echo "HEAD"
+    echo "HEAD"
 
-      return 0
-    fi
-    # else  nope, more than one commit, so caller's starting-ref is at
-    #       HEAD, which means nothing to push/archive.
+    return 0
+  elif [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
+    || git merge-base --is-ancestor "${rebase_boundary}" "HEAD" \
+  ; then
+    # The common ancestor is ${rebase_boundary},
+    # i.e., rebase_boundary is behind HEAD.
 
-    # We complete the command here:
-    # - This function is called when pulling changes for a single project,
-    #   or when pushing changes or archiving patches for a single project,
-    #   also by git-sort-by-scope rebaser.
-    # - This function is not called to work on more than one project, so
-    #   exiting here is fine (albeit a little short-circuity, I admit).
-    >&2 echo "Nothing to do: Already up-to-date with “${rebase_boundary}”"
-
-    ${PW_OPTION_FAIL_ELEVENSES:-false} \
-      && exit ${PW_ELEVENSES} \
-      || exit 0
-  fi
-
-  if git merge-base --is-ancestor "${rebase_boundary}" "HEAD"; then
-    # The common ancestor is ${ref_sha}, i.e., rebase_boundary behind HEAD.
-    #
-    # Print rebase_boundary's SHA.
-    git merge-base "${rebase_boundary}" "HEAD"
+    echo "${rebase_boundary}"
 
     return 0
   elif git merge-base --is-ancestor "HEAD" "${rebase_boundary}"; then
     # rebase_boundary ahead of HEAD. *How *did* we get here?*
     #
-    # The rebase_boundary might be a local or remote branch name, or a tag name.
-    # But it's very unlikely a local branch or tag would be ahead of the
-    # current branch, unless the user is outside the normal workflow. So
-    # we'll assume the rebase_boundary is a remote branch and print related hint.
-    >&2 echo "ERROR: The object “${rebase_boundary}” is ahead of the current branch."
-    >&2 echo "- HINT: Pull or rebase upstream changes, and then try again."
+    # - The rebase_boundary might be a local or remote branch name,
+    #   a tag name, or user-specified.
+    # - But it's very unlikely a local branch or tag GPW uses would be ahead
+    #   of the current branch, unless the user is outside the normal workflow.
+    >&2 echo "ERROR: The rebase boundary is ahead of the current branch (HEAD)"
+    >&2 echo "- Rebase boundary: ${rebase_boundary}"
+    >&2 echo "- HINT: If the boundary is a remote branch, pull or rebase, and then try again."
+    >&2 echo "  - If it's a local reference, try something different, then try again."
 
     exit 1
+  fi
+
+  # Diverged!
+
+  >&2 echo "ERROR: The rebase boundary does not share history with the current branch (HEAD)"
+  >&2 echo "- Rebase boundary: ${rebase_boundary}"
+  >&2 echo "- HINT: It's possible that you rebased and broke the ancestry"
+  >&2 echo "  - Please ensure the rebase boundary is an ancestor of HEAD"
+
+  if git_remote_branch_exists "${rebase_boundary}"; then
+    if ${PW_ACTION_PUSH}; then
+      # FTREQ/2024-08-30: Why isn't GPW written in a OO language? Add context:
+      # - If this is 'entrust/scoping' branch, suggest user prob. wants to
+      #   force-push.
+      # - If this is 'publish/release', user prob. wants to rebase.
+      # - Or this is 'publish/feature', and user, dunno, either-or.
+      >&2 echo "- One option is to rebase local work atop the remote branch, e.g.,"
+      >&2 echo "    git rebase ${rebase_boundary}"
+      >&2 echo "- Another option is to sort-by-scope with a specific SHA, and to"
+      >&2 echo "  force-push to overwrite the remote branch, e.g.,"
+      >&2 echo "    ${PROG_NAME} push --force --starting-ref <REF>"
+      >&2 echo "  Alternatively, use HEAD to skip the rebase, e.g.,"
+      >&2 echo "    ${PROG_NAME} push --force --starting-ref HEAD"
+    elif ${PW_ACTION_ARCHIVE}; then
+      # FTREQ/2024-08-30: Support rebase past upstream branch.
+      # - Currently --apply doesn't expect previously applied commits to change.
+      # - We could add a commit-count as starting ref. for --apply patchkages.
+      >&2 echo "- You should rebase local work atop the remote branch, e.g.,"
+      >&2 echo "    git rebase ${rebase_boundary}"
+      >&2 echo "  Because put-wise does not currently support re-applying old commits"
+    fi
+    # else, git-sort-by-scope (if user called directly with specific 'remote/branch'),
+    #    or git-bump (with rebase_boundary from dep_rebase_boundary, so... rebase or
+    #    force... but no concern for GPW).
   else
-    # Diverged!
-    if ! ${PW_OPTION_FORCE_PUSH:-false}; then
-      >&2 echo "ERROR: The object “${rebase_boundary}” does not share history with HEAD."
-      >&2 echo "- HINT: You probably rebased one of them."
-      >&2 echo "  - You may need to call sort-by-scope with a specific SHA."
-      >&2 echo "  - Then you probably need to force-push changes."
-      >&2 echo "    ... unless you want to try rebasing atop upstream,"
-      >&2 echo "    and then you could try running this command again."
-
-      exit 1
-    else
-      >&2 info "FORCE: The object “${rebase_boundary}” is divergent!"
-
-      echo "HEAD"
-
-      return 0
+    # The rebase boundary is a local branch, or SHA.
+    # On push: pw/in tag, local 'release' branch, or version tag.
+    # On archive: pw/in tag, or user-specified.
+    # On git-sort-by-scope: User-specified.
+    # On git-bump-verstion-tag: Same possibilities as push.
+    if git_tag_exists "${rebase_boundary}"; then
+      >&2 echo "- If this is fixed tag (e.g., a version tag, or the pw/in tag),"
+      >&2 echo "  you probably want to fix your work so it's not diverged, e.g.,"
+      >&2 echo "    git rebase ${rebase_boundary}"
+      >&2 echo "- Or, if you think it's safe, you could move the tag, e.g.,"
+      >&2 echo "    git tag -f ${rebase_boundary} <REF>"
     fi
   fi
+
+  exit 1
 }
 
 # Reorder commits in prep. to diff.
