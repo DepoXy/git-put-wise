@@ -72,7 +72,7 @@ put_wise_pull_unspecially () {
   # Exit 1 if missing remote or remote branch, or
   # exit 11 if branch up-to-date/ahead of remote.
   local tracking_upstream=""
-  tracking_upstream="$(must_locate_tracking_upstream "${branch_name}")" || exit $?
+  tracking_upstream="$(must_identify_rebase_base "${branch_name}")" || exit $?
 
   local upstream_remote
   local upstream_branch
@@ -148,7 +148,7 @@ put_wise_pull_complicated () {
   # Exit 1 if missing remote or remote branch, or
   # exit 11 if branch up-to-date/ahead of remote.
   local tracking_upstream=""
-  tracking_upstream="$(must_locate_tracking_upstream "${branch_name}")" || exit $?
+  tracking_upstream="$(must_identify_rebase_base "${branch_name}")" || exit $?
   local reset_ref="refs/remotes/${tracking_upstream}"
 
   local pop_after=false
@@ -462,165 +462,86 @@ put_wise_pull_remotes_cleanup () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_locate_tracking_upstream () {
+must_identify_rebase_base () {
   local branch_name="$1"
 
-  local tracking_upstream=""
+  local rebase_base=""
 
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
-    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+  local branch_name=""
+  local local_release=""
+  local remote_release=""
+  local remote_protected=""
+  local remote_current=""
+  local remote_name=""
+  local rebase_boundary=""
+  local already_sorted=false
+  local already_signed=false
+  # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
+  if put_wise_identify_rebase_boundary_and_remotes \
+    "${_action_desc:-pull}" "${_inhibit_exit_if_unidentified:-true}" \
   ; then
-    if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
-      # Exit 1 if no remote branch; exit 1 if diverged;
-      # or exit 11 if up-to-date or ahead of remote.
-      if git_remote_exists "${SCOPING_REMOTE_NAME}" && \
-        must_ensure_protected_remote_branch_exists \
-      ; then
-        tracking_upstream="${REMOTE_BRANCH_SCOPING}"
-      fi
-      # else, no scoping remote, so might be a 'private' branch with
-      # 'release' upstream.
+    # Note the identify fcn. sets remote strings if remote exists but
+    # branch absent, i.e., if user can create new branch on push. So
+    # here we also check if branch actually exists.
+    if git_remote_branch_exists "${remote_protected}"; then
+      # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
+      must_confirm_upstream_shares_history_with_head "${remote_protected}"
+
+      rebase_base="${remote_protected}"
+    elif git_remote_branch_exists "${remote_current}"; then
+      must_confirm_upstream_shares_history_with_head "${remote_current}"
+
+      rebase_base="${remote_current}"
+    elif git_remote_branch_exists "${remote_release}"; then
+      must_confirm_upstream_shares_history_with_head "${remote_release}"
+
+      rebase_base="${remote_release}"
     fi
+  fi
 
-    if [ -z "${tracking_upstream}" ]; then
-      if git_remote_exists "${RELEASE_REMOTE_NAME}"; then
-        # Look instead for refs/remotes/publish/release.
-        # - Exit 1 if diverged, or exit 11 if up-to-date or ahead of remote.
-        must_ensure_ready_to_rebase_onto_remote_release_branch
-        tracking_upstream="${REMOTE_BRANCH_RELEASE}"
-      else
-        # - Exit 11 if no release remote (e.g., 'publish').
-        ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
+  if [ -z "${rebase_base}" ]; then
+    # true if branch_name is 'release' or 'private'.
+    local is_hyper_branch
+    is_hyper_branch="$(print_is_hyper_branch "${branch_name}")"
 
-        >&2 echo "ERROR: Please setup an appropriate remote for '${branch_name}':" \
-                 "Try either/and “${SCOPING_REMOTE_NAME}” or “${RELEASE_REMOTE_NAME}”."
+    local scoping_branch="${SCOPING_REMOTE_BRANCH}"
+    # If feature branch, use current branch name, e.g., 'entrust/<feature>'
+    ${is_hyper_branch} || scoping_branch="${branch_name}"
 
-        exit 1
-      fi
+    >&2 echo "ERROR: Unable to find an upstream branch on top of which to rebase"
+    >&2 echo "- Hint: Please create one of more of the following remote branches:"
+    >&2 echo "    git push ${SCOPING_REMOTE_NAME} <REF>:refs/heads/${scoping_branch}"
+    if ! ${is_hyper_branch}; then
+      >&2 echo "    git push ${remote_name} <REF>:refs/heads/${branch_name}"
     fi
-  else
-    # Arbitrary, non-special (not 'private' or 'release') branch.
-    # - Exit 1/11 if no tracking branch.
-    tracking_upstream="$(must_have_git_tracking_branch_or_exit)" || exit $?
-
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    ${DRY_ECHO} git fetch -q "$(git_upstream_parse_remote_name "${tracking_upstream}")"
-  fi
-
-  printf "${tracking_upstream}"
-}
-
-# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
-# We've identified refs/remotes/entrust, but not entrust/scoping.
-#
-# We run this command once or twice, a second time to fetch then retest.
-must_ensure_protected_remote_branch_exists () {
-  # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-  ${DRY_ECHO} git fetch -q "${SCOPING_REMOTE_NAME}"
-
-  local remote_sha=""
-  remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_SCOPING}")" \
-    || true
-
-  if [ -z "${remote_sha}" ]; then
-    # Has 'entrust' remote, and definitely no upstream 'entrust/scoping'.
-    # - We /could/ fallback 'publish/release', but this seems like an
-    #   error. Why would the user have the 'entrust' remote?
-    >&2 echo "ERROR: There's no remote “${REMOTE_BRANCH_SCOPING}” branch," \
-             "but the “${SCOPING_REMOTE_NAME}” remote exists. You" \
-             "should push or remove or change the remote name."
+    >&2 echo "    git push ${RELEASE_REMOTE_NAME} <REF>:refs/heads/${RELEASE_REMOTE_BRANCH}"
 
     exit 1
   fi
 
-  # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
-  must_confirm_upstream_shares_history_with_head \
-    "${REMOTE_BRANCH_SCOPING}" "${remote_sha}"
+  printf "%s" "${rebase_base}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
-must_have_git_tracking_branch_or_exit () {
-  # See also: git_tracking_branch_safe
-  reset_ref="$(git_tracking_branch)" || true
-
-  if [ -z "${reset_ref}" ]; then
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES}
-
-    >&2 echo "ERROR: Please set a tracking branch so we know what to pull"
-
-    exit 1
-  fi
-
-  printf "${reset_ref}"
-}
-
-# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
-must_ensure_ready_to_rebase_onto_remote_release_branch () {
-  # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-  ${DRY_ECHO} git fetch -q "${RELEASE_REMOTE_NAME}"
-
-  local remote_sha=""
-  remote_sha="$(git_remote_branch_object_name "${REMOTE_BRANCH_RELEASE}")" \
-    || true
-
-  if [ -z "${remote_sha}" ]; then
-    >&2 echo "ERROR: Please setup an appropriate remote branch for '${LOCAL_BRANCH_PRIVATE}':" \
-             "Try either/and “${REMOTE_BRANCH_SCOPING}” or “${REMOTE_BRANCH_RELEASE}”."
-
-    exit 1
-  fi
-
-  if ! git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
-    fatal_report_missing_local_release_branch
-  fi
-
-  # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
-  must_confirm_upstream_shares_history_with_head \
-    "${REMOTE_BRANCH_RELEASE}" "${remote_sha}"
-}
-
-# ***
-
-fatal_report_missing_local_release_branch () {
-  local merge_base=$(git merge-base "${REMOTE_BRANCH_RELEASE}" "HEAD")
-
-  >&2 echo "ERROR: Found remote “${REMOTE_BRANCH_RELEASE}”" \
-    "but not local “${LOCAL_BRANCH_RELEASE}”."
-  >&2 echo "- HINT: You might be able to create “${LOCAL_BRANCH_RELEASE}”" \
-    "at the merge-base:"
-  >&2 echo "    # git merge-base \"\${REMOTE_BRANCH_RELEASE}\" HEAD"
-  >&2 echo "    $ git merge-base \"${REMOTE_BRANCH_RELEASE}\" HEAD"
-  >&2 echo "    ${merge_base}"
-  >&2 echo "    $ git branch ${LOCAL_BRANCH_RELEASE}" \
-    "$(git rev-parse --short=${PW_SHA1SUM_LENGTH} ${merge_base})"
-
-  exit 1
-}
-
-# ***
 
 # 2022-11-14: This function inspired by must_confirm_shares_history_with_head,
 # but markedly different, too, especially the ancestor_sha = remote_sha check.
 must_confirm_upstream_shares_history_with_head () {
   local remote_ref="$1"
-  local remote_sha="$2"
 
   local head_sha
   head_sha="$(git rev-parse HEAD)"
 
-  if [ "${remote_sha}" = "${head_sha}" ]; then
+  if git_is_same_commit "${remote_ref}" "${head_sha}"; then
     >&2 echo "Nothing to do: Already up-to-date with “${remote_ref}”"
 
     exit ${PW_ELEVENSES}
   fi
 
   local ancestor_sha
-  ancestor_sha="$(git merge-base "${remote_sha}" "HEAD")"
+  ancestor_sha="$(git merge-base "${remote_ref}" "HEAD")"
 
-  if [ "${ancestor_sha}" = "${remote_sha}" ]; then
+  if git_is_same_commit "${ancestor_sha}" "${remote_ref}"; then
     >&2 echo "Nothing to do: “${remote_ref}” is behind HEAD"
 
     exit ${PW_ELEVENSES}
@@ -633,8 +554,11 @@ must_confirm_upstream_shares_history_with_head () {
     # two branches have diverged.
     # - We assume if the ancestor is at least not the first commit,
     #   that it's safe to 3-way rebase.
+    #   - FIXME/2024-08-30 11:45: What's a 3-way rebase?
+    #     - UTEST: So, what, set remote to *different* project, then pull??
+    # FIXME/2024-08-30 11:44: What if they don't share root??
     if [ "${ancestor_sha}" = "$(git_first_commit_sha)" ]; then
-      >&2 echo "ERROR: The remote “${remote_ref}” branch does not share history with HEAD."
+      >&2 echo "ERROR: The remote “${remote_ref}” branch does not share history with HEAD"
 
       exit 1
     fi
