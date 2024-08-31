@@ -678,9 +678,10 @@ cli_must_verify_action_specified () {
 #   generally 40 (WARNING), unless set to 10 (TRACE) because --verbose.
 
 cli_setup_log_level () {
+  # logger.sh defaults LOG_LEVEL_ERROR
   ${PW_OPTION_VERBOSE} \
     && LOG_LEVEL=${LOG_LEVEL_TRACE} \
-    || LOG_LEVEL=${PW_LOG_LEVEL:-${LOG_LEVEL}}
+    || LOG_LEVEL=${PW_LOG_LEVEL:-${LOG_LEVEL_WARNING}}
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
