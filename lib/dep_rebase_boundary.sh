@@ -569,17 +569,16 @@ insist_nothing_tagged_after () {
     # ***
 
     >&2 echo "${msg_fiver}: Tag(s) found within rebase range"
-    >&2 echo "- Ver. tag: ${recent_ver}"
-    >&2 echo "- Oth. tag: ${recent_tag}"
-    >&2 echo "- Boundary: ${rebase_boundary}"
+    >&2 echo "- Latest tag: ${newer_tag}"
+    >&2 echo "- Rebase boundary: ${rebase_boundary}"
 
     if ${tags_will_not_be_orphaned}; then
       >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"
     else
       if ${PW_OPTION_ORPHAN_TAGS:-false}; then
-        >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false to fail on this check"
+        >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=false (--no-orphan-tags) to fail on this check"
       else
-        >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true to disable this check"
+        >&2 echo "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true (--orphan-tags) to disable this check"
 
         exit 1
       fi
