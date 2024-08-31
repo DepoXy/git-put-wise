@@ -71,15 +71,15 @@ put_wise_pull_unspecially () {
 
   # Exit 1 if missing remote or remote branch, or
   # exit 11 if branch up-to-date/ahead of remote.
-  local tracking_upstream=""
-  tracking_upstream="$(must_identify_rebase_base "${branch_name}")" || exit $?
+  local upstream_ref=""
+  upstream_ref="$(must_identify_rebase_base "${branch_name}")" || exit $?
 
   local upstream_remote
   local upstream_branch
-  upstream_remote="$(git_upstream_parse_remote_name "${tracking_upstream}")"
-  upstream_branch="$(git_upstream_parse_branch_name "${tracking_upstream}")"
+  upstream_remote="$(git_upstream_parse_remote_name "${upstream_ref}")"
+  upstream_branch="$(git_upstream_parse_branch_name "${upstream_ref}")"
 
-  echo "Will rebase atop '${tracking_upstream}' (no '${pw_tag_archived}' tag)"
+  echo "Will rebase atop '${upstream_ref}' (no '${pw_tag_archived}' tag)"
   echo "  Old HEAD is at:"
   echo "    ${branch_name} $(shorten_sha "$(git_commit_object_name)")"
 
@@ -147,9 +147,10 @@ put_wise_pull_complicated () {
 
   # Exit 1 if missing remote or remote branch, or
   # exit 11 if branch up-to-date/ahead of remote.
-  local tracking_upstream=""
-  tracking_upstream="$(must_identify_rebase_base "${branch_name}")" || exit $?
-  local reset_ref="refs/remotes/${tracking_upstream}"
+  local upstream_ref=""
+  upstream_ref="$(must_identify_rebase_base "${branch_name}")" || exit $?
+
+  local reset_ref="refs/remotes/${upstream_ref}"
 
   local pop_after=false
   pop_after=$(maybe_stash_changes)
@@ -157,7 +158,7 @@ put_wise_pull_complicated () {
   local old_head="$(git_commit_object_name)"
 
   echo "Rebasing local changes atop:"
-  echo "  ${tracking_upstream}"
+  echo "  ${upstream_ref}"
   echo "picking local changes since:"
   echo "  ${pw_tag_archived}"
   echo "where the latest HEAD is at:"
@@ -275,13 +276,13 @@ bind generic E !sh -c \" \\
   local least_diffy_ref_short=$(shorten_sha "${least_diffy_ref}")
 
   # REFER: These all show up in tig @linux: pw-🚩🏁🔀🖖🆚
-  local pw_tag_least_diffy_ref="pw/🆚/diff-distance/${least_diffy_cnt}/${tracking_upstream}"
+  local pw_tag_least_diffy_ref="pw/🆚/diff-distance/${least_diffy_cnt}/${upstream_ref}"
   git tag -f "${pw_tag_least_diffy_ref}" "${pick_from}" > /dev/null
 
   local approved=true
 
   print_tig_review_instructions_pull \
-    "${pw_tag_least_diffy_ref}" "${tracking_upstream}" "${least_diffy_ref_short}" "${pick_from}" \
+    "${pw_tag_least_diffy_ref}" "${upstream_ref}" "${least_diffy_ref_short}" "${pick_from}" \
     || approved=false
 
   if ${approved}; then
@@ -569,7 +570,7 @@ must_confirm_upstream_shares_history_with_head () {
 
 print_tig_review_instructions_pull () {
   local pw_tag_least_diffy_ref="$1"
-  local tracking_upstream="$2"
+  local upstream_ref="$2"
   local least_diffy_ref_short="$3"
   local pick_from="$4"
 
@@ -581,7 +582,7 @@ print_tig_review_instructions_pull () {
     echo
     local help_tag_prefix="  <${pw_tag_least_diffy_ref}> — "
     echo "${help_tag_prefix}Pick patches from this revision (‘${least_diffy_ref_short}’)"
-    echo "$(echo "${help_tag_prefix}" | sed 's/./ /g') after resetting to remote '${tracking_upstream}' HEAD"
+    echo "$(echo "${help_tag_prefix}" | sed 's/./ /g') after resetting to remote '${upstream_ref}' HEAD"
     echo
     echo "Press 'E' to git-diff the local pick-from rev against the closest remote match"
     echo
