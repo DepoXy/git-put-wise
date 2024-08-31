@@ -70,9 +70,9 @@ put_wise_pull_unspecially () {
   local pw_tag_archived="$2"
 
   # Exit 1 if missing remote or remote branch, or
-  # exit 11 if branch up-to-date/ahead of remote.
+  # exit 0/11 if branch up-to-date/ahead of remote.
   local upstream_ref=""
-  upstream_ref="$(must_identify_rebase_base "${branch_name}")" || exit $?
+  must_identify_rebase_base "${branch_name}"
 
   local upstream_remote
   local upstream_branch
@@ -146,9 +146,9 @@ put_wise_pull_complicated () {
   # ***
 
   # Exit 1 if missing remote or remote branch, or
-  # exit 11 if branch up-to-date/ahead of remote.
+  # exit 0/11 if branch up-to-date/ahead of remote.
   local upstream_ref=""
-  upstream_ref="$(must_identify_rebase_base "${branch_name}")" || exit $?
+  must_identify_rebase_base "${branch_name}"
 
   local reset_ref="refs/remotes/${upstream_ref}"
 
@@ -466,7 +466,8 @@ put_wise_pull_remotes_cleanup () {
 must_identify_rebase_base () {
   local branch_name="$1"
 
-  local rebase_base=""
+  # "Return" variable.
+  upstream_ref=""
 
   local branch_name=""
   local local_release=""
@@ -488,19 +489,19 @@ must_identify_rebase_base () {
       # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
       must_confirm_upstream_shares_history_with_head "${remote_protected}"
 
-      rebase_base="${remote_protected}"
+      upstream_ref="${remote_protected}"
     elif git_remote_branch_exists "${remote_current}"; then
       must_confirm_upstream_shares_history_with_head "${remote_current}"
 
-      rebase_base="${remote_current}"
+      upstream_ref="${remote_current}"
     elif git_remote_branch_exists "${remote_release}"; then
       must_confirm_upstream_shares_history_with_head "${remote_release}"
 
-      rebase_base="${remote_release}"
+      upstream_ref="${remote_release}"
     fi
   fi
 
-  if [ -z "${rebase_base}" ]; then
+  if [ -z "${upstream_ref}" ]; then
     # true if branch_name is 'release' or 'private'.
     local is_hyper_branch
     is_hyper_branch="$(print_is_hyper_branch "${branch_name}")"
@@ -519,8 +520,6 @@ must_identify_rebase_base () {
 
     exit 1
   fi
-
-  printf "%s" "${rebase_base}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -536,7 +535,7 @@ must_confirm_upstream_shares_history_with_head () {
   if git_is_same_commit "${remote_ref}" "${head_sha}"; then
     >&2 echo "Nothing to do: Already up-to-date with “${remote_ref}”"
 
-    exit ${PW_ELEVENSES}
+    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
   fi
 
   local ancestor_sha
@@ -545,7 +544,7 @@ must_confirm_upstream_shares_history_with_head () {
   if git_is_same_commit "${ancestor_sha}" "${remote_ref}"; then
     >&2 echo "Nothing to do: “${remote_ref}” is behind HEAD"
 
-    exit ${PW_ELEVENSES}
+    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
   elif [ "${ancestor_sha}" != "${head_sha}" ]; then
     # The common ancestor is not HEAD, which we would expect if the
     # remote publish/release was ahead of release. And since we already
