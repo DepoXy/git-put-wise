@@ -558,7 +558,8 @@ insist_nothing_tagged_after () {
     fi
 
     if is_already_sorted_and_signed \
-      "${rebase_boundary}" "${enable_gpg_sign}" "${older_tag}" \
+      "${rebase_boundary}" "${enable_gpg_sign}" "${newer_tag}" \
+      > /dev/null \
     ; then
       tags_will_not_be_orphaned=true
 
