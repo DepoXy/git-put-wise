@@ -527,6 +527,24 @@ fetch_and_check_branch_exists_or_remote_online () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+verify_rebase_boundary_exists () {
+  local rebase_boundary="$1"
+
+  if [ -z "${rebase_boundary}" ]; then
+
+    return 1
+  fi
+
+  if [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+
+    return 0
+  fi
+
+  git_commit_object_name ${rebase_boundary} > /dev/null
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 PW_OPTION_ORPHAN_TAGS="${PW_OPTION_ORPHAN_TAGS:-false}"
 
 insist_nothing_tagged_after () {
@@ -599,24 +617,6 @@ insist_nothing_tagged_after () {
       fi
     fi
   fi
-}
-
-# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
-verify_rebase_boundary_exists () {
-  local rebase_boundary="$1"
-
-  if [ -z "${rebase_boundary}" ]; then
-
-    return 1
-  fi
-
-  if [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
-
-    return 0
-  fi
-
-  git_commit_object_name ${rebase_boundary} > /dev/null
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
