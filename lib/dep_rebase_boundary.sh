@@ -445,49 +445,6 @@ put_wise_identify_rebase_boundary_and_remotes () {
   fi
 }
 
-# ***
-
-# Overzealous UX reporting if diverging from tags, not sure why I care
-# to alert user.
-
-debug_alert_if_ref_tags_after_rebase_boundary () {
-  local branch_name="$1"
-  local rebase_boundary="$2"
-  local applied_tag="$3"
-
-  if [ -z "${rebase_boundary}" ]; then
-
-    return 0
-  fi
-
-  local work_tag="$(format_pw_tag_starting "${branch_name}")"
-
-  for tag_name in \
-    "${applied_tag}" \
-    "$(format_pw_tag_archived "${branch_name}")" \
-    "${work_tag}" \
-  ; do
-    if ! git_tag_exists "${tag_name}"; then
-
-      continue
-    fi
-
-    if $(must_confirm_shares_history_with_head "${tag_name}" > /dev/null 2>&1); then
-      local divergent_ok=false
-
-      if ! $( \
-        must_confirm_commit_at_or_behind_commit \
-          "${tag_name}" "${rebase_boundary}" ${divergent_ok} \
-          "tag-name" "sort-from" \
-            > /dev/null 2>&1 \
-      ); then
-        >&2 debug "FYI: '${tag_name}' tag moving to headless sequence" \
-          "until reused by future put-wise"
-      fi
-    fi
-  done
-}
-
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 fetch_and_check_branch_exists_or_remote_online () {
@@ -721,6 +678,49 @@ insist_single_author_used_since () {
       fi
     fi
   fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# Overzealous UX reporting if diverging from tags, not sure why I care
+# to alert user.
+
+debug_alert_if_ref_tags_after_rebase_boundary () {
+  local branch_name="$1"
+  local rebase_boundary="$2"
+  local applied_tag="$3"
+
+  if [ -z "${rebase_boundary}" ]; then
+
+    return 0
+  fi
+
+  local work_tag="$(format_pw_tag_starting "${branch_name}")"
+
+  for tag_name in \
+    "${applied_tag}" \
+    "$(format_pw_tag_archived "${branch_name}")" \
+    "${work_tag}" \
+  ; do
+    if ! git_tag_exists "${tag_name}"; then
+
+      continue
+    fi
+
+    if $(must_confirm_shares_history_with_head "${tag_name}" > /dev/null 2>&1); then
+      local divergent_ok=false
+
+      if ! $( \
+        must_confirm_commit_at_or_behind_commit \
+          "${tag_name}" "${rebase_boundary}" ${divergent_ok} \
+          "tag-name" "sort-from" \
+            > /dev/null 2>&1 \
+      ); then
+        >&2 debug "FYI: '${tag_name}' tag moving to headless sequence" \
+          "until reused by future put-wise"
+      fi
+    fi
+  done
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
