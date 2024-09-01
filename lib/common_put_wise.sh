@@ -1059,6 +1059,13 @@ _common_source_dep () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# CALSO: For similar staged and unstaged WIP support, see git-bump's:
+#   git_wip_staged_if_untidy
+#   git_wip_commit_if_untidy
+#   git_undo_staged_wip_commit_maybe
+#   git_pop_wipped_wip_commit_maybe
+# - CXREF: ~/.kit/git/git-bump-version-tag/bin/git-bump-version-tag
+
 # Make a WIP commit if we must.
 # - Similar to git-smart's `git wip`.
 maybe_stash_changes () {
@@ -1069,12 +1076,25 @@ maybe_stash_changes () {
 
   local pop_after=false
 
+  # ALTLY/2024-09-01: We could skip the status check,
+  # and *always* make 2 commits using --allow-empty.
+  # - Then we wouldn't have to track pop_after, we
+  #   could just always checks for 2 WIP commits.
+
   # Note that `git add -A` also fails if nothing changed.
   if test -n "$(git status --porcelain=v1)"; then
     pop_after=true
 
+    # We could check git_nothing_staged, and track both is-staged and is-wipped.
+    # But it's easier to *always* make and pop 2 WIP commits, then we can easily
+    # support stashing either or both staged and unstaged changes.
+    # - This first commit picks up anything that might be staged.
+    git commit -q --no-verify --allow-empty -m "${wip_commit_message} (staged)"
+
+    # This second commit picks up changes that were unstaged (or maybe it's
+    # an empty commit).
     git add -A
-    git commit -q --no-verify -m "${wip_commit_message}"
+    git commit -q --no-verify --allow-empty -m "${wip_commit_message} (working)"
   fi
 
   echo ${pop_after}
@@ -1083,14 +1103,25 @@ maybe_stash_changes () {
 maybe_unstash_changes () {
   local pop_after="$1"
 
-  if ${pop_after} && is_latest_commit_wip_commit; then
-    # Aka `git pop1`.
-    git reset --quiet --mixed @~1
+  if ${pop_after}; then
+    if is_latest_commit_wip_commit_working; then
+      # Aka `git pop1`.
+      git reset --quiet --mixed @~1
+    fi
+
+    if is_latest_commit_wip_commit_staged; then
+      # Aka `git undo`.
+      git reset --quiet --soft @~1
+    fi
   fi
 }
 
-is_latest_commit_wip_commit () {
-  git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX:-PRIVATE: }WIP "
+is_latest_commit_wip_commit_staged () {
+  git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX:-PRIVATE: }WIP .*(staged)$"
+}
+
+is_latest_commit_wip_commit_working () {
+  git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX:-PRIVATE: }WIP .*(working)$"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -1127,11 +1158,16 @@ git_post_rebase_exec_inject () {
 
   if ${pop_after}; then
     # Make a delayed `maybe_unstash_changes` call.
-    echo "exec sleep 0.1 \
-      && git log -1 --format=%s \
-        | grep -q -e \"^${PRIVATE_PREFIX:-PRIVATE: }WIP \\\\[\" \
-      && git reset -q --mixed @~1 &" \
-      "${GITSMART_POST_REBASE_EXECS_TAG}" \
+    echo "exec ( sleep 0.1 ;
+      git log -1 --format=%s
+        | grep -q -e \"^${PRIVATE_PREFIX:-PRIVATE: }WIP \\\\[.*(working)$\"
+      && git reset -q --mixed @~1 ;
+      git log -1 --format=%s
+        | grep -q -e \"^${PRIVATE_PREFIX:-PRIVATE: }WIP \\\\[.*(staged)$\"
+      && git reset -q --soft @~1 ;
+      ) & ${GITSMART_POST_REBASE_EXECS_TAG}" \
+        | sed 's/^ \+/ /' \
+        | tr -d '\n' \
         >> "${GIT_REBASE_TODO_PATH}"
   fi
 }
