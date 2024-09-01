@@ -399,7 +399,10 @@ print_exec_gpg_sign () {
   print_exec_gpg_sign_raw | sanitize_exec_fcn
 }
 
-# Remove forbidden newlines, and condense whitespace for readability.
+# Drop comment-only likes;
+# remove forbidden newlines;
+# condense whitespace for readability; and
+# escape double quotes.
 sanitize_exec_fcn () {
   sed -e '/^ *#/d' \
   | tr -d '\n' \
