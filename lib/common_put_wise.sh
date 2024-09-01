@@ -778,8 +778,11 @@ is_already_sorted_and_signed () {
       since_commit="${rebase_boundary}"
     fi
 
+    local exclude_pattern="^(${PRIVATE_PREFIX:-PRIVATE: }|${SCOPING_PREFIX:-PROTECTED: }).*\$"
+
     if ! ${enable_gpg_sign} \
-      || git_is_gpg_signed_since_commit "${since_commit}" "${until_ref}" \
+      || git_is_gpg_signed_since_commit \
+        "${since_commit}" "${until_ref}" "${exclude_pattern}" \
     ; then
       if ${enable_gpg_sign}; then
         already_signed=true

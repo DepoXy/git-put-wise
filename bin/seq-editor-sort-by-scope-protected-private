@@ -447,6 +447,15 @@ print_exec_gpg_sign_raw () {
     exec_gpg_sign () {
       set -e;
 
+      if git log -1 --format=%s
+        | grep -q
+          -e "^'"${PRIVATE_PREFIX:-PRIVATE: }"'"
+          -e "^'"${SCOPING_PREFIX:-PROTECTED: }"'"
+      ; then
+
+        return 0;
+      fi;
+
       git commit --amend --no-edit --allow-empty --no-verify -S -q;
     }
   '
