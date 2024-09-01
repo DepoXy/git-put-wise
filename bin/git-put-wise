@@ -49,14 +49,22 @@ check_dep_with_hint () {
 source_deps () {
   # Sets LOG_LEVEL=${LOG_LEVEL:-40}.
   source_dep "deps/sh-logger/bin/logger.sh"
+
+  # CXREF: Loaded on-demand by put_wise_rebase_abort
+  #  source_dep "deps/git-smart/bin/git-abort"
+  # CXREF: Loaded on-demand by main
+  #  source_dep "deps/sh-err-trap/lib/err-trap.sh"
   source_dep "deps/sh-git-nubs/lib/git-nubs.sh"
-  source_dep "lib/cli_parse_params.sh"
-  source_dep "lib/common_put_wise.sh"
+
   source_dep "lib/dep_apply_confirm_patch_base.sh"
   source_dep "lib/dep_ephemeral_branch.sh"
   source_dep "lib/dep_scoped_commits.sh"
   source_dep "lib/dep_rebase_boundary.sh"
   source_dep "lib/dep_tig_prompt.sh"
+
+  source_dep "lib/cli_parse_params.sh"
+
+  source_dep "lib/common_put_wise.sh"
 }
 
 source_dep () {
