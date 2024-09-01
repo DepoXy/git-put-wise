@@ -253,14 +253,12 @@ git_most_recent_tag () {
 
   local contains=""
   if [ -n "${gitref}" ]; then
-    # This adds a ~<n> suffix to the tag name, e.g., if the tag
-    # named 'foo' is 5 commits away from gitref, prints "foo~5".
     contains="--contains ${gitref}"
   fi
 
   git describe --tags --abbrev=0 ${contains} \
     2> /dev/null \
-    | sed 's/\~.*//'
+    | sed_remove_tag_suffix
 }
 
 # ***
@@ -599,6 +597,13 @@ git_insist_nothing_staged () {
 
   return 1
 }
+
+# ***
+
+# Capture special tig %(commit) value that's used when Unstaged changes
+# or Staged changes is the selected revision. This lets tooling offload
+# the burden of probing and translating that value from the tig config.
+GITNUBS_SPECIAL_TIG_SHA_UNSTAGED="0000000000000000000000000000000000000000"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
@@ -1129,14 +1134,23 @@ git_most_recent_version_tag () {
 
   local contains=""
   if [ -n "${gitref}" ]; then
-    # This adds a ~<n> suffix to the tag name, e.g., if the tag
-    # named 'foo' is 5 commits away from gitref, prints "foo~5".
     contains="--contains ${gitref}"
   fi
 
   git describe --tags --abbrev=0 ${contains} ${GITNUBS_DESCRIBE_MATCH_PATTERNS} \
     2> /dev/null \
-    | sed 's/\~.*//'
+    | sed_remove_tag_suffix
+}
+
+# The git-describe --contains option will add a suffix to the tag name,
+# e.g., if the tag named 'foo' is 5 commits away from gitref, prints
+# "foo~5" (the fifth parent of foo, which can also be denoted "foo~~~~~").
+# - When the tag is on the current commit, prints ^0.
+#   - From `man git-rev-parse`: "<rev>ˆ0 means the commit itself and is
+#     used when <rev> is the object name of a tag object that refers to
+#     a commit object"
+sed_remove_tag_suffix () {
+  sed 's/\(\~\|\^0\).*//'
 }
 
 # Prints the smallest version tag found after a reference commit.
