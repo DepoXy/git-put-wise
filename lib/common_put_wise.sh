@@ -1065,7 +1065,7 @@ maybe_stash_changes () {
   local context="${1:-git-put-wise}"
 
   # E.g., "PRIVATE: WIP [git-put-wise]"
-  local wip_commit_message="${PRIVATE_PREFIX}WIP [${context}]"
+  local wip_commit_message="${PRIVATE_PREFIX:-PRIVATE: }WIP [${context}]"
 
   local pop_after=false
 
@@ -1090,7 +1090,7 @@ maybe_unstash_changes () {
 }
 
 is_latest_commit_wip_commit () {
-  git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX}WIP "
+  git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX:-PRIVATE: }WIP "
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -1129,7 +1129,7 @@ git_post_rebase_exec_inject () {
     # Make a delayed `maybe_unstash_changes` call.
     echo "exec sleep 0.1 \
       && git log -1 --format=%s \
-        | grep -q -e \"^${PRIVATE_PREFIX}WIP \\\\[\" \
+        | grep -q -e \"^${PRIVATE_PREFIX:-PRIVATE: }WIP \\\\[\" \
       && git reset -q --mixed @~1 &" \
       "${GITSMART_POST_REBASE_EXECS_TAG}" \
         >> "${GIT_REBASE_TODO_PATH}"
