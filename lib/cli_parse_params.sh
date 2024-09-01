@@ -57,10 +57,11 @@ PW_ACTION_PULL_CLEANUP=${PW_ACTION_PULL_CLEANUP:-false}
 PW_OPTION_NO_CLEANUP=${PW_OPTION_NO_CLEANUP:-false}
 
 PW_OPTION_FORCE_PUSH=${PW_OPTION_FORCE_PUSH:-false}
+PW_OPTION_AUTO_CONFIRM=${PW_OPTION_AUTO_CONFIRM:-false}
+
+PW_OPTION_SKIP_REBASE=${PW_OPTION_SKIP_REBASE:-false}
 PW_OPTION_ORPHAN_TAGS=${PW_OPTION_ORPHAN_TAGS:-false}
 PW_OPTION_IGNORE_AUTHOR=${PW_OPTION_IGNORE_AUTHOR:-false}
-PW_OPTION_SKIP_REBASE=${PW_OPTION_SKIP_REBASE:-false}
-PW_OPTION_AUTO_CONFIRM=${PW_OPTION_AUTO_CONFIRM:-false}
 
 PW_OPTION_SKIP_SQUASH=${PW_OPTION_SKIP_SQUASH:-false}
 
@@ -279,42 +280,6 @@ cli_parse_params () {
         shift
         ;;
 
-      --orphan-tags)
-        PW_OPTION_ORPHAN_TAGS=true
-
-        shift
-        ;;
-
-      --no-orphan-tags)
-        PW_OPTION_ORPHAN_TAGS=false
-
-        shift
-        ;;
-
-      --ignore-author)
-        PW_OPTION_IGNORE_AUTHOR=true
-
-        shift
-        ;;
-
-      --no-ignore-author)
-        PW_OPTION_IGNORE_AUTHOR=false
-
-        shift
-        ;;
-
-      --skip-rebase)
-        PW_OPTION_SKIP_REBASE=true
-
-        shift
-        ;;
-
-      --no-skip-rebase)
-        PW_OPTION_SKIP_REBASE=false
-
-        shift
-        ;;
-
       --explain)
         PW_OPTION_QUICK_TIG=false
 
@@ -335,6 +300,42 @@ cli_parse_params () {
 
       --no-yes)
         PW_OPTION_AUTO_CONFIRM=false
+
+        shift
+        ;;
+
+      --skip-rebase)
+        PW_OPTION_SKIP_REBASE=true
+
+        shift
+        ;;
+
+      --no-skip-rebase)
+        PW_OPTION_SKIP_REBASE=false
+
+        shift
+        ;;
+
+      --orphan-tags)
+        PW_OPTION_ORPHAN_TAGS=true
+
+        shift
+        ;;
+
+      --no-orphan-tags)
+        PW_OPTION_ORPHAN_TAGS=false
+
+        shift
+        ;;
+
+      --ignore-author)
+        PW_OPTION_IGNORE_AUTHOR=true
+
+        shift
+        ;;
+
+      --no-ignore-author)
+        PW_OPTION_IGNORE_AUTHOR=false
 
         shift
         ;;
@@ -457,9 +458,9 @@ cli_parse_params () {
               #   PW_ACTION_REBASE_CONTINUE=true
               #   PW_ACTION_REBASE_ABORT=true
               #   PW_ACTION_PULL_CLEANUP=true
+              #   PW_OPTION_SKIP_REBASE=false|true
               #   PW_OPTION_ORPHAN_TAGS=false|true
               #   PW_OPTION_IGNORE_AUTHOR=false|true
-              #   PW_OPTION_SKIP_REBASE=false|true
               J)
                 option_value_must_be_specified "-J" "$@"
                 PW_PROJECT_PATH="$1"
