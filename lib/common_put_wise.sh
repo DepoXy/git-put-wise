@@ -1228,6 +1228,49 @@ git_post_rebase_exec_inject_callback () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# CXREF: This hook called on exit by deps/sh-err-trap/lib/err-trap.sh
+# - On DepoXy at: ~/.kit/sh/sh-err-trap/lib/err-trap.sh
+
+PW_PID_KILL_ON_ERROR=${PW_PID_KILL_ON_ERROR}
+
+# Used by tig config to kill tig on error, so that tig stops running
+# and dumps user back to console so that the user can see the error.
+sh_err_trap_user_hook () {
+  local normal_exit="$1"
+  local return_value="$2"
+
+  if [ -z "${PW_PID_KILL_ON_ERROR}" ] \
+    || ( [ ${return_value} -eq 0 ] \
+      && [ ! -f "${GIT_REBASE_TODO_PATH}" ] ) \
+  ; then
+
+    return 0
+  fi
+
+  # return_value nonzero and/or git-rebase-todo exists.
+
+  local proc_name
+  proc_name="$(ps -o comm= ${PW_PID_KILL_ON_ERROR})"
+
+  local says_who=""
+  if [ ${return_value} -ne 0 ]; then
+    says_who="nonzero exit"
+  fi
+  if [ -f "${GIT_REBASE_TODO_PATH}" ]; then
+    [ -z "${says_who}" ] || says_who="${says_who}, and "
+    says_who="${GIT_REBASE_TODO_PATH}"
+  fi
+
+  >&2 echo
+  >&2 echo -e "Killing \`${proc_name}\` because you got work to do\n (says ${says_who})"
+  >&2 echo "  🥩 🥩 chop chop"
+  >&2 echo
+
+  kill -s 9 ${PW_PID_KILL_ON_ERROR}
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 must_confirm_commit_at_or_behind_commit () {
   local early_commit="$1"
   local later_commit="${2:-HEAD}"
