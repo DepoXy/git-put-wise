@@ -60,16 +60,17 @@ git-rebase-sort-by-scope-protected-private () {
   # CXREF: ~/.kit/git/git-put-wise/bin/seq-editor-sort-by-scope-protected-private
   local seq_editor
   seq_editor="$(must_locate_seq_editor)" \
-    || return $?
+    || exit_1
 
-  must_verify_starting_ref "${starting_ref}"
+  must_verify_starting_ref "${starting_ref}" \
+    || exit_1
 
   local enable_gpg_sign=${enable_gpg_sign_if_signingkey}
 
   local gpg_sign
   gpg_sign="$( \
     insist_print_gpg_sign_arg ${enable_gpg_sign_if_signingkey} ${insist_signing_key}
-  )" || return 1
+  )" || exit_1
 
   if [ -z "${gpg_sign}" ]; then
     enable_gpg_sign=false
@@ -100,7 +101,7 @@ git-rebase-sort-by-scope-protected-private () {
 
   # Verify rebase_boundary. Called fcn. echoes rebase_boundary, or prints "HEAD".
   must_confirm_shares_history_with_head "${rebase_boundary}" > /dev/null \
-    || exit $?
+    || exit_1
 
   # Sets already_sorted=true and returns 1 if sorted but not signed; or
   # sets already_sorted=false and returns 1 if not sorted; or
@@ -178,7 +179,12 @@ git-rebase-sort-by-scope-protected-private () {
     git_post_rebase_exec_run ${pop_after}
   fi
 
-  return ${retcode}
+  if [ ${retcode} -ne 0 ]; then
+
+    exit_1
+  fi
+
+  return 0
 }
 
 # ***
@@ -249,7 +255,7 @@ print_rebase_boundary () {
       >&2 echo "- Or enable use_magic_starting_ref:"
       >&2 echo "    ${prog_name} \"\" true"
 
-      exit 1
+      exit_1
     fi
 
     printf "%s" "${starting_ref}"
@@ -427,9 +433,16 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
 main () {
   set -e
 
+  # Load: set_traps, clear_traps, exit_0, exit_1, os_is_macos.
+  . "$(dirname -- "$(realpath -- "$0")")/../deps/sh-err-trap/lib/err-trap.sh"
+
+  set_traps
+
   source_deps
 
   git-rebase-sort-by-scope-protected-private "$@"
+
+  clear_traps
 }
 
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
