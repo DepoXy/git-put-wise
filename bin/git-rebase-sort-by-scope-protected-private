@@ -62,7 +62,7 @@ git-rebase-sort-by-scope-protected-private () {
   seq_editor="$(must_locate_seq_editor)" \
     || exit_1
 
-  must_verify_starting_ref "${starting_ref}" \
+  starting_ref="$(must_verify_starting_ref "${starting_ref}")" \
     || exit_1
 
   local enable_gpg_sign=${enable_gpg_sign_if_signingkey}
@@ -208,30 +208,30 @@ must_verify_starting_ref () {
 
   if [ -z "${starting_ref}" ]; then
     # Will verify further in print_rebase_boundary
-
-    return 0
-  fi
-
-  if [ "${starting_ref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    :
+  elif [ "${starting_ref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
     >&2 echo "BWARE: Rebasing all commits"
-
-    return 0
-  fi
-
-  if ! git rev-parse "${starting_ref}" >/dev/null 2>&1; then
+  elif [ "${starting_ref}" = "${GITNUBS_SPECIAL_TIG_SHA_UNSTAGED}" ]; then
+    # When run from tig, this is the %(commit) value if user has either
+    # Unstaged changes or Staged changes selected.
+    # - This is somewhat business logic bleed, i.e., this translation
+    #   should probably happen in the tig config. But the tig config code
+    #   is a long, heavily escaped, quoted string. So it's usually better
+    #   to call out of the config as soon as possible. I.e., we don't mind
+    #   doing this here, do we.
+    starting_ref="HEAD"
+  elif ! git rev-parse "${starting_ref}" >/dev/null 2>&1; then
     # What git-rebase would print.
     >&2 echo "ERROR: fatal: invalid upstream '${starting_ref}'"
 
     return 1
-  fi
-
-  if ! git merge-base --is-ancestor "${starting_ref}" "HEAD"; then
+  elif ! git merge-base --is-ancestor "${starting_ref}" "HEAD"; then
     >&2 echo "ERROR: The starting ref is not an ancestor: '${starting_ref}'"
 
     return 1
   fi
 
-  return 0
+  printf "%s" "${starting_ref}"
 }
 
 # If 'starting_ref' is the latest commit, do the user a solid and replace
