@@ -63,7 +63,7 @@ put_wise_archive_patches_go () {
   debug "starting_ref: ${starting_ref}"
 
   # Sort & sign commits. Unless exit 0/11 if starting_ref → HEAD
-  # (because no-op); or exit 1 if ahead of HEAD, or diverged.
+  # (because no-op); or exit_1 if ahead of HEAD, or diverged.
   resort_and_sign_commits_before_push "${_rebase_boundary:-${starting_ref}}" \
     ${_enable_gpg_sign:-false}
 
@@ -114,7 +114,7 @@ put_wise_archive_patches_go () {
     >&2 echo "ERROR: Unable to encrypt patches." \
       "What went wrong, I thought we were a perfect match."
 
-    exit 1
+    exit_1
   else
     local before_cd="$(pwd -L)"
 
@@ -229,7 +229,7 @@ print_starting_ref_or_upstream_branch () {
       >&2 echo "GAFFE: Unexpected DEV error:" \
         "git_tag_object_name \"${pw_tag_applied}\" failed"
 
-      exit 1
+      exit_1
     fi
   fi
 
@@ -449,7 +449,7 @@ identify_commit_range_end () {
     >&2 echo
     >&2 echo "    git config push.default nothing"
   
-    exit 1
+    exit_1
   else
     commit_range_end="HEAD"
   fi
@@ -479,7 +479,7 @@ must_have_non_empty_rev_range_not_already_tagged () {
   if [ "${archive_from}" = "${archive_upto}" ]; then
     >&2 echo "Nothing to do: Only PRIVATE commits since previous archive"
 
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
+    exit_elevenses
   fi
 
   # If pw/<branch>/out tag exists, means --archive was run more recently than
@@ -570,7 +570,7 @@ compose_filenames () {
   patch_name="${crypt_name}--${encoded_br}--$(basename -- "$(pwd)")"
 
   temp_dir="$(mktemp -d /tmp/$(basename -- "$0")-XXXXXXX)"
-  [ ! -d "${temp_dir}" ] && >&2 echo "ERROR: \`mktemp\` failed" && exit 1 || true
+  [ ! -d "${temp_dir}" ] && >&2 echo "ERROR: \`mktemp\` failed" && exit_1 || true
 
   patch_dir="${temp_dir}/${patch_name}"
 
@@ -599,7 +599,7 @@ must_produce_nonempty_patch () {
     >&2 echo -e "Unexpected: Nothing archived! Try:\n" \
       " git diff ${rev_range}"
 
-    exit 1
+    exit_1
   fi
 
   # Tell the other side what project this is.
@@ -653,8 +653,8 @@ encrypt_archive_and_cleanup () {
 # ***
 
 remove_temp_files () {
-  [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && exit 1 || true
-  [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && exit 1 || true
+  [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && exit_1 || true
+  [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && exit_1 || true
   ${DRY_ECHO} command rm -f "${cleartext_name}"
   ${DRY_ECHO} command rm -rf "${temp_dir}"
 }
@@ -680,7 +680,7 @@ must_not_already_be_archived () {
   if [ -n "${matching_archives}" ]; then
     >&2 echo "Nothing to do: Archive already exists: $(echo ${matching_archives} | head -1)"
 
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
+    exit_elevenses
   fi
 
   cd "${before_cd}"
@@ -736,7 +736,7 @@ remove_outdated_archives () {
 
   local archive
   while IFS= read -r archive; do
-    [ -z "${archive}" ] && >&2 echo "ERROR: 'archive' unset!" && exit 1 || true
+    [ -z "${archive}" ] && >&2 echo "ERROR: 'archive' unset!" && exit_1 || true
 
     echo "${ux_prefix}git rm -q \"${archive}\""
     ${DRY_ECHO} git rm -q "${archive}"

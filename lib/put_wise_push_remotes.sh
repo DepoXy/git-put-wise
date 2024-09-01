@@ -127,7 +127,7 @@ put_wise_push_remotes_go () {
   ; then
     >&2 echo "Nothing to push: All remote branches up-to-date"
 
-    exit 0
+    exit_0
   fi
 
   # ***
@@ -333,7 +333,7 @@ must_exit_elevenses_if_private_private_project () {
     && [ -z "${remote_name}" ] \
   ; then
 
-    exit ${PW_ELEVENSES}
+    exit_11
   fi
 }
 
@@ -432,7 +432,7 @@ prompt_user_to_continue_update_remotes () {
       >&2 echo "GAFFE: prompt_user_to_continue_update_remotes:" \
         "Uneven arg count (${orig_count})"
 
-      exit 1
+      exit_1
     fi
 
     if [ -n "${tagged_name}" ]; then
@@ -458,7 +458,7 @@ prompt_user_to_continue_update_remotes () {
     >&2 echo "  - Or, if this is a private repo without a push remote,"
     >&2 echo "    try the ‘archive’ command"
 
-    exit 1
+    exit_1
   fi
 
   # ***

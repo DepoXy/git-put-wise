@@ -213,7 +213,7 @@ put_wise_pull_complicated () {
         # This would mean pipeline above is not WAD.
         >&2 echo "ERROR: You git-diff | awk pipeline doesn't work how you think."
 
-        exit 1
+        exit_1
       fi
 
       echo "Found it!"
@@ -297,7 +297,7 @@ bind generic E !sh -c \" \\
 
     maybe_unstash_changes ${pop_after}
 
-    exit 1
+    exit_1
   fi
 
   echo
@@ -320,7 +320,7 @@ bind generic E !sh -c \" \\
 
   ephemeral_branch="$(\
     prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${reset_ref}"
-  )" || exit $?
+  )" || exit_1
 
   echo "git reset --hard \"${reset_ref}\""
 
@@ -519,7 +519,7 @@ must_identify_rebase_base () {
     fi
     >&2 echo "    git push ${RELEASE_REMOTE_NAME} <REF>:refs/heads/${RELEASE_REMOTE_BRANCH}"
 
-    exit 1
+    exit_1
   fi
 }
 
@@ -536,7 +536,7 @@ must_confirm_upstream_shares_history_with_head () {
   if git_is_same_commit "${remote_ref}" "${head_sha}"; then
     >&2 echo "Nothing to pull: Already up-to-date with “${remote_ref}”"
 
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
+    exit_elevenses
   fi
 
   local ancestor_sha
@@ -545,7 +545,7 @@ must_confirm_upstream_shares_history_with_head () {
   if git_is_same_commit "${ancestor_sha}" "${remote_ref}"; then
     >&2 echo "Nothing to do: “${remote_ref}” is behind HEAD"
 
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
+    exit_elevenses
   elif [ "${ancestor_sha}" != "${head_sha}" ]; then
     # The common ancestor is not HEAD, which we would expect if the
     # remote publish/release was ahead of release. And since we already
@@ -561,7 +561,7 @@ must_confirm_upstream_shares_history_with_head () {
     if [ "${ancestor_sha}" = "$(git_first_commit_sha)" ]; then
       >&2 echo "ERROR: The remote “${remote_ref}” branch does not share history with HEAD"
 
-      exit 1
+      exit_1
     fi
   fi
 }

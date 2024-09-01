@@ -120,7 +120,7 @@ must_verify_patches_repo_specified () {
     >&2 echo "ERROR: Please specify the patches archive repo" \
       "using -T/--patches-repo or the PW_PATCHES_REPO environ."
 
-    exit 1
+    exit_1
   fi
 
   return 0
@@ -133,7 +133,7 @@ must_verify_patches_repo_is_directory_if_specified () {
     >&2 echo "ERROR: The patches archive repo is not a" \
       "directory: “${PW_PATCHES_REPO}”"
 
-    exit 1
+    exit_1
   fi
 
   return 0
@@ -161,7 +161,7 @@ maybe_prompt_user_and_prepare_patches_repo () {
   if [ -e "${PW_PATCHES_REPO}" ] && [ ! -d "${PW_PATCHES_REPO}" ]; then
     >&2 echo "ERROR: Patches repo exists but not directory: “${PW_PATCHES_REPO}”"
 
-    exit 1
+    exit_1
   fi
 
   prompt_user_to_create_patches_repo "${PW_PATCHES_REPO}" || return 1
@@ -206,7 +206,7 @@ must_verify_looks_like_our_repo () {
     >&2 echo "ERROR: Patches repo's first commit message not ours: “${first_message}”"
     >&2 echo "- Expecting: “${PW_PATCHES_REPO_MESSAGE_INIT}”"
 
-    exit 1
+    exit_1
   fi
 
   local emptiness="${PW_PATCHES_REPO_HINT}"
@@ -215,7 +215,7 @@ must_verify_looks_like_our_repo () {
     # Said the Professor.
     >&2 echo "ERROR: Oh the vast emptiness! Nothing at: “${emptiness}”."
 
-    exit 1
+    exit_1
   fi
 
   # Extra-worried. (Not worried enough to `pwd -P`?)
@@ -228,7 +228,7 @@ must_verify_looks_like_our_repo () {
   if [ "${home_relative_path}" = "${cur_dir}" ]; then
     >&2 echo "ERROR: You need to specify a path under \$HOME, sorry, eh."
 
-    exit 1
+    exit_1
   fi
 
   return 0
@@ -304,7 +304,7 @@ put_wise_reset_patches_repo () {
   if [ -e "${PW_PATCHES_REPO}" ] && [ ! -d "${PW_PATCHES_REPO}" ]; then
     >&2 echo "ERROR: Patches repo path not a directory: “${PW_PATCHES_REPO}”."
 
-    exit 1
+    exit_1
   fi
 
   if [ -d "${PW_PATCHES_REPO}" ]; then
@@ -408,7 +408,7 @@ must_cd_project_path_and_verify_repo () {
   if [ ! -d "${PW_PROJECT_PATH}" ]; then
     >&2 echo "ERROR: Not a directory: ${PW_PROJECT_PATH}"
 
-    exit 1
+    exit_1
   fi
 
   cd "${PW_PROJECT_PATH}"
@@ -427,7 +427,7 @@ must_not_be_patches_repo () {
 
   >&2 echo "ERROR: This command does not work on the patches repo: “${PW_PATCHES_REPO}”"
 
-  exit 1
+  exit_1
 }
 
 project_path_same_as_patches_repo () {
@@ -603,7 +603,7 @@ must_verify_patches_repo_archive () {
   if ! print_repo_archive_list | grep --quiet -e "^${relative_path}$"; then
     >&2 echo "ERROR: Specified patches archive not committed to patches repo."
 
-    exit 1
+    exit_1
   fi
 
   cd "${before_cd}"
@@ -683,7 +683,7 @@ resort_and_sign_commits_before_push () {
   local starting_sha_or_HEAD
   starting_sha_or_HEAD="$( \
     must_confirm_shares_history_with_head "${rebase_boundary}"
-  )" || exit $?
+  )" || exit_1
 
   if [ "${starting_sha_or_HEAD}" = "HEAD" ]; then
     >&2 echo "Nothing to do: Already up-to-date with “${rebase_boundary}”"
@@ -728,11 +728,18 @@ resort_and_sign_commits_before_push_unless_unnecessary () {
 exit_elevenses () {
   if ${PW_OPTION_FAIL_ELEVENSES:-false}; then
 
-    exit ${PW_ELEVENSES:-11}
+    exit_11
   else
 
-    exit 0
+    exit_0
   fi
+}
+
+# CXREF: ~/.kit/sh/sh-err-trap/lib/err-trap.sh
+exit_11 () {
+  clear_traps true 11
+
+  exit ${PW_ELEVENSES:-11}
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -963,7 +970,7 @@ must_confirm_shares_history_with_head () {
     >&2 echo "- HINT: If the boundary is a remote branch, pull or rebase, and then try again."
     >&2 echo "  - If it's a local reference, try something different, then try again."
 
-    exit 1
+    exit_1
   fi
 
   # Diverged!
@@ -1013,7 +1020,7 @@ must_confirm_shares_history_with_head () {
     fi
   fi
 
-  exit 1
+  exit_1
 }
 
 # Reorder commits in prep. to diff.
@@ -1049,14 +1056,14 @@ _common_source_dep () {
     if [ ! -f "${dep_path}" ]; then
       >&2 echo "GAFFE: Incorrect dependency path resolved: ${dep_path}"
 
-      exit 1
+      exit_1
     fi
 
     . "${dep_path}"
   else
     >&2 echo "GAFFE: Please try running git-put-wise, or sourcing from Bash"
 
-    exit 1
+    exit_1
   fi
 }
 
@@ -1246,7 +1253,7 @@ must_confirm_commit_at_or_behind_commit () {
     # Somewhat overzealous check, because callers also check.
     >&2 echo "GAFFE: Missing early_commit [must_confirm_commit_at_or_behind_commit]"
 
-    exit 1
+    exit_1
   elif ! git merge-base --is-ancestor "${early_commit}" "${later_commit}"; then
     # early later than later, or diverged.
 
@@ -1263,7 +1270,7 @@ must_confirm_commit_at_or_behind_commit () {
       # 2023-01-16: I don't think code is designed to flow through here.
       >&2 echo "GAFFE: Unexpected: later_commit (${later}) not --is-ancestor HEAD"
 
-      exit 1
+      exit_1
     fi
 
     if [ "${common_ancestor}" = "$(git_commit_object_name ${later_commit})" ]; then
@@ -1279,7 +1286,7 @@ must_confirm_commit_at_or_behind_commit () {
         >&2 echo "    git merge --ff-only ${early_commit}"
       fi
 
-      exit 1
+      exit_1
     fi
 
     # Because (later < early OR later <> early) AND (later is not common
@@ -1288,11 +1295,11 @@ must_confirm_commit_at_or_behind_commit () {
     if git merge-base --is-ancestor "${early_commit}" "HEAD"; then
       >&2 echo "GAFFE: Impossible: ${early} <> ${later} but each <= HEAD ??"
 
-      exit 1
+      exit_1
     elif ! ${divergent_ok}; then
       >&2 echo "ERROR: These objects have diverged: ${early} and ${later}"
 
-      exit 1
+      exit_1
     fi
   fi
 
@@ -1563,7 +1570,7 @@ process_return_receipts_read_count_and_destroy () {
     >&2 echo "- Unpacked archive: ${gpg_rr}"
     >&2 echo "- Expected to find: ${ret_rec_plain_path}"
 
-    exit 1
+    exit_1
   fi
 
   # E.g., "${host_sha}--${proj_sha}--${beg_sha}--${end_sha}--${time}--${branch}--${proj_name}"
@@ -1603,7 +1610,7 @@ process_return_receipts_read_count_and_destroy () {
       >&2 echo "- From plaintext “${ret_rec_plain_path}”"
       >&2 echo "- From crypttext “${gpg_rr}”"
 
-      exit 1
+      exit_1
     fi
 
     prompt_user_and_change_branch_if_working_branch_different_retrcpt \
@@ -1620,7 +1627,7 @@ process_return_receipts_read_count_and_destroy () {
       >&2 echo "- From plaintext “${ret_rec_plain_path}”"
       >&2 echo "- From crypttext “${gpg_rr}”"
 
-      exit 1
+      exit_1
     fi
 
     set -- ${host_nrev_line}
@@ -1652,7 +1659,7 @@ process_return_receipts_read_count_and_destroy () {
 
   ${DRY_ECHO} command rm -f "${ret_rec_plain_path}"
 
-  [ ${failed} -eq 0 ] || exit ${failed}
+  [ ${failed} -eq 0 ] || exit_1
 
   debug "git rm -q \"${gpg_rr}\""
   ${DRY_ECHO} git rm -q "${gpg_rr}"
@@ -1680,7 +1687,7 @@ must_find_path_starting_with_prefix_dash_dash () {
   if [ -z "${file_guess}" ]; then
     >&2 echo "ERROR: Unexpectedly found nothing unpacked for “${gpgf}--*”."
 
-    exit 1
+    exit_1
   fi
 
   printf "${file_guess}"
@@ -1706,7 +1713,7 @@ check_dep_python3 () {
   hint_install_deb () { >&2 echo "  sudo apt-get install python3"; }
   hint_install_brew () { >&2 echo "  brew install python@3.12"; }
 
-  check_dep_with_hint 'python3' || exit 1
+  check_dep_with_hint 'python3' || exit_1
 }
 
 # ***

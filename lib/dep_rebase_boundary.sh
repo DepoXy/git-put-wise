@@ -116,7 +116,7 @@
 # - This fcn. does not verify rebase_boundary is reachable from HEAD.
 #   - The caller is expected to call resort_and_sign_commits_before_push,
 #     or to call must_confirm_shares_history_with_head directly, which
-#     will `exit 1` if rebase_boundary ahead or divergent.
+#     will `exit 1` (exit_1) if rebase_boundary ahead or divergent.
 
 put_wise_identify_rebase_boundary_and_remotes () {
   local action_desc="$1"
@@ -425,18 +425,18 @@ put_wise_identify_rebase_boundary_and_remotes () {
           "${remote_name}" \
           "${rebase_boundary}"
 
-        exit 1
+        exit_1
       fi
     fi
 
     if ! insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"; then
 
-      exit 1
+      exit_1
     fi
 
     if ! insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"; then
 
-      exit 1
+      exit_1
     fi
 
     debug_alert_if_ref_tags_after_rebase_boundary \
@@ -603,7 +603,7 @@ insist_nothing_tagged_after () {
       else
         >&2 ${log} "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true (--orphan-tags) to disable this check"
 
-        exit 1
+        exit_1
       fi
     fi
   fi
@@ -718,7 +718,7 @@ insist_single_author_used_since () {
       else
         >&2 echo "- ALTLY: Set PW_OPTION_IGNORE_AUTHOR=true (--ignore-author) to disable this check"
 
-        exit 1
+        exit_1
       fi
     fi
   fi

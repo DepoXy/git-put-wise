@@ -112,13 +112,13 @@ cli_parse_params () {
         # but not `git put-wise help`.
         echo "${PW_USAGE}"
 
-        exit 0
+        exit_0
         ;;
 
       -V | --version)
         echo "${PW_VERSION}"
 
-        exit 0
+        exit_0
         ;;
 
       --about | about)
@@ -126,7 +126,7 @@ cli_parse_params () {
 
         echo "${PW_ABOUT}"
 
-        exit 0
+        exit_0
         ;;
 
       -o | --push | push)
@@ -425,7 +425,7 @@ cli_parse_params () {
             >&2 echo "ERROR: Unrecognized argument: “${cur_arg}”."
             >&2 echo "- HINT: Use \`--\` separator if you this argument is the path."
 
-            exit 1
+            exit_1
           fi
           # Support scrunching single-char options, e.g., `put-wise -oR`.
           shift
@@ -561,7 +561,7 @@ cli_parse_params () {
                 >&2 echo "ERROR: Unrecognized argument: “-${char}” (in “$1”)."
                 >&2 echo "- HINT: Use \`--\` separator if you meant to specify a path."
 
-                exit 1
+                exit_1
                 ;;
             esac
           done
@@ -591,7 +591,7 @@ cli_parse_params () {
     if [ -n "$1" ]; then
       >&2 echo "ERROR: Too many arguments, starting with: “$1”."
 
-      exit 1
+      exit_1
     fi
   fi
 
@@ -605,7 +605,7 @@ option_value_must_be_specified () {
 
   >&2 echo "ERROR: Option “${option}” expects an argument."
 
-  exit 1
+  exit_1
 }
 
 # ***
@@ -621,7 +621,7 @@ must_not_have_set_path_yet () {
   >&2 echo "- The first path arg. specified “${project_path_first_arg}”."
   >&2 echo "- The extraneous arg. specifies “${project_path_extraneous}”."
 
-  exit 1
+  exit_1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -658,7 +658,7 @@ cli_must_verify_action_specified () {
 
   >&2 echo "ERROR: Please specify a command. See --help for help."
 
-  exit 1
+  exit_1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #

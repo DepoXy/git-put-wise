@@ -115,7 +115,7 @@ choose_patch_base_or_ask_user () {
 
     git tag -d "${PW_TAG_APPLY_INSERT_HERE_TAG}" > /dev/null 2>&1 || true
 
-    ${coach_said_not_to} || exit 1
+    ${coach_said_not_to} || exit_1
   fi
 
   # ***
@@ -165,7 +165,7 @@ choose_patch_base_or_ask_user () {
       >&2 echo "DEV: Replace this message: Add hint on how to recover."
     fi
 
-    exit 1
+    exit_1
   fi
 
   return 0
@@ -269,7 +269,7 @@ prompt_user_to_verify_patching_sha_fallback () {
 
   >&2 echo "${PW_USER_CANCELED_GOODBYE}"
 
-  exit 1
+  exit_1
 }
 
 print_prompt_user_explainer_using_starting_sha_tag () {

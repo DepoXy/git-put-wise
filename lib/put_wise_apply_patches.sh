@@ -73,7 +73,7 @@ put_wise_apply_patches_apply_all () {
   if [ -n "${PW_OPTION_REGENERATE_RECEIPTS}" ]; then
     >&2 echo "ERROR: -g/--regenerate option only works on --apply"
 
-    exit 1
+    exit_1
   fi
 
   local projects_patched=()
@@ -101,12 +101,12 @@ put_wise_apply_patches_apply_one () {
       # Egregious short-circuit return (exit!) branch, my bad.
       fake_the_return_receipt
 
-      exit 0
+      exit_0
     fi
     # Exits 0/11 if none found, or exits 1 if multiple archives found.
     gpgf="$(must_find_one_patches_archive_for_project_path_and_print)" || exit $?
     # Because exit 0 is truthy, we need to propagate the exit 0.
-    [ -n "${gpgf}" ] || exit 0
+    [ -n "${gpgf}" ] || exit_0
     unpack_target_is_not_nonempty_else_info_stderr "${gpgf}" || patch_dir_exists=true
   elif [ -f "${PW_PROJECT_PATH}" ]; then
     # User specified a specific archive file.
@@ -119,7 +119,7 @@ put_wise_apply_patches_apply_one () {
   if [ -n "${PW_OPTION_REGENERATE_RECEIPTS}" ]; then
     >&2 echo "ERROR: No project path specified for -g/--regenerate option."
 
-    exit 1
+    exit_1
   fi
 
   cd "${PW_PATCHES_REPO}"
@@ -172,7 +172,7 @@ must_not_be_patches_repo_or_hint_and_exit () {
     >&2 echo "- HINT: To unpack and apply a specific archive, specify its path."
     >&2 echo "  - Or to unpack and apply all archives, use --apply-all."
 
-    exit 1
+    exit_1
   fi
 }
 
@@ -201,14 +201,14 @@ must_find_one_patches_archive_for_project_path_and_print () {
     >&2 debug "- For project path: $(pwd -L)"
     >&2 echo "Nothing to apply: No archive exists for this project"
 
-    ${PW_OPTION_FAIL_ELEVENSES:-false} && exit ${PW_ELEVENSES} || exit 0
+    exit_elevenses
   fi
 
   if [ $(echo "${repo_matches}" | wc -l) -ne 1 ]; then
     >&2 echo "ERROR: Too many matching archives found for this repo:"
     >&2 echo "${repo_matches}"
 
-    exit 1
+    exit_1
   fi
 
   local one_match="${repo_matches}"
@@ -306,7 +306,7 @@ process_patch_archive () {
   if [ ! -d "${patch_dir}" ]; then
     >&2 echo "ERROR: Unexpectedly found that “${patch_dir}” is not a directory."
 
-    exit 1
+    exit_1
   fi
 
   local ret_rec_crypt_path="${gpgf}${PW_RETURN_RECEIPT_CRYPT}"
@@ -370,7 +370,7 @@ process_unpacked_patchkage () {
   #       '${patch_dir}',
   #       count=5
   # ))")
-  check_dep_python3 || exit 1
+  check_dep_python3 || exit_1
   set -- $(split_on_double_dash "${patch_dir}" 6)
   local hostname_sha="$1"
   local projpath_sha="$2"
@@ -651,7 +651,7 @@ fake_the_return_receipt () {
     # I don't think this branch is possible.
     >&2 echo "ERROR: Please specify the project path."
 
-    exit 1
+    exit_1
   fi
 
   # Without the original archive, this script doesn't know what IDs to use
@@ -677,7 +677,7 @@ fake_the_return_receipt () {
   if [ -z "${hostname_sha}" ]; then
     >&2 echo "ERROR: Could not determine hostname SHA from: ${gpgf}"
 
-    exit 1
+    exit_1
   fi
 
   local starting_sha
@@ -749,7 +749,7 @@ must_determine_project_path_from_meta_file () {
   if [ ! -f "${meta_file}" ]; then
     >&2 echo "ERROR: No meta file found at “${meta_file}” for “${patch_dir}”"
 
-    exit 1
+    exit_1
   fi
 
   local project_path
@@ -764,7 +764,7 @@ must_determine_project_path_from_meta_file () {
     >&2 echo "ERROR: Invalid project path “${project_path}” specified by “${patch_dir}”"
 
     # This seems like too serious an offense to keep processing.
-    exit 1
+    exit_1
   fi
 
   echo "${project_path}"
@@ -808,7 +808,7 @@ git_insist_not_applied () {
   >&2 echo
   >&2 git --no-pager log -1 "${tagged_sha}"
 
-  exit 1
+  exit_1
 }
 
 # ***
@@ -920,7 +920,7 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
       echo
 
       while [ "$(git_branch_name)" != "${patch_branch}" ]; do
-        # This will exit 1 on anything but 'y' or 'Y'. Otherwise, it'll
+        # This will exit_1 on anything but 'y' or 'Y'. Otherwise, it'll
         # loop to check if user created and checked out ${patch_branch},
         # or it'll prompt again.
         must_prompt_user_and_await_resolved_uffda
@@ -1215,7 +1215,7 @@ prepare_return_receipt_encrypt () {
 # Specifically, if the user calls us with a path to an unpacked patch
 # directory, we expect it to have the same name as what git-put-wise
 # used when it was created, so that we can identify the GPG archive from
-# which it was unpacked. (Although we don't `exit 1` if violated.)
+# which it was unpacked. (Although we don't `exit_1` if violated.)
 remove_archive_from_git () {
   local gpgf="$1"
 
