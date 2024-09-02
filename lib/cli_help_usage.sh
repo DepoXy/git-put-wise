@@ -99,6 +99,10 @@ Additional options
   --ignore-author           On --push/--archive, allow rebase multiple author commits
   --no-ignore-author        On --push/--archive, don’t --ignore-author [default]
 
+  --fetch-backoff           On --push/--archive, git-fetch only ever this often
+                              E.g., --fetch-backoff=\"-1 hour\"  # [default]
+  --no-fetch-backoff        On --push/--archive, always git-fetch
+
   -u|--squash               Fixup commits to the patches repo [default]
   -U|--no-squash            Make new commits to patches repo
 
@@ -152,6 +156,8 @@ Environment variables you can use instead of options above:
                             PW_OPTION_ORPHAN_TAGS=true|false
   --ignore-author/--no-ignore-author
                             PW_OPTION_IGNORE_AUTHOR=true|false
+  --fetch-backoff <time>/--no-fetch-backoff
+                            PW_OPTIONS_FETCH_BACKOFF=\"<time>\"
 
   -U|--no-squash            PW_OPTION_SKIP_SQUASH=true
   -u|--squash               PW_OPTION_SKIP_SQUASH=false

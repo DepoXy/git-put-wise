@@ -197,8 +197,7 @@ git_put_wise_apply_all_accordingly () {
   if [ -n "$(print_repo_archive_list)" ]; then
     git-put-wise --apply-all "$@"
   else
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    git fetch "${SCOPING_REMOTE_NAME}"
+    git_fetch_with_backoff "${SCOPING_REMOTE_NAME}"
 
     local local_cnt
     local other_cnt

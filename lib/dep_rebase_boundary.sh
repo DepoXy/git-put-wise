@@ -480,10 +480,7 @@ fetch_and_check_branch_exists_or_remote_online () {
   # because this function also does a lot of state validating.
   >&2 echo_announce "Fetch from ‘${remote_name}’" -n
 
-  # git-fetch prints progress to stderr, which we ignore ('-q' also works).
-  if ! git fetch "${remote_name}" \
-    refs/heads/${branch_name} 2> /dev/null \
-  ; then
+  if ! git_fetch_with_backoff "${remote_name}" "${branch_name}"; then
     >&2 echo " ...failed!"
     if git ls-remote ${remote_name} -q 2> /dev/null; then
       >&2 echo "- Remote exists but not the branch: ‘${upstream}’"

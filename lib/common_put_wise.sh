@@ -1372,6 +1372,40 @@ find_oldest_commit_by_message () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# COPYD: See `periodically_fetch` from git-bump-version-tag, in DepoXy at:
+#   ~/.kit/git/git-bump-version-tag/bin/git-bump-version-tag
+# - Though without branch_name support.
+
+git_fetch_with_backoff () {
+  local remote_name="$1"
+  local branch_name="$2"
+
+  local branch_ref=""
+  [ -z "${branch_name}" ] || branch_ref="refs/heads/${branch_name}"
+
+  # E.g., "tools.git-put-wise".
+  local cfg_section="tools.${PROG_NAME}"
+  local cfg_last_fetch="lastfetch--${remote_name}${branch_name:+--${branch_name}}"
+
+  local last_update="$(git config ${cfg_section}.${cfg_last_fetch})"
+
+  local backoff_time_ago
+  backoff_time_ago="$(date -d "${PW_OPTIONS_FETCH_BACKOFF:--1 hour}" +'%s')"
+
+  if [ -z "${last_update}" ] || [ ${last_update} -le ${backoff_time_ago} ] \
+  ; then
+    # git-fetch prints progress to stderr, which we ignore ('-q' also works).
+    if ! git fetch "${remote_name}" ${branch_ref} 2> /dev/null; then
+
+      return 1
+    fi
+
+    git config ${cfg_section}.${cfg_last_fetch} "$(date +%s)"
+  fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 commit_changes_and_counting () {
   if [ $(git_number_of_commits) -eq 1 ]; then
     # Very first --archive!

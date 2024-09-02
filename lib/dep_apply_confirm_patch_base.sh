@@ -179,12 +179,10 @@ suss_which_known_branch_is_furthest_along () {
   # MAYBE/2022-12-11: Would we ever not want to do this?
   # - Because offline, or because these are "slow"?
   if git_remote_branch_exists "${REMOTE_BRANCH_SCOPING}"; then
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    git fetch "${SCOPING_REMOTE_NAME}" 2> /dev/null
+    git_fetch_with_backoff "${SCOPING_REMOTE_NAME}"
   fi
   if git_remote_branch_exists "${REMOTE_BRANCH_RELEASE}"; then
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    git fetch "${RELEASE_REMOTE_NAME}" 2> /dev/null
+    git_fetch_with_backoff "${RELEASE_REMOTE_NAME}"
   fi
 
   # ***
@@ -201,8 +199,7 @@ suss_which_known_branch_is_furthest_along () {
   local upstream_remote
   upstream_remote="$(git_upstream_parse_remote_name "${tracking_branch}")"
   if [ -n "${upstream_remote}" ]; then
-    # MAYBE/2023-01-18: GIT_FETCH: Use -q?
-    git fetch "${upstream_remote}" 2> /dev/null
+    git_fetch_with_backoff "${upstream_remote}"
   fi
 
   # ***
