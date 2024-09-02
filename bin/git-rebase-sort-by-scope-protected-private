@@ -116,7 +116,7 @@ git-rebase-sort-by-scope-protected-private () {
   # ***
 
   local rev_list_commits
-  rev_list_commits=$(print_git_rev_list_commits "${rebase_boundary}^")
+  rev_list_commits=$(print_git_rev_list_commits "${rebase_boundary}")
 
   local n_commits
   n_commits="$(git rev-list --count ${rev_list_commits})"
