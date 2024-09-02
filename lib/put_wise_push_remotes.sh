@@ -120,10 +120,22 @@ put_wise_push_remotes_go () {
       || git_is_same_commit "${remote_ref}" "${local_ref}"
   }
 
+  if remote_absent_or_branch_at_ref "${remote_protected}" "${protected_boundary_or_HEAD}"; then
+    remote_protected=""
+  fi
+
+  if remote_absent_or_branch_at_ref "${remote_current}" "${scoping_boundary_or_HEAD}"; then
+    remote_current=""
+  fi
+
+  if remote_absent_or_branch_at_ref "${remote_release}" "${release_boundary_or_HEAD}"; then
+    remote_release=""
+  fi
+
   if true \
-    && remote_absent_or_branch_at_ref "${remote_protected}" "${protected_boundary_or_HEAD}" \
-    && remote_absent_or_branch_at_ref "${remote_current}" "${scoping_boundary_or_HEAD}" \
-    && remote_absent_or_branch_at_ref "${remote_release}" "${release_boundary_or_HEAD}" \
+    && [ -z "${remote_protected}" ] \
+    && [ -z "${remote_current}" ] \
+    && [ -z "${remote_release}" ] \
   ; then
     >&2 echo "Nothing to push: All remote branches up-to-date"
 
