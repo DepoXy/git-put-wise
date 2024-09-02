@@ -30,17 +30,20 @@ prepare_ephemeral_branch_if_commit_scoping () {
   local divergent_ok=true
   if git_remote_branch_exists "${REMOTE_BRANCH_SCOPING}"; then
     must_confirm_commit_at_or_behind_commit \
-      "refs/remotes/${REMOTE_BRANCH_SCOPING}" "${patch_base}" ${divergent_ok}
+      "refs/remotes/${REMOTE_BRANCH_SCOPING}" "${patch_base}" ${divergent_ok} \
+      || exit_1
   fi
   if [ "$(git_branch_name)" != "${LOCAL_BRANCH_RELEASE}" ]; then
     if git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
       must_confirm_commit_at_or_behind_commit \
-        "refs/heads/${LOCAL_BRANCH_RELEASE}" "${patch_base}"
+        "refs/heads/${LOCAL_BRANCH_RELEASE}" "${patch_base}" \
+        || exit_1
     fi
   fi
   if git_remote_branch_exists "${REMOTE_BRANCH_RELEASE}"; then
     must_confirm_commit_at_or_behind_commit \
-      "refs/remotes/${REMOTE_BRANCH_RELEASE}" "${patch_base}"
+      "refs/remotes/${REMOTE_BRANCH_RELEASE}" "${patch_base}" \
+      || exit_1
   fi
 
   # E.g., git co -b pw-patches-<branch_name> abcd1234

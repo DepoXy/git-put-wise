@@ -58,7 +58,7 @@ put_wise_archive_patches_go () {
   starting_ref="$(
     print_starting_ref_or_upstream_branch \
       "${starting_ref_arg}" "${pw_tag_applied}" \
-  )"
+  )" || exit_1
 
   debug "starting_ref: ${starting_ref}"
 
@@ -229,7 +229,7 @@ print_starting_ref_or_upstream_branch () {
       >&2 echo "GAFFE: Unexpected DEV error:" \
         "git_tag_object_name \"${pw_tag_applied}\" failed"
 
-      exit_1
+      return 1
     fi
   fi
 
@@ -641,7 +641,8 @@ encrypt_archive_and_cleanup () {
   cd - > /dev/null
 
   # Cleanup.
-  remove_temp_files
+  remove_temp_files \
+    || return 1
 
   if ${success}; then
     printf "${crypt_path}"
@@ -653,8 +654,8 @@ encrypt_archive_and_cleanup () {
 # ***
 
 remove_temp_files () {
-  [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && exit_1 || true
-  [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && exit_1 || true
+  [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && return 1 || true
+  [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && return 1 || true
   ${DRY_ECHO} command rm -f "${cleartext_name}"
   ${DRY_ECHO} command rm -rf "${temp_dir}"
 }

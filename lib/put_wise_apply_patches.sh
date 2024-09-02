@@ -104,7 +104,7 @@ put_wise_apply_patches_apply_one () {
       exit_0
     fi
     # Exits 0/11 if none found, or exits 1 if multiple archives found.
-    gpgf="$(must_find_one_patches_archive_for_project_path_and_print)" || exit $?
+    gpgf="$(must_find_one_patches_archive_for_project_path_and_print)" || exit_1
     # Because exit 0 is truthy, we need to propagate the exit 0.
     [ -n "${gpgf}" ] || exit_0
     unpack_target_is_not_nonempty_else_info_stderr "${gpgf}" || patch_dir_exists=true
@@ -208,7 +208,7 @@ must_find_one_patches_archive_for_project_path_and_print () {
     >&2 echo "ERROR: Too many matching archives found for this repo:"
     >&2 echo "${repo_matches}"
 
-    exit_1
+    return 1
   fi
 
   local one_match="${repo_matches}"
@@ -387,7 +387,8 @@ process_unpacked_patchkage () {
   local patch_path="$(pwd -L)"
 
   local project_path
-  project_path="$(must_determine_project_path_from_meta_file "${patch_dir}")"
+  project_path="$(must_determine_project_path_from_meta_file "${patch_dir}")" \
+    || exit_1
 
   local patch_branch="${PW_OPTION_BRANCH:-${remoteish_br}}"
 
@@ -749,7 +750,7 @@ must_determine_project_path_from_meta_file () {
   if [ ! -f "${meta_file}" ]; then
     >&2 echo "ERROR: No meta file found at “${meta_file}” for “${patch_dir}”"
 
-    exit_1
+    return 1
   fi
 
   local project_path
@@ -764,7 +765,7 @@ must_determine_project_path_from_meta_file () {
     >&2 echo "ERROR: Invalid project path “${project_path}” specified by “${patch_dir}”"
 
     # This seems like too serious an offense to keep processing.
-    exit_1
+    return 1
   fi
 
   echo "${project_path}"

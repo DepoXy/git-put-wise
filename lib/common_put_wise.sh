@@ -970,7 +970,7 @@ must_confirm_shares_history_with_head () {
     >&2 echo "- HINT: If the boundary is a remote branch, pull or rebase, and then try again."
     >&2 echo "  - If it's a local reference, try something different, then try again."
 
-    exit_1
+    return 1
   fi
 
   # Diverged!
@@ -1020,7 +1020,7 @@ must_confirm_shares_history_with_head () {
     fi
   fi
 
-  exit_1
+  return 1
 }
 
 # Reorder commits in prep. to diff.
@@ -1296,7 +1296,7 @@ must_confirm_commit_at_or_behind_commit () {
     # Somewhat overzealous check, because callers also check.
     >&2 echo "GAFFE: Missing early_commit [must_confirm_commit_at_or_behind_commit]"
 
-    exit_1
+    return 1
   elif ! git merge-base --is-ancestor "${early_commit}" "${later_commit}"; then
     # early later than later, or diverged.
 
@@ -1313,7 +1313,7 @@ must_confirm_commit_at_or_behind_commit () {
       # 2023-01-16: I don't think code is designed to flow through here.
       >&2 echo "GAFFE: Unexpected: later_commit (${later}) not --is-ancestor HEAD"
 
-      exit_1
+      return 1
     fi
 
     if [ "${common_ancestor}" = "$(git_commit_object_name ${later_commit})" ]; then
@@ -1329,7 +1329,7 @@ must_confirm_commit_at_or_behind_commit () {
         >&2 echo "    git merge --ff-only ${early_commit}"
       fi
 
-      exit_1
+      return 1
     fi
 
     # Because (later < early OR later <> early) AND (later is not common
@@ -1338,11 +1338,11 @@ must_confirm_commit_at_or_behind_commit () {
     if git merge-base --is-ancestor "${early_commit}" "HEAD"; then
       >&2 echo "GAFFE: Impossible: ${early} <> ${later} but each <= HEAD ??"
 
-      exit_1
+      return 1
     elif ! ${divergent_ok}; then
       >&2 echo "ERROR: These objects have diverged: ${early} and ${later}"
 
-      exit_1
+      return 1
     fi
   fi
 
@@ -1853,7 +1853,8 @@ process_return_receipt_move_remoteish_tracking_branch () {
   must_confirm_commit_at_or_behind_commit \
     "refs/tags/${pw_tag_applied}" "HEAD" \
     ${divergent_ok} \
-    "pick-from" "this branch"
+    "pick-from" "this branch" \
+    || exit_1
 
   local previous_cnt="$(git_number_of_commits "refs/tags/${pw_tag_applied}")"
 

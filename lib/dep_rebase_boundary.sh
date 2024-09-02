@@ -261,10 +261,12 @@ put_wise_identify_rebase_boundary_and_remotes () {
     local divergent_ok=false
 
     if git_remote_branch_exists "${remote_release}"; then
-      # Exits on error.
+      # Exit on error.
       must_confirm_commit_at_or_behind_commit \
         "${remote_release}" "${local_release}" ${divergent_ok} \
-        "remote-release" "local-release"
+        "remote-release" "local-release" \
+        || exit_1
+
     fi
 
     if [ "${branch_name}" != "${local_release}" ]; then

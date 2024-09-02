@@ -280,8 +280,10 @@ bind generic r +<sh -c \" \\
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_SCOPING}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_THEREST}"
 
-  # Indicate success/failure.
-  ${keep_going}
+  if ! ${keep_going}; then
+    # So that non-zero exit doesn't trip errexit traps
+    exit_1
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -345,7 +347,8 @@ resort_and_sign_commits_before_push_maybe () {
 
   # Note that resort_and_sign_commits_before_push checks that
   # sort-from shares history with HEAD:
-  #   must_confirm_commit_at_or_behind_commit "${rebase_boundary}" "HEAD"
+  #   must_confirm_shares_history_with_head "${rebase_boundary}" \
+  #     || exit_1
 
   >&2 debug "rebase_boundary: ${rebase_boundary}"
 

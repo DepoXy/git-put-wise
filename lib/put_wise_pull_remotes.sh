@@ -141,7 +141,8 @@ put_wise_pull_complicated () {
   must_confirm_commit_at_or_behind_commit \
     "${pick_from}" "${protected_boundary_or_HEAD}" \
     ${divergent_ok} \
-    "${pw_tag_archived}" "private-scoping-boundary-or-HEAD"
+    "${pw_tag_archived}" "private-scoping-boundary-or-HEAD" \
+    || exit_1
 
   # ***
 
