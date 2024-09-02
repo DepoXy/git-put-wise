@@ -476,26 +476,28 @@ fetch_and_check_branch_exists_or_remote_online () {
     return 1
   fi
 
-  # Always fetch the remote, so that our ref is current,
-  # because this function also does a lot of state validating.
-  >&2 echo_announce "Fetch from ‘${remote_name}’" -n
+  # Fetch the remote, so that our remote branch ref is current, though
+  # respect user back-off to be less irritating and run quicker.
+  if is_git_fetch_backoff_expired "${remote_name}" "${branch_name}"; then
+    >&2 echo_announce "Fetch from ‘${remote_name}’" -n
 
-  if ! git_fetch_with_backoff "${remote_name}" "${branch_name}"; then
-    >&2 echo " ...failed!"
-    if git ls-remote ${remote_name} -q 2> /dev/null; then
-      >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
-      # If case remote branch was deleted, remove local ref.
-      git fetch -q --prune "${remote_name}"
+    if ! git_fetch_with_backoff "${remote_name}" "${branch_name}"; then
+      >&2 echo " ...failed!"
+      if git ls-remote ${remote_name} -q 2> /dev/null; then
+        >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
+        # If case remote branch was deleted, remove local ref.
+        git fetch -q --prune "${remote_name}"
 
-      return 0
+        return 0
+      else
+        >&2 echo "- Remote unreachable"
+        # We'll still check the branch to see if previously fetched.
+        # MAYBE: Might still want to fail because ref. might be stale.
+      fi
     else
-      >&2 echo "- Remote unreachable"
-      # We'll still check the branch to see if previously fetched.
-      # MAYBE: Might still want to fail because ref. might be stale.
+      >&2 echo
+      # Fetched the branch specifically (so final check is a formality).
     fi
-  else
-    >&2 echo
-    # Fetched the branch specifically (so final check is a formality).
   fi
 
   if git_remote_branch_exists "${upstream}"; then
@@ -503,7 +505,7 @@ fetch_and_check_branch_exists_or_remote_online () {
 
     return 0
   else
-    # Remote not reachable, and no branch.
+    # No branch, and remote not reachable or fetch backoff in effect.
 
     return 1
   fi

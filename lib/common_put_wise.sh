@@ -1380,28 +1380,41 @@ git_fetch_with_backoff () {
   local remote_name="$1"
   local branch_name="$2"
 
+  # Set by the is-expired fcn.
   local branch_ref=""
-  [ -z "${branch_name}" ] || branch_ref="refs/heads/${branch_name}"
+  local cfg_section=""
+  local cfg_last_fetch=""
 
-  # E.g., "tools.git-put-wise".
-  local cfg_section="tools.${PROG_NAME}"
-  local cfg_last_fetch="lastfetch--${remote_name}${branch_name:+--${branch_name}}"
-
-  local last_update="$(git config ${cfg_section}.${cfg_last_fetch})"
-
-  local backoff_time_ago
-  backoff_time_ago="$(date -d "${PW_OPTIONS_FETCH_BACKOFF:--1 hour}" +'%s')"
-
-  if [ -z "${last_update}" ] || [ ${last_update} -le ${backoff_time_ago} ] \
-  ; then
+  if is_git_fetch_backoff_expired "${remote_name}" "${branch_name}"; then
     # git-fetch prints progress to stderr, which we ignore ('-q' also works).
     if ! git fetch "${remote_name}" ${branch_ref} 2> /dev/null; then
+      git config --unset ${cfg_section}.${cfg_last_fetch}
 
       return 1
     fi
 
     git config ${cfg_section}.${cfg_last_fetch} "$(date +%s)"
   fi
+}
+
+is_git_fetch_backoff_expired () {
+  local remote_name="$1"
+  local branch_name="$2"
+
+  branch_ref=""
+  [ -z "${branch_name}" ] || branch_ref="refs/heads/${branch_name}"
+
+  # E.g., "tools.git-put-wise", or
+  # "tools.git-rebase-sort-by-scope-protected-private".
+  cfg_section="tools.${PROG_NAME}"
+  cfg_last_fetch="lastfetch--${remote_name}${branch_name:+--${branch_name}}"
+
+  local last_update="$(git config ${cfg_section}.${cfg_last_fetch})"
+
+  local backoff_time_ago
+  backoff_time_ago="$(date -d "${PW_OPTIONS_FETCH_BACKOFF:--1 hour}" +'%s')"
+
+  [ -z "${last_update}" ] || [ ${last_update} -le ${backoff_time_ago} ]
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
