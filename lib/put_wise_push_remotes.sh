@@ -272,11 +272,16 @@ bind generic r +<sh -c \" \\
     fi
 
     if ! ${restrict_release}; then
-      prompt_push "${remote_protected}" "${protected_boundary_or_HEAD}" ${git_push_force}
       prompt_push "${remote_current}" "${scoping_boundary_or_HEAD}" ${git_push_force}
     fi
 
     prompt_push "${remote_release}" "${release_boundary_or_HEAD}" ${git_push_force}
+
+    # Push 'scoping' last, in case fails b/c diverged and sets keep_going=false
+    # (so at least pushes to 'release', which is probably more important to user).
+    if ! ${restrict_release}; then
+      prompt_push "${remote_protected}" "${protected_boundary_or_HEAD}" ${git_push_force}
+    fi
   fi
 
   if ! ${keep_going}; then
