@@ -429,12 +429,16 @@ put_wise_identify_rebase_boundary_and_remotes () {
       fi
     fi
 
-    if ! insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"; then
+    if ! rebase_boundary="$( \
+      insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"
+    )"; then
 
       exit_1
     fi
 
-    if ! insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"; then
+    if ! rebase_boundary="$( \
+      insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"
+    )"; then
 
       exit_1
     fi
@@ -534,9 +538,12 @@ insist_nothing_tagged_after () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
 
+  local exclusive_boundary="${rebase_boundary}"
+
   # ISOFF/2024-08-30: Should be okay to check all commits.
   #
   #   if [ -z "${rebase_boundary}" ]; then
+  #     printf "%s" "${exclusive_boundary}"
   #
   #     return 0
   #   fi
@@ -577,11 +584,12 @@ insist_nothing_tagged_after () {
       fi
     fi
 
-    if is_already_sorted_and_signed \
+    if is_range_sorted_and_signed_and_nothing_scoped_follows \
       "${rebase_boundary}" "${enable_gpg_sign}" "${newer_tag}" \
-      > /dev/null \
     ; then
       tags_will_not_be_orphaned=true
+
+      exclusive_boundary="${newer_tag}"
 
       msg_fiver="ALERT"
     fi
@@ -603,10 +611,12 @@ insist_nothing_tagged_after () {
       else
         >&2 ${log} "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true (--orphan-tags) to disable this check"
 
-        exit_1
+        return 1
       fi
     fi
   fi
+
+  printf "%s" "${exclusive_boundary}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -645,6 +655,8 @@ insist_single_author_used_since () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
 
+  local exclusive_boundary="${rebase_boundary}"
+
   local latest_author_email
   latest_author_email="$(git log -1 --format=%ae)"
 
@@ -660,13 +672,10 @@ insist_single_author_used_since () {
     git log -n 1 --format="%H" --perl-regexp --author="^(?!(${author_pattern})).*\$"
   )"
 
-  if [ -z "${latest_other_commit}" ]; then
-    # Mono-authorship.
+  # If no latest commit, indicates same author throughout # Mono-authorship
 
-    return 0
-  fi
-
-  if git merge-base --is-ancestor "${rebase_boundary}" "${latest_other_commit}" \
+  if [ -n "${latest_other_commit}" ] \
+    && git merge-base --is-ancestor "${rebase_boundary}" "${latest_other_commit}" \
   ; then
     local msg_fiver="ERROR"
     if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
@@ -679,26 +688,14 @@ insist_single_author_used_since () {
     # the author commit, and allow if that's the case.
     local commits_will_not_be_changed=false
 
-    if is_already_sorted_and_signed \
+    if is_range_sorted_and_signed_and_nothing_scoped_follows \
       "${rebase_boundary}" "${enable_gpg_sign}" "${latest_other_commit}" \
-      > /dev/null \
     ; then
-      # Also check nothing scoped, otherwise if rev range ends with 1+
-      # scoped commits, and later commit is not scoped, or lesser scope,
-      # than technically this rev range not sorted. (And doesn't seem
-      # worth it to check commits after are equal or greater scope, though
-      # technically that would make this check less exclusive.)
-      local scoping_boundary_or_HEAD
-      scoping_boundary_or_HEAD="$( \
-        identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
-      )"
+      commits_will_not_be_changed=true
 
-      if ! git merge-base --is-ancestor "${scoping_boundary_or_HEAD}" "${latest_other_commit}" \
-      ; then
-        commits_will_not_be_changed=true
+      exclusive_boundary="${latest_other_commit}"
 
-        msg_fiver="ALERT"
-      fi
+      msg_fiver="ALERT"
     fi
 
     # ***
@@ -718,10 +715,50 @@ insist_single_author_used_since () {
       else
         >&2 echo "- ALTLY: Set PW_OPTION_IGNORE_AUTHOR=true (--ignore-author) to disable this check"
 
-        exit_1
+        return 1
       fi
     fi
   fi
+
+  printf "%s" "${exclusive_boundary}"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# If something canonical found after the rebase boundary, such as
+# a version tag, check if the rebase range until then is already
+# sorted & signed, so we can just move the boundary forward.
+#
+# Also checks if rev range ends with 1+ scoped commits, and if any
+# later commits are not scoped, or lesser scope, because than the
+# rev range is technically not sorted. (And doesn't seem worth it
+# to check commits after are equal or greater scope, though really
+# that would make this check less exclusive. E.g., if the
+# rebase_boundary commit is PROTECTED, than it'd be okay if only
+# PRIVATE commits followed. But seems like busy work to implement.)
+
+is_range_sorted_and_signed_and_nothing_scoped_follows () {
+  local rebase_boundary="$1"
+  local enable_gpg_sign="$2"
+  local until_ref="$3"
+
+  if is_already_sorted_and_signed \
+    "${rebase_boundary}" "${enable_gpg_sign}" "${until_ref}" \
+    > /dev/null \
+  ; then
+    local scoping_boundary_or_HEAD
+    scoping_boundary_or_HEAD="$( \
+      identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
+    )"
+
+    if ! git merge-base --is-ancestor "${scoping_boundary_or_HEAD}" "${until_ref}" \
+    ; then
+
+      return 0
+    fi
+  fi
+
+  return 1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
