@@ -126,6 +126,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # - Note that put-wise doesn't use this option, but another project
   #   does: git-bump-version-tag.
   local inhibit_exit_if_unidentified="${2:-false}"
+  local skip_integrity_checks="${3:-false}"
 
   # Caller vars set below:
   branch_name="$(git_branch_name)"
@@ -427,6 +428,11 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
         exit_1
       fi
+    fi
+
+    if ${skip_integrity_checks:-false}; then
+
+      return 0
     fi
 
     if ! rebase_boundary="$( \
