@@ -151,6 +151,7 @@ put_wise_push_remotes_go () {
   #   - Just FYI that you should `git tag test-🥷-me` aforehand.
   PW_TAG_SCOPE_MARKER_PRIVATE="pw-🔴"
   PW_TAG_SCOPE_MARKER_PROTECTED="pw-🔵"
+  PW_TAG_SCOPE_MARKER_RELEASE="pw-🔷"
   # Here's a test tag to show which characters display properly in @linux tig:
   #   PW_TAG_SCOPE_MARKER_PROTECTED="pw-🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜"
   #                             @linux: ^^      ^^    ^^^^              ^^^^
@@ -184,6 +185,9 @@ put_wise_push_remotes_go () {
   # Skip ${DRY_ECHO}, tags no biggie, and user wants to see in tig.
   git tag -f "${PW_TAG_SCOPE_MARKER_PRIVATE}" "${protected_boundary_or_HEAD}" > /dev/null
   git tag -f "${PW_TAG_SCOPE_MARKER_PROTECTED}" "${scoping_boundary_or_HEAD}" > /dev/null
+  if ! git_is_same_commit "${scoping_boundary_or_HEAD}" "${release_boundary_or_HEAD}"; then
+    git tag -f "${PW_TAG_SCOPE_MARKER_RELEASE}" "${release_boundary_or_HEAD}" > /dev/null
+  fi
 
   local tagged_release=""
   local tagged_scoping=""
@@ -287,6 +291,7 @@ bind generic r +<sh -c \" \\
 
   quietly_delete_tag "${PW_TAG_SCOPE_MARKER_PRIVATE}"
   quietly_delete_tag "${PW_TAG_SCOPE_MARKER_PROTECTED}"
+  quietly_delete_tag "${PW_TAG_SCOPE_MARKER_RELEASE}"
 
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_RELEASE}"
   quietly_delete_tag "${PW_TAG_SCOPE_PUSHES_SCOPING}"
