@@ -751,7 +751,7 @@ is_range_sorted_and_signed_and_nothing_scoped_follows () {
       identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
     )"
 
-    if ! git merge-base --is-ancestor "${scoping_boundary_or_HEAD}" "${until_ref}" \
+    if git merge-base --is-ancestor "${until_ref}" "${scoping_boundary_or_HEAD}" \
     ; then
 
       return 0
