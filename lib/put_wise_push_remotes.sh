@@ -269,6 +269,11 @@ bind generic r +<sh -c \" \\
       fi
     else
       >&2 echo "${PW_USER_CANCELED_GOODBYE}"
+
+      # User declined tig-prompt.
+      # - This doesn't seem like a tig-killable offense.
+      #   - We could just not return nonzero, or we can empty the kill PID.
+      PW_PID_KILL_ON_ERROR=""
     fi
 
     if ! ${restrict_release}; then
