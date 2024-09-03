@@ -340,10 +340,15 @@ git_number_of_commits () {
 }
 
 git_distance_between_commits () {
-  local gitref_lhs="${1:-HEAD}"
-  local gitref_rhs="${2:-HEAD}"
+  local gitref="$1"
+  local endref="${2:-HEAD}"
 
-  git rev-list --count ${gitref_lhs}..${gitref_rhs}
+  local rev_list_commits="${endref}"
+  if [ -n "${gitref}" ]; then
+    rev_list_commits="${gitref}..${endref}"
+  fi
+
+  git rev-list --count ${rev_list_commits}
 }
 
 # ***
