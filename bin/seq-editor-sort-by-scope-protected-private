@@ -356,6 +356,8 @@ print_rebase_prog_prefix () {
   # e.g.,
   #   [ "$(cat .git/rebase-merge/gpg_sign_opt 2> /dev/null)" = "-S" ]
   # but we don't use the --gpg-sign arg; rather, we go our own way.
+  # - Specifically, git-rebase won't sign all commits in the rebase,
+  #   it'll only sign commits that are otherwise changed by the rebase.
   if [ -s "$(print_rebase_options_gpg_sign_file)" ]; then
     prog_prefix="Signing commits: "
   else
