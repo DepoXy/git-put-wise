@@ -90,7 +90,8 @@ git-rebase-sort-by-scope-protected-private () {
   # ***
 
   local rebase_boundary=""
-  rebase_boundary="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")"
+  rebase_boundary="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")" \
+    || exit_1
 
   if [ -z "${rebase_boundary}" ]; then
     # Means no rebase boundary identified, but all commits sorted/signed.
@@ -287,8 +288,14 @@ print_rebase_boundary () {
   local already_sorted=false
   local already_signed=false
   # BWARE: Calls git-fetch, so not the quickest command.
-  >&2 put_wise_identify_rebase_boundary_and_remotes \
-    "rebase automatically"
+  if ! >&2 put_wise_identify_rebase_boundary_and_remotes \
+    "rebase automatically" \
+  ; then
+    >&2 echo "ERROR: Could not identify rebase boundary"
+    >&2 echo "- Hint: You can specify the boundary explicitly to skip this step"
+
+    return 1
+  fi
 
   printf "%s" "${rebase_boundary}"
 }
