@@ -441,21 +441,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
       return 0
     fi
 
-    local failed_checks=false
-
     if ! rebase_boundary="$( \
-      insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"
+      insist_rebase_range_free_from_canonicals "${rebase_boundary}" "${enable_gpg_sign}"
     )"; then
-      failed_checks=true
-    fi
-
-    if ! rebase_boundary="$( \
-      insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"
-    )"; then
-      failed_checks=true
-    fi
-
-    if ${failed_checks}; then
 
       return 1
     fi
@@ -544,6 +532,31 @@ verify_rebase_boundary_exists () {
   fi
 
   git_commit_object_name ${rebase_boundary} > /dev/null
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+insist_rebase_range_free_from_canonicals () {
+  local rebase_boundary="$1"
+  local enable_gpg_sign="$2"
+
+  local failed_checks=false
+
+  if ! rebase_boundary="$( \
+    insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"
+  )"; then
+    failed_checks=true
+  fi
+
+  if ! rebase_boundary="$( \
+    insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"
+  )"; then
+    failed_checks=true
+  fi
+
+  printf "%s" "${rebase_boundary}"
+
+  ! ${failed_checks} || return 1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #

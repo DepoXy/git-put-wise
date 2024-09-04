@@ -90,8 +90,11 @@ git-rebase-sort-by-scope-protected-private () {
   # ***
 
   local rebase_boundary=""
-  rebase_boundary="$(print_rebase_boundary "${starting_ref}" "${use_magic_starting_ref}")" \
-    || exit_1
+  rebase_boundary="$(print_rebase_boundary \
+    "${starting_ref}" \
+    "${use_magic_starting_ref}" \
+    "${enable_gpg_sign}" \
+  )" || exit_1
 
   if [ -z "${rebase_boundary}" ]; then
     # Means no rebase boundary identified, but all commits sorted/signed.
@@ -243,29 +246,47 @@ must_verify_starting_ref () {
 print_rebase_boundary () {
   local starting_ref="$1"
   local use_magic_starting_ref="$2"
+  local enable_gpg_sign="$3"
 
   local prog_name="$(basename -- "$0")"
 
-  if ! ${use_magic_starting_ref:-false}; then
-    if [ -z "${starting_ref}" ]; then
-      >&2 echo "ERROR: Please specify a starting ref to sort & sign from"
-      >&2 echo "- E.g, specify a gitref:"
-      >&2 echo "    ${prog_name} <REF>"
-      >&2 echo "- Or use the special \"ROOT\" ref to sort & sign all commits:"
-      >&2 echo "    ${prog_name} ROOT"
-      >&2 echo "- Or enable use_magic_starting_ref:"
-      >&2 echo "    ${prog_name} \"\" true"
+  if ! ${use_magic_starting_ref:-false} \
+    && [ -z "${starting_ref}" ] \
+  ; then
+    >&2 echo "ERROR: Please specify a starting ref to sort & sign from"
+    >&2 echo "- E.g, specify a gitref:"
+    >&2 echo "    ${prog_name} <REF>"
+    >&2 echo "- Or use the special \"ROOT\" ref to sort & sign all commits:"
+    >&2 echo "    ${prog_name} ROOT"
+    >&2 echo "- Or enable use_magic_starting_ref:"
+    >&2 echo "    ${prog_name} \"\" true"
+
+    exit_1
+  fi
+
+  # Uses: git rev-parse --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
+  if [ -n "${starting_ref}" ] && ( \
+    ! ${use_magic_starting_ref:-false} \
+    || ! git_is_same_commit "${starting_ref}" "HEAD" \
+  ); then
+
+    # LATER/2024-09-03: We'll try this for now, but it might be too strict.
+    # - Previously, if user specified the rebase boundary, we'd use it
+    #   unconditionally.
+    # - But now, check for tags and other authors within rebase range,
+    #   and force user to disable this check explicitly:
+    #     PW_OPTION_ORPHAN_TAGS=true PW_OPTION_IGNORE_AUTHOR=true ...
+    # - If this is too aggressive, we could make this opt-in.
+    #   - Or we could add a separate tig binding that disables this check,
+    #     since author mostly uses this rebase script via tig bindings.
+    #   - But I'd rather *harden* the code now, and see how it shakes out.
+    if ! starting_ref="$( \
+      insist_rebase_range_free_from_canonicals "${starting_ref}" "${enable_gpg_sign}"
+    )"; then
 
       exit_1
     fi
 
-    printf "%s" "${starting_ref}"
-
-    return 0
-  fi
-
-  # Uses: git rev-parse --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
-  if [ -n "${starting_ref}" ] && ! git_is_same_commit "${starting_ref}" "HEAD"; then
     printf "%s" "${starting_ref}"
 
     return 0
