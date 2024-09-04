@@ -291,16 +291,17 @@ put_wise_identify_rebase_boundary_and_remotes () {
     remote_release=""
   fi
 
-  # On force-push branch, don't include remote 'release' branch.
-  # ALTLY: We could allow force-push from 'private' branch, e.g.,
-  #   if ${PW_OPTION_FORCE_PUSH:-false} && ! ${is_hyper_branch}; ...
-  # - But this should be a rare event, so require user to use
-  #   local 'release' branch to force-push to remote 'release'.
-  if ${PW_OPTION_FORCE_PUSH:-false} \
-    && [ "${branch_name}" != "${LOCAL_BRANCH_RELEASE}" ] \
-  ; then
-    local_release=""
-    remote_release=""
+  # On force-push branch, don't include remote 'release' branch when
+  # pushing from 'private'; and don't include 'scoping' when pushing
+  # from 'release'. This is so user only force-pushes one remote at a
+  # time.
+  if ${PW_OPTION_FORCE_PUSH:-false}; then
+    if [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
+      remote_protected=""
+    else
+      local_release=""
+      remote_release=""
+    fi
   fi
 
   # NOTE: If rebase_boundary is 'release' or 'publish/release', it might
