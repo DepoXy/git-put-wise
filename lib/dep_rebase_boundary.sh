@@ -261,11 +261,11 @@ put_wise_identify_rebase_boundary_and_remotes () {
     local divergent_ok=false
 
     if git_remote_branch_exists "${remote_release}"; then
-      # Exit on error.
+      # Fail now if remote 'release' not at or behind local 'release'.
       must_confirm_commit_at_or_behind_commit \
         "${remote_release}" "${local_release}" ${divergent_ok} \
         "remote-release" "local-release" \
-        || exit_1
+        || return 1
 
     fi
 
@@ -428,7 +428,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
           "${remote_name}" \
           "${rebase_boundary}"
 
-        exit_1
+        return 1
       fi
     fi
 
@@ -441,14 +441,14 @@ put_wise_identify_rebase_boundary_and_remotes () {
       insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"
     )"; then
 
-      exit_1
+      return 1
     fi
 
     if ! rebase_boundary="$( \
       insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"
     )"; then
 
-      exit_1
+      return 1
     fi
 
     debug_alert_if_ref_tags_after_rebase_boundary \
