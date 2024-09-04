@@ -437,16 +437,21 @@ put_wise_identify_rebase_boundary_and_remotes () {
       return 0
     fi
 
+    local failed_checks=false
+
     if ! rebase_boundary="$( \
       insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"
     )"; then
-
-      return 1
+      failed_checks=true
     fi
 
     if ! rebase_boundary="$( \
       insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"
     )"; then
+      failed_checks=true
+    fi
+
+    if ${failed_checks}; then
 
       return 1
     fi
@@ -547,6 +552,8 @@ insist_nothing_tagged_after () {
 
   local exclusive_boundary="${rebase_boundary}"
 
+  local failed_checks=false
+
   # ISOFF/2024-08-30: Should be okay to check all commits.
   #
   #   if [ -z "${rebase_boundary}" ]; then
@@ -618,12 +625,14 @@ insist_nothing_tagged_after () {
       else
         >&2 ${log} "- USAGE: Set PW_OPTION_ORPHAN_TAGS=true (--orphan-tags) to disable this check"
 
-        return 1
+        failed_checks=true
       fi
     fi
   fi
 
   printf "%s" "${exclusive_boundary}"
+
+  ! ${failed_checks} || return 1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -663,6 +672,8 @@ insist_single_author_used_since () {
   local enable_gpg_sign="$2"
 
   local exclusive_boundary="${rebase_boundary}"
+
+  local failed_checks=false
 
   local latest_author_email
   latest_author_email="$(git log -1 --format=%ae)"
@@ -722,12 +733,14 @@ insist_single_author_used_since () {
       else
         >&2 echo "- ALTLY: Set PW_OPTION_IGNORE_AUTHOR=true (--ignore-author) to disable this check"
 
-        return 1
+        failed_checks=true
       fi
     fi
   fi
 
   printf "%s" "${exclusive_boundary}"
+
+  ! ${failed_checks} || return 1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
