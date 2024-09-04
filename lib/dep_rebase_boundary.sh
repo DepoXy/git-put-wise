@@ -690,7 +690,7 @@ insist_single_author_used_since () {
   # If no latest commit, indicates same author throughout # Mono-authorship
 
   if [ -n "${latest_other_commit}" ] \
-    && git merge-base --is-ancestor "${rebase_boundary}" "${latest_other_commit}" \
+    && ! git merge-base --is-ancestor "${latest_other_commit}" "${rebase_boundary}" \
   ; then
     local msg_fiver="ERROR"
     if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
