@@ -205,7 +205,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # If feature branch, use current branch name, e.g., 'entrust/<feature>'
   ${is_hyper_branch} || scoping_branch="${branch_name}"
 
-  if remote_ref="$( \
+  local scoping_remote_ref
+
+  if scoping_remote_ref="$( \
     fetch_and_check_branch_exists_or_remote_online \
       "${SCOPING_REMOTE_NAME}" \
       "${scoping_branch}" \
@@ -214,7 +216,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     # Prefer pw/in over scoping boundary
     # - Ref is empty string if remote exists but not branch (before first push).
     if [ -z "${rebase_boundary}" ] && [ -n "${remote_ref}" ]; then
-      rebase_boundary="${remote_ref}"
+      rebase_boundary="${scoping_remote_ref}"
     fi
   fi
 
@@ -262,11 +264,23 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
     if git_remote_branch_exists "${remote_release}"; then
       # Fail now if remote 'release' not at or behind local 'release'.
-      must_confirm_commit_at_or_behind_commit \
+      if ! must_confirm_commit_at_or_behind_commit \
         "${remote_release}" "${local_release}" ${divergent_ok} \
         "remote-release" "local-release" \
-        || return 1
+      ; then
+        if ! ${PW_OPTION_FORCE_PUSH:-false}; then
 
+          return 1
+        elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
+          # Don't use publish/release as boundary if force-pushing
+          # to it (because if user force-pushing, likely diverged).
+          if git merge-base --is-ancestor "${scoping_remote_ref}" "${branch_name}"; then
+            rebase_boundary="${scoping_remote_ref}"
+          else
+            rebase_boundary="${applied_tag}"
+          fi
+        fi
+      fi
     fi
 
     if [ "${branch_name}" != "${local_release}" ]; then
