@@ -387,6 +387,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # Fallback latest version tag.
   if [ -z "${rebase_boundary}" ]; then
     rebase_boundary="$(git_most_recent_version_tag)"
+
+    if [ -n "${rebase_boundary}" ]; then
+      rebase_boundary="refs/tags/${rebase_boundary}"
+    fi
   fi
 
   # ***
@@ -592,7 +596,7 @@ insist_nothing_tagged_after () {
     local newer_tag="${recent_ver}"
     if [ -n "${recent_tag}" ]; then
       if [ -z "${recent_ver}" ] \
-        || git merge-base --is-ancestor "${recent_ver}" "${recent_tag}" \
+        || git merge-base --is-ancestor "refs/tags/${recent_ver}" "refs/tags/${recent_tag}" \
       ; then
         newer_tag="${recent_tag}"
       fi
