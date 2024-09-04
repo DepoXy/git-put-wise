@@ -313,8 +313,14 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
       remote_protected=""
     else
+      # When force-pushing scoping or feature branch, ignore 'release'.
       local_release=""
       remote_release=""
+
+      if [ "${branch_name}" != "${LOCAL_BRANCH_PRIVATE}" ]; then
+        # When force-pushing feature branch, ignore 'scoping'.
+        remote_protected=""
+      fi
     fi
   fi
 
