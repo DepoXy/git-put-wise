@@ -566,18 +566,11 @@ insist_nothing_tagged_after () {
   #     return 0
   #   fi
 
-  local rev_list_commits
-  rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}")"
-
-  local child_of_rebase_boundary="$( \
-    git rev-list ${rev_list_commits} | tail -n 1
-  )"
-
   local recent_ver
-  recent_ver="$(git_most_recent_version_tag "${child_of_rebase_boundary}")"
+  recent_ver="$(git_most_recent_version_tag "${rebase_boundary}")"
 
   local recent_tag
-  recent_tag="$(git_most_recent_tag "${child_of_rebase_boundary}")"
+  recent_tag="$(git_most_recent_tag "${rebase_boundary}")"
 
   if [ -n "${recent_ver}" ] \
     || [ -n "${recent_tag}" ] \
