@@ -288,9 +288,17 @@ check_if_patches_repo () {
 main () {
   set -e
 
+  # Load: set_traps, clear_traps, exit_0, exit_1, os_is_macos.
+  . "$(dirname -- "$(realpath -- "$0")")/../deps/sh-err-trap/lib/err-trap.sh"
+
+  set_traps
+
   source_deps
 
-  _pw_putwisely "$@"
+  _pw_putwisely "$@" \
+    || exit_1
+
+  clear_traps
 }
 
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
