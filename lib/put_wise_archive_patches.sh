@@ -54,13 +54,22 @@ put_wise_archive_patches_go () {
   # E.g., 'pw/private/out'
   local pw_tag_archived="$(format_pw_tag_archived "${branch_name}")"
 
+  # ***
+
   local starting_ref
   starting_ref="$(
     print_starting_ref_or_upstream_branch \
       "${starting_ref_arg}" "${pw_tag_applied}" \
   )" || exit_1
 
-  debug "starting_ref: ${starting_ref}"
+  local context=""
+  if [ "${starting_ref}" = "${GIT_EMPTY_TREE}" ]; then
+    context=" [magic empty tree object]"
+  fi
+
+  debug "starting_ref: ${starting_ref}${context}"
+
+  # ***
 
   # Sort & sign commits. Unless exit 0/11 if starting_ref → HEAD
   # (because no-op); or exit_1 if ahead of HEAD, or diverged.
