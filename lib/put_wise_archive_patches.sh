@@ -14,7 +14,7 @@ DRY_ECHO=""
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # REFER: `printf '' | git hash-object -t tree --stdin`
-local GIT_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+GIT_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
