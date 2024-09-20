@@ -526,49 +526,6 @@ must_identify_rebase_base () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# 2022-11-14: This function inspired by must_confirm_shares_history_with_head,
-# but markedly different, too, especially the ancestor_sha = remote_sha check.
-must_confirm_upstream_shares_history_with_head () {
-  local remote_ref="$1"
-
-  local head_sha
-  head_sha="$(git rev-parse HEAD)"
-
-  if git_is_same_commit "${remote_ref}" "${head_sha}"; then
-    >&2 echo "Nothing to pull: Already up-to-date with “${remote_ref}”"
-
-    exit_elevenses
-  fi
-
-  local ancestor_sha
-  ancestor_sha="$(git merge-base "${remote_ref}" "HEAD")"
-
-  if git_is_same_commit "${ancestor_sha}" "${remote_ref}"; then
-    >&2 echo "Nothing to do: “${remote_ref}” is behind HEAD"
-
-    exit_elevenses
-  elif [ "${ancestor_sha}" != "${head_sha}" ]; then
-    # The common ancestor is not HEAD, which we would expect if the
-    # remote publish/release was ahead of release. And since we already
-    # checked that publish/release and release don't already reference
-    # the same object, and that publish/release is not behind HEAD,
-    # and now that publish/release is not ahead of HEAD, it seems the
-    # two branches have diverged.
-    # - We assume if the ancestor is at least not the first commit,
-    #   that it's safe to 3-way rebase.
-    #   - FIXME/2024-08-30 11:45: What's a 3-way rebase?
-    #     - UTEST: So, what, set remote to *different* project, then pull??
-    # FIXME/2024-08-30 11:44: What if they don't share root??
-    if [ "${ancestor_sha}" = "$(git_first_commit_sha)" ]; then
-      >&2 echo "ERROR: The remote “${remote_ref}” branch does not share history with HEAD"
-
-      exit_1
-    fi
-  fi
-}
-
-# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
 print_tig_review_instructions_pull () {
   local pw_tag_least_diffy_ref="$1"
   local upstream_ref="$2"
