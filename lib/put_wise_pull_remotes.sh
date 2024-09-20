@@ -467,6 +467,10 @@ put_wise_pull_remotes_cleanup () {
 must_identify_rebase_base () {
   local branch_name="$1"
 
+  # ***
+
+  # USYNC: must_identify_rebase_base (pull) & identify_first_upstream_branch (archive)
+
   # "Return" variable.
   upstream_ref=""
 
@@ -502,6 +506,8 @@ must_identify_rebase_base () {
       upstream_ref="${remote_release}"
     fi
   fi
+
+  # ***
 
   if [ -z "${upstream_ref}" ]; then
     # true if branch_name is 'release' or 'private'.

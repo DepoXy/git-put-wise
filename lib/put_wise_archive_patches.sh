@@ -325,6 +325,8 @@ print_starting_ref_or_upstream_branch () {
 # ***
 
 identify_first_upstream_branch () {
+  # USYNC: must_identify_rebase_base (pull) & identify_first_upstream_branch (archive)
+
   # "Return" variable.
   upstream_ref=""
 
