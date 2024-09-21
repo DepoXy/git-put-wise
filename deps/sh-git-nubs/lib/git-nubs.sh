@@ -44,6 +44,18 @@ git_branch_name () {
     git rev-parse --abbrev-ref=loose HEAD 2> /dev/null \
   ); then
     # Unnamed branch, e.g., before first commit after `git init .`.
+    # - See also:
+    #     $ git init .
+    #     $ git log -1
+    #     fatal: your current branch 'main' does not have any commits yet
+    #     # Or whatever branch is named in .git/HEAD
+    # - Speaking of which, we could use branch name from .git/HEAD:
+    #     $ cat .git/HEAD
+    #     ref: refs/heads/main
+    #   but this code has always used "<?!>" and I think it's
+    #   a better clue to the user than printing a normal branch
+    #   name (i.e., so user can see there's no branch without
+    #   testing for nonzero return).
     branch_name="<?!>"
 
     exit_code=1
@@ -102,10 +114,26 @@ git_tracking_branch_safe () {
 #        it without checking if object actually exists.
 #        - See git_is_commit for checking if commit object.
 git_commit_object_name () {
-  local gitref="${1:-HEAD}"
-  local opts="$2"
+  git_typed_object_name "commit" "$@"
+}
 
-  git rev-parse ${opts} --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
+# UCASE: Check if tag is on magic empty tree object (4b825dc642cb), e.g.,
+#   $ git tag some-tag 4b825dc642cb  # Ever-present magic empty tree
+#   $ git_tree_object_name some-tag
+#   4b825dc642cb6eb9a060e54bf8d69288fbee4904
+git_tree_object_name () {
+  git_typed_object_name "tree" "$@"
+}
+
+git_typed_object_name () {
+  local type="$1"
+  local gitref="${2:-HEAD}"
+  local opts="$3"
+
+  # CPYST:
+  #   gitref=HEAD && git rev-parse --verify "${gitref}^{commit}"
+  #   gitref=refs/tags/1.2.3 && git rev-parse --verify "${gitref}^{commit}"
+  git rev-parse ${opts} --verify --end-of-options "${gitref}^{${type}}" 2> /dev/null
 }
 
 git_is_same_commit () {
@@ -130,6 +158,12 @@ git_object_name_check_format () {
   local tag_name="$1"
 
   git check-ref-format "refs/tags/${tag_name}"
+}
+
+git_object_type () {
+  local gitref="$1"
+
+  git cat-file -t "$(git rev-parse "${gitref}")"
 }
 
 # There are a few ways to find the object name (SHA) for a tag, including:
@@ -322,7 +356,12 @@ git_number_of_commits () {
   local gitref="${1:-HEAD}"
   [ $# -lt 1 ] || shift
 
-  git rev-list --count "${gitref}" "$@"
+  if ! git_branch_name > /dev/null; then
+    # Fresh repo, e.g., `git init . && git_number_of_commits`.
+    echo "0"
+  else
+    git rev-list --count "${gitref}" "$@"
+  fi
 }
 
 git_distance_between_commits () {
@@ -1234,7 +1273,7 @@ git_most_recent_tag () {
       existing_tags="$(git tag --list --points-at "${latest_commit}")"
 
       # Doesn't matter which tag, really.
-      recent_tag="$(echo "${recent_tags}" | head -n 1)"
+      recent_tag="$(echo "${existing_tags}" | head -n 1)"
     else
       existing_tags="$(git_versions_tagged_for_commit_object "${latest_commit}")"
 
