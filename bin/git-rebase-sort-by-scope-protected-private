@@ -214,7 +214,7 @@ must_verify_starting_ref () {
     # Will verify further in print_rebase_boundary
     :
   elif [ "${starting_ref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
-    >&2 echo "BWARE: Rebasing all commits"
+    >&2 echo "ALERT: If not sorted & signed, may rebase all commits"
   elif [ "${starting_ref}" = "${GITNUBS_SPECIAL_TIG_SHA_UNSTAGED}" ]; then
     # When run from tig, this is the %(commit) value if user has either
     # Unstaged changes or Staged changes selected.
