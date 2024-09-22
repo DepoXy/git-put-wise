@@ -13,11 +13,6 @@ DRY_ECHO=""
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# REFER: `printf '' | git hash-object -t tree --stdin`
-GIT_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-
-# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
-
 put_wise_archive_patches () {
   ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
