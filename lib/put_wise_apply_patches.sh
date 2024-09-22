@@ -1221,6 +1221,11 @@ print_exec_fcn_reset_committer_raw () {
   local patch_path="$1"
   local old_head="$2"
 
+  if ${PW_OPTION_RESET_AUTHOR_DISABLE:-false}; then
+
+    return 0
+  fi
+
   local gitrange
   if [ "${old_head}" != "${GIT_EMPTY_TREE}" ]; then
     gitrange="${old_head}.."
@@ -1239,28 +1244,34 @@ print_exec_fcn_reset_committer_raw () {
   #   author meta data, so that SHAs will match between hosts.
   echo '
     exec_reset_committer () {
-      local count=0;
-      count="$(git rev-list --count '"${gitrange}"')";
+      local author_name="'"${PW_OPTION_APPLY_AUTHOR_NAME}"'";
+      local author_email="'"${PW_OPTION_APPLY_AUTHOR_EMAIL}"'";
 
-      local patch_file;
-      patch_file="$(find "'"${patch_path}"'" -regex ".*\/0*${count}-[^\/]*.patch")";
+      if [ -z "${author_name}" ] || [ -z "${author_email}" ]; then
+        local count=0;
+        count="$(git rev-list --count '"${gitrange}"')";
 
-      local from_author;
-      from_author="$(
-        awk '"'"'
-          /^From: / {
-            print $0;
-            exit 0;
-          }
-          /^$/ { exit 0; }
-        '"'"' "${patch_file}"
-      )";
+        local patch_file;
+        patch_file="$(find "'"${patch_path}"'" -regex ".*\/0*${count}-[^\/]*.patch")";
 
-      local author_name;
-      local author_email;
-      if [ -n "${from_author}" ]; then
-        author_name="$(echo "${from_author}" | sed '"'"'s/From: "\?\(.*\)"\? <\(.*\)>$/\1/'"'"')";
-        author_email="$(echo "${from_author}" | sed '"'"'s/From: "\?\(.*\)"\? <\(.*\)>$/\2/'"'"')";
+        local from_author;
+        from_author="$(
+          awk '"'"'
+            /^From: / {
+              print $0;
+              exit 0;
+            }
+            /^$/ { exit 0; }
+          '"'"' "${patch_file}"
+        )";
+
+        if [ -z "${author_name}" ]; then
+          author_name="$(echo "${from_author}" | sed '"'"'s/From: "\?\(.*\)"\? <\(.*\)>$/\1/'"'"')";
+        fi;
+
+        if [ -z "${author_email}" ]; then
+          author_email="$(echo "${from_author}" | sed '"'"'s/From: "\?\(.*\)"\? <\(.*\)>$/\2/'"'"')";
+        fi;
       fi;
 
       GIT_COMMITTER_DATE="$(git log --no-walk --format=%ad)"
