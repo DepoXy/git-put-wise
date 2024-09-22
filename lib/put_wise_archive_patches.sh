@@ -356,21 +356,25 @@ identify_first_upstream_branch () {
     # here we also check if branch actually exists.
     if git_remote_branch_exists "${remote_protected}"; then
       # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
-      must_confirm_upstream_shares_history_with_head "${remote_protected}"
+      must_confirm_upstream_shares_history_with_head "${remote_protected}" \
+        ${_strict_check:-true}
 
       upstream_ref="${remote_protected}"
     elif git_remote_branch_exists "${remote_current}"; then
-      must_confirm_upstream_shares_history_with_head "${remote_current}"
+      must_confirm_upstream_shares_history_with_head "${remote_current}" \
+        ${_strict_check:-true}
 
       upstream_ref="${remote_current}"
     elif git_remote_branch_exists "${remote_release}"; then
       # MAYBE: Ignore for feature branch if diverges from HEAD.
-      must_confirm_upstream_shares_history_with_head "${remote_release}"
+      must_confirm_upstream_shares_history_with_head "${remote_release}" \
+        ${_strict_check:-true}
 
       upstream_ref="${remote_release}"
     elif git_branch_exists "${local_release}"; then
       # MAYBE: Ignore for feature branch if diverges from HEAD.
-      must_confirm_upstream_shares_history_with_head "${local_release}"
+      must_confirm_upstream_shares_history_with_head "${local_release}" \
+        ${_strict_check:-true}
 
       upstream_ref="${local_release}"
     fi

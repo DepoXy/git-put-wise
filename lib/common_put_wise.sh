@@ -1049,11 +1049,17 @@ must_confirm_shares_history_with_head () {
 # but markedly different, too, especially the ancestor_sha = remote_sha check.
 must_confirm_upstream_shares_history_with_head () {
   local remote_ref="$1"
+  local strict_check="${2:-false}"
 
   local head_sha
   head_sha="$(git rev-parse HEAD)"
 
   if git_is_same_commit "${remote_ref}" "${head_sha}"; then
+    if ${strict_check:-false}; then
+
+      return 0
+    fi
+
     >&2 echo "Nothing to pull: Already up-to-date with “${remote_ref}”"
 
     exit_elevenses
@@ -1063,6 +1069,11 @@ must_confirm_upstream_shares_history_with_head () {
   ancestor_sha="$(git merge-base "${remote_ref}" "HEAD")"
 
   if git_is_same_commit "${ancestor_sha}" "${remote_ref}"; then
+    if ${strict_check:-false}; then
+
+      return 0
+    fi
+
     >&2 echo "Nothing to do: “${remote_ref}” is behind HEAD"
 
     exit_elevenses
