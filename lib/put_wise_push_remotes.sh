@@ -135,6 +135,40 @@ put_wise_push_remotes_go () {
     remote_release=""
   fi
 
+  # ***
+
+  alert_if_remote_diverged_and_not_force_push () {
+    local remote_ref="$1"
+    local local_ref="$2"
+
+    if ! ${PW_OPTION_FORCE_PUSH:-false} \
+      && [ -n "${remote_ref}" ] \
+      && [ -n "${local_ref}" ] \
+      && ! git merge-base --is-ancestor "${remote_ref}" "${local_ref}" \
+    ; then
+      >&2 warn "ALERT: Skipping diverged remote: ${remote_ref}"
+      >&2 warn "- Hint: Use --force if you want to update it"
+
+      return 0
+    fi
+
+    return 1
+  }
+
+  if alert_if_remote_diverged_and_not_force_push "${remote_protected}" "${protected_boundary_or_HEAD}"; then
+    remote_protected=""
+  fi
+
+  if alert_if_remote_diverged_and_not_force_push "${remote_current}" "${scoping_boundary_or_HEAD}"; then
+    remote_current=""
+  fi
+
+  if alert_if_remote_diverged_and_not_force_push "${remote_release}" "${release_boundary_or_HEAD}"; then
+    remote_release=""
+  fi
+
+  # ***
+
   if true \
     && [ -z "${remote_protected}" ] \
     && [ -z "${remote_current}" ] \
