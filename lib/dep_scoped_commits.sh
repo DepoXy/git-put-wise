@@ -41,7 +41,11 @@ determine_scoping_boundary () {
   fi
 
   if [ -z "${scoping_starts_at}" ]; then
-    scoping_starts_at="HEAD"
+    # Use HEAD only if there's at least one commit.
+    # - ALTLY: if git log -1 --format=%% > /dev/null 2>&1; then ...
+    if git_branch_name > /dev/null; then
+      scoping_starts_at="HEAD"
+    fi
   fi
 
   printf "${scoping_starts_at}"

@@ -102,6 +102,8 @@ export PW_TAG_ONTIME_APPLY="${PW_TAG_ONTIME_APPLY:-pw-apply-here}"
 # REFER: `printf '' | git hash-object -t tree --stdin`
 GIT_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
+PUT_WISE_REBASE_ALL_COMMITS="${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 __DRYRUN () { >&2 echo "$@"; }
@@ -433,7 +435,11 @@ must_cd_project_path_and_verify_repo () {
 
   cd "${PW_PROJECT_PATH}"
 
-  git_insist_git_repo
+  if ${PW_ACTION_APPLY} || ${PW_ACTION_APPLY_ALL}; then
+    git_insist_is_git_repo_root
+  else
+    git_insist_git_repo
+  fi
 
   PW_PROJECT_PATH="$(git_repo_canonicalize_environ_path "PW_PROJECT_PATH")"
 
@@ -460,9 +466,10 @@ project_path_same_as_patches_repo () {
   local project_path_abs
   local patches_repo_abs
 
-  # Is user hasn't setup the patches repo, then the answer is *no*.
+  # Is user hasn't setup the patches repo, or if they're unpacking to a
+  # project path that doesn't exist yet, then the answer is *no*.
   # - E.g., ~/.depoxy/patchr does not exist (yet).
-  if [ ! -d "${PW_PATCHES_REPO}" ]; then
+  if ! [ -d "${PW_PROJECT_PATH}" ] || ! [ -d "${PW_PATCHES_REPO}" ]; then
 
     return 1
   fi
@@ -777,6 +784,7 @@ exit_11 () {
 # Side-effect: Sets already_sorted=true|false
 
 is_already_sorted_and_signed () {
+  # rebase_boundary is a commit object, or magic name "ROOT".
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local until_ref="${3:-HEAD}"
@@ -964,6 +972,12 @@ print_is_gpg_sign_enabled () {
 #     (via directly)
 must_confirm_shares_history_with_head () {
   local rebase_boundary="$1"
+
+  if [ "${rebase_boundary}" = "${GIT_EMPTY_TREE}" ]; then
+    echo "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
+
+    return 0
+  fi
 
   if git_is_same_commit "${rebase_boundary}" "HEAD"; then
     echo "HEAD"
@@ -1376,6 +1390,13 @@ must_confirm_commit_at_or_behind_commit () {
     >&2 echo "GAFFE: Missing early_commit [must_confirm_commit_at_or_behind_commit]"
 
     return 1
+  elif [ "$(git rev-parse "${early_commit}")" = "${GIT_EMPTY_TREE}" ]; then
+    # Aka the mother of all commits. Also a tree, so cannot merge-base, e.g.,:
+    #   $ git merge-base --is-ancestor ${GIT_EMPTY_TREE} HEAD
+    #   error: object 4b825dc642cb6eb9a060e54bf8d69288fbee4904 is a tree, not a commit
+    #   fatal: Not a valid commit name refs/tags/pw/private/in
+
+    return 0
   elif ! git merge-base --is-ancestor "${early_commit}" "${later_commit}"; then
     # early later than later, or diverged.
 
@@ -1441,12 +1462,17 @@ must_confirm_commit_at_or_behind_commit () {
 #   git --no-pager log --pretty=%H --grep '^PROTECTED: ' -1 --reverse
 # both return the same, youngest match.
 
+# Inhibit stderr, e.g.,
+#   $ git log -1
+#   fatal: your current branch 'release' does not have any commits yet
+
 # CXREF/2022-10-27: must_find_matching_commit from git-smart:
 #   ~/.kit/git/git-smart/bin/git-rebase-bubble-commit
 find_oldest_commit_by_message () {
   local matchstr="$1"
 
-  git --no-pager log --pretty=format:"%H" --grep "${matchstr}" | tail -1
+  git --no-pager log --pretty=format:"%H" --grep "${matchstr}" 2> /dev/null \
+    | tail -1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #

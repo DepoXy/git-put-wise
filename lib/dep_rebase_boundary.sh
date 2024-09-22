@@ -606,11 +606,16 @@ insist_nothing_tagged_after () {
   #     return 0
   #   fi
 
+  local gitref="${rebase_boundary}"
+  if [ "${gitref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    gitref=""
+  fi
+
   local recent_ver
-  recent_ver="$(git_most_recent_version_tag "${rebase_boundary}")"
+  recent_ver="$(git_most_recent_version_tag "${gitref}")"
 
   local recent_tag
-  recent_tag="$(git_most_recent_tag "${rebase_boundary}")"
+  recent_tag="$(git_most_recent_tag "${gitref}")"
 
   if [ -n "${recent_ver}" ] \
     || [ -n "${recent_tag}" ] \
@@ -652,7 +657,7 @@ insist_nothing_tagged_after () {
 
     >&2 ${log} "${msg_fiver}: Tag(s) found within rebase range"
     >&2 ${log} "- Latest tag: ${newer_tag}"
-    >&2 ${log} "- Rebase boundary: ${rebase_boundary}"
+    >&2 ${log} "- Rebase boundary: ${rebase_boundary:-${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}}"
 
     if ${tags_will_not_be_orphaned}; then
       >&2 ${log} "- But it's okay — the related commit(s) will be untouched on rebase"
@@ -730,8 +735,10 @@ insist_single_author_used_since () {
   # If no latest commit, indicates same author throughout # Mono-authorship
 
   if [ -n "${latest_other_commit}" ] \
-    && ! git merge-base --is-ancestor "${latest_other_commit}" "${rebase_boundary}" \
-  ; then
+    && ( [ -z "${rebase_boundary}" ] \
+      || [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
+      || ! git merge-base --is-ancestor "${latest_other_commit}" "${rebase_boundary}"
+  ); then
     local msg_fiver="ERROR"
     if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
       msg_fiver="ALERT"
@@ -759,7 +766,7 @@ insist_single_author_used_since () {
     >&2 echo "- Latest author email: ${latest_author_email}"
     >&2 echo "- Latest other commit: ${latest_other_commit}"
     >&2 echo "- Other commit email: $(git log -1 --format=%ae ${latest_other_commit})"
-    >&2 echo "- Rebase boundary: ${rebase_boundary}"
+    >&2 echo "- Rebase boundary: ${rebase_boundary:-${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}}"
 
     if ${commits_will_not_be_changed}; then
       >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"

@@ -101,10 +101,17 @@ put_wise_apply_patches_apply_one () {
 
   local patch_dir_exists=false
 
-  if [ -z "${PW_PROJECT_PATH}" ] || [ -d "${PW_PROJECT_PATH}" ]; then
+  if [ -f "${PW_PROJECT_PATH}" ]; then
+    # User specified a specific archive file.
+    gpgf="${PW_PROJECT_PATH}"
+  elif [ -z "${PW_PROJECT_PATH}" ] \
+    || [ -d "${PW_PROJECT_PATH}" ] \
+    || ! [ -e "${PW_PROJECT_PATH}" ] \
+  ; then
     # User wants to apply patches to a specific project, so we
     # need to find a patch archive file for that project path
     # (which defaults to current directory ".").
+    # - Note that PW_PROJECT_PATH need not exist; we'll `mkdir` later.
     must_verify_project_path_and_not_patches_repo
     if [ -n "${PW_OPTION_REGENERATE_RECEIPTS}" ]; then
       # Egregious short-circuit return (exit!) branch, my bad.
@@ -117,11 +124,6 @@ put_wise_apply_patches_apply_one () {
     # Because exit 0 is truthy, we need to propagate the exit 0.
     [ -n "${gpgf}" ] || exit_0
     unpack_target_is_not_nonempty_else_info_stderr "${gpgf}" || patch_dir_exists=true
-  elif [ -f "${PW_PROJECT_PATH}" ]; then
-    # User specified a specific archive file.
-    gpgf="${PW_PROJECT_PATH}"
-  else
-    fatal "What am I looking at? Neither file nor directory: “${PW_PROJECT_PATH}”"
   fi
 
   # If here and --regenerate, means user did not specify project path.
@@ -166,16 +168,24 @@ decrypt_and_unpack_patchkage () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 must_verify_project_path_and_not_patches_repo () {
-  local before_cd="$(pwd -L)"
+  # Don't care if project doesn't exist: process_unpacked_patchkage
+  # will `mkdir` and `git init .` if necessary. Otherwise canonicalize
+  # PW_PROJECT_PATH (and if run in subdir, change to repo root).
+  if [ -d "${PW_PROJECT_PATH:-.}" ] \
+    && [ -n "$(command ls -A)" ] \
+    && git rev-parse --abbrev-ref HEAD > /dev/null 2>&1 \
+  ; then
+    local before_cd="$(pwd -L)"
 
-  # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
-  # - This function only cares about canonicalizing, to compare against
-  #   patches repo path.
-  must_cd_project_path_and_verify_repo
+    # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
+    # - This function only cares about canonicalizing, to compare against
+    #   patches repo path.
+    must_cd_project_path_and_verify_repo
+
+    cd "${before_cd}"
+  fi
 
   must_not_be_patches_repo_or_hint_and_exit
-
-  cd "${before_cd}"
 }
 
 must_not_be_patches_repo_or_hint_and_exit () {
@@ -196,7 +206,7 @@ must_not_be_patches_repo_or_hint_and_exit () {
 # - UCASE: Run `pw archive -v`, remove local project, then test `pw apply`.
 
 must_find_one_patches_archive_for_project_path_and_print () {
-  local projpath_sha="$(print_project_path_ref)"
+  local projpath_sha="$(print_project_path_ref "${PW_PROJECT_PATH}")"
 
   local hostname_sha
   hostname_sha="$(print_sha "$(hostname)")"
@@ -421,13 +431,31 @@ process_unpacked_patchkage () {
   # E.g., 'pw/private/apply'... though used as ephemeral branch name.
   local ephemeral_branch="$(format_pw_tag_ephemeral_apply "${patch_branch}")"
 
+  local fresh_repo=false
+
+  if [ ! -d "${project_path}" ]; then
+    fresh_repo=true
+
+    echo "Unpacking new project: ${project_path}"
+
+    mkdir -p -- "${project_path}"
+  fi
+
   cd "${project_path}"
+
+  if [ -z "$(command ls -A)" ]; then
+    git init .
+  fi
 
   projects_patched+=("${project_path}")
 
   print_applying_onto_progress "${patch_path}" "${project_path}"
 
-  git_insist_git_repo
+  if ! git_is_git_repo_root; then
+    >&2 echo "ERROR: Expected a Git repo root: ${project_path}"
+
+    return 1
+  fi
 
   git_insist_not_applied "${patch_branch}" "${starting_sha}"
 
@@ -439,9 +467,21 @@ process_unpacked_patchkage () {
 
   # ***
 
-  if ! prompt_user_and_change_branch_if_working_branch_different_patches \
-    "${patch_dir}" "${patch_branch}" "${project_path}" "${patch_path}"; \
-  then
+  local branch_name
+  branch_name="$(git_branch_name)"
+
+  if ! git_branch_name > /dev/null; then
+    fresh_repo=true
+
+    # Configure the empty tree to use the patch branch name, e.g.:
+    #   $ git init .
+    #   $ git branch -m foo
+    #   $ cat .git/HEAD
+    #   ref: refs/heads/foo
+    git branch -m "${patch_branch}"
+  elif ! prompt_user_and_change_branch_if_working_branch_different_patches \
+    "${patch_dir}" "${patch_branch}" "${project_path}" "${patch_path}" \
+  ; then
     ${PW_OPTION_FAIL_ELEVENSES:-false} && return ${PW_ELEVENSES} || return 0
   fi
 
@@ -459,12 +499,24 @@ process_unpacked_patchkage () {
   # switch back). That function also has an await that allows the user
   # to create a local branch if they need, in which case it was the user 
   # who changed the branch, another reason not to set it back.)
-  local working_branch="$(git_branch_name)"
+  # - Catch nonzero return if no branch name, e.g., fresh repo.
+  local working_branch
+  working_branch="$(git_branch_name)" \
+    || true
+
+  local friendly_branch="${working_branch}"
 
   # Ah, memories.
-  local old_head="$(git_commit_object_name)"
+  # - Note this prints nothing and returns nonzero if no commits yet.
+  local old_head
+  if ! old_head="$(git_commit_object_name)"; then
+    old_head="${GIT_EMPTY_TREE}"
+    friendly_branch="<empty tree>"
+  fi
+  # CXREF: See echo's that precede these:
+  #   print_applying_onto_progress
   echo "whose HEAD is at:"
-  echo "  ${working_branch} $(shorten_sha ${old_head})"
+  echo "  ${friendly_branch} $(shorten_sha ${old_head})"
 
   # Check for a return receipt, so "remote" branch pointer up to date.
   process_return_receipts "${projpath_sha}"
@@ -490,35 +542,41 @@ process_unpacked_patchkage () {
   # E.g., 'pw/private/work'
   local pw_tag_starting="$(format_pw_tag_starting "${patch_branch}")"
 
-  local patch_base=""
   # (lb): I don't normally set variables using Bash's loose variable scoping,
   # but this function prints progress and might prompt user, so it needs stdout.
   # But I want to have the patch_base "passed" back, meaning we cannot call
   # patch_base="$(subprocess)".
+  # Caller leaves patch_base empty if this repo has no commits.
+  local patch_base=""
   choose_patch_base_or_ask_user "${starting_sha}" "${pw_tag_applied}" \
     "${PW_TAG_ONTIME_APPLY}" "${patch_branch}"
 
-  # ***
+  if [ -z "${patch_base}" ]; then
+    ephemeral_branch=""
+    patch_base="${GIT_EMPTY_TREE}"
+  else
+    # Run some checks, then create and checkout ephemeral branch.
+    if ! ephemeral_branch="$(\
+      prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${patch_base}"
+    )"; then
+      maybe_unstash_changes ${pop_after}
 
-  # Run some checks, then create and checkout ephemeral branch.
-  if ! ephemeral_branch="$(\
-    prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${patch_base}"
-  )"; then
-    maybe_unstash_changes ${pop_after}
+      return 1
+    fi
 
-    return 1
-  fi
+    # Double-check previous command didn't accidentally spew additional
+    # stdout and mess us the ephemeral_branch name variable capture.
+    # - Remember that errexit not in effect, so dying deliberately.
+    #   - Though makes me wonder if convention of relying on errexit to die
+    #     is lazy and sloppy. Even how `return 1` can kill the script. It's
+    #     definitely not a programming language best practice.
+    if [ -n "${ephemeral_branch}" ] && \
+      ! git check-ref-format --branch "${ephemeral_branch}" \
+    ; then
+      maybe_unstash_changes ${pop_after}
 
-  # Double-check previous command didn't accidentally spew additional
-  # stdout and mess us the ephemeral_branch name variable capture.
-  # - Remember that errexit not in effect, so dying deliberately.
-  #   - Though makes me wonder if convention of relying on errexit to die
-  #     is lazy and sloppy. Even how `return 1` can kill the script. It's
-  #     definitely not a programming language best practice.
-  if ! git check-ref-format --branch "${ephemeral_branch}"; then
-    maybe_unstash_changes ${pop_after}
-
-    return 1
+      return 1
+    fi
   fi
 
   # ***
@@ -793,10 +851,7 @@ must_determine_project_path_from_meta_file () {
   project_path="$(echo "${project_path}" | sed "s#^\$HOME/#${HOME}/#")"
 
   if [ ! -d "${project_path}" ]; then
-    >&2 echo "ERROR: Invalid project path “${project_path}” specified by “${patch_dir}”"
-
-    # This seems like too serious an offense to keep processing.
-    return 1
+    >&2 echo "ALERT: Unpacking to new project path “${project_path}”"
   fi
 
   echo "${project_path}"

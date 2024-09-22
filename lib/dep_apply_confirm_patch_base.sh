@@ -58,6 +58,7 @@ choose_patch_base_or_ask_user () {
       do_confirm=false
     else
       # Means pw/branch/out was removed by the user.
+      # - Or fresh `git init .` and no commits yet.
       warn "No tags, and starting ID unknown; will try furthest along upstream"
     fi
   fi
@@ -82,6 +83,7 @@ choose_patch_base_or_ask_user () {
       describe_patch="This is the furthest along upstream branch"
     else
       # No upstream branches, local nor remote.
+      # - Note that scoping_starts_at is empty if there are no commits.
       patch_base="${scoping_starts_at}"
       furthest_along="${patch_base}"
       describe_patch="$(echo "This is the scoping boundary or HEAD" \
@@ -104,7 +106,7 @@ choose_patch_base_or_ask_user () {
   local DEV_prompt_patch_base=false
   DEV_prompt_patch_base=true
 
-  if ${do_confirm} || ${DEV_prompt_patch_base}; then
+  if [ -n "${patch_base}" ] && ( ${do_confirm} || ${DEV_prompt_patch_base} ); then
     git tag -f "${PW_TAG_APPLY_INSERT_HERE_TAG}" "${patch_base}" > /dev/null
 
     local coach_said_not_to=true
@@ -218,12 +220,20 @@ suss_which_known_branch_is_furthest_along () {
     [ -n "${gitref}" ] || continue
 
     num_commits="$(git_number_of_commits "${gitref}" 2> /dev/null)"
-    [ -n "${num_commits}" ] || continue
+
+    if [ -z "${num_commits}" ] || [ ${num_commits} -eq 0 ]; then
+
+      continue
+    fi
 
     echo "${num_commits} ${gitref}"
   done | sort -n -s -r)"
 
-  debug "- Branch counts:\n$(echo "${branch_counts}" | sed 's/^/  /')"
+  if [ -n "${branch_counts}" ]; then
+    debug "- Branch counts:\n$(echo "${branch_counts}" | sed 's/^/  /')"
+  else
+    debug "- No known branches found"
+  fi
 
   furthest_along="$(echo "${branch_counts}" | head -1 | awk '{ print $2 }')"
 }
@@ -232,6 +242,11 @@ prompt_user_to_verify_patching_sha_fallback () {
   local patch_base="$1"
   local pw_io_tag_name="$2"
   local pw_ontime_tag_name="$3"
+
+  if [ -z "${patch_base}" ]; then
+
+    return 0
+  fi
 
   echo
   echo "You need to verify the SHA on which to git-am apply patches."
