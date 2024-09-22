@@ -837,6 +837,8 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
 
   local work_tag="$(format_pw_tag_starting "${branch_name}")"
 
+  >&2 debug "Checking tags: ${applied_tag}, ${arch_tag}, ${work_tag}"
+
   for tag_name in \
     "${applied_tag}" \
     "${arch_tag}" \
