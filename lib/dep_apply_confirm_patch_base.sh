@@ -84,8 +84,8 @@ choose_patch_base_or_ask_user () {
       # No upstream branches, local nor remote.
       patch_base="${scoping_starts_at}"
       furthest_along="${patch_base}"
-      describe_patch="This is the scoping boundary or HEAD" \
-        "(because no upstreams, no tags, unknown starting)"
+      describe_patch="$(echo "This is the scoping boundary or HEAD" \
+        "(because no upstreams, no tags, unknown starting)")"
     fi
 
     prompt_user_to_verify_patching_sha_fallback "${patch_base}" \
