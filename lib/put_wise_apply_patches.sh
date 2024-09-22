@@ -930,8 +930,7 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
       echo "      cd \"${project_path}\""
       echo "      git checkout -b private"
       echo "  - If you choose not to continue, you can try again later:"
-      echo "      cd \"$(realpath -- "${patch_path}/..")\""
-      echo "      $(basename -- "$0") \"${patch_dir}\""
+      echo "      $(basename -- "$0") apply \"${project_path}\""
       echo
 
       while [ "$(git_branch_name)" != "${patch_branch}" ]; do
