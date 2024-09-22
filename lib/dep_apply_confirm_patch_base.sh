@@ -21,6 +21,7 @@ choose_patch_base_or_ask_user () {
 
   patch_base=""
 
+  local patch_base_raw=""
   local describe_patch=""
   local do_confirm=false
 
@@ -28,21 +29,24 @@ choose_patch_base_or_ask_user () {
 
   # E.g., 'pw-apply-here' on --apply, 'pw-start-here' on --archive.
   if git_tag_exists "${pw_ontime_tag_name}"; then
-    info "Found explicit user starting tag ‘${pw_ontime_tag_name}’,"
+    info "Found explicit user starting tag (${pw_ontime_tag_name})"
     patch_base="$(git_commit_object_name "${pw_ontime_tag_name}")"
+    patch_base_raw="${pw_ontime_tag_name}"
     describe_patch="We found your ‘${pw_ontime_tag_name}’ tag"
     do_confirm=true
   # The starting SHA from the GPG filename.
   elif git_is_commit "${starting_sha}"; then
-    info "Confirmed starting ref (${starting_sha}) is a known object."
+    info "Confirmed starting ref is a known object (${starting_sha})"
     patch_base="${starting_sha}"
+    patch_base_raw="${starting_sha}"
     describe_patch="The given starting ref (${starting_sha}) is valid"
     do_confirm=false
   # The most recent --apply pw/<branch>/in tag for --archive,
   #          or the --archive pw/<branch>/out tag for --apply.
   elif git_tag_exists "${pw_io_tag_name}"; then
-    info "Found a put-wise-managed ‘${pw_io_tag_name}’."
+    info "Found a put-wise-managed tag (${pw_io_tag_name})"
     patch_base="$(git_tag_object_name "${pw_io_tag_name}")"
+    patch_base_raw="${pw_io_tag_name}"
     describe_patch="We found a ‘${pw_io_tag_name}’ tag from a previous put-wise"
     do_confirm=true
   # If nothing else, put-wise likely never used on project before.
@@ -54,9 +58,11 @@ choose_patch_base_or_ask_user () {
     if [ ${num_commits} -eq 1 ]; then
       info "Only one commit; no choice but HEAD"
       patch_base="HEAD"
+      patch_base_raw="HEAD"
       describe_patch="There's only 1 commit we can apply to"
       do_confirm=false
     else
+      patch_base_raw="<none>"
       # Means pw/branch/out was removed by the user.
       # - Or fresh `git init .` and no commits yet.
       warn "No tags, and starting ID unknown; will try furthest along upstream"
@@ -95,7 +101,8 @@ choose_patch_base_or_ask_user () {
   fi
 
   if [ "${furthest_along}" != "${patch_base}" ]; then
-    info "- Cannot start from there, that commit is behind one or more upstream branches."
+    info "- Ope, cannot start from there (${patch_base_raw}):"
+    info "  - That commit is behind one or more upstream branches"
 
     patch_base="${furthest_along}"
     describe_patch="This is the furthest along published ref"
