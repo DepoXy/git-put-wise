@@ -206,6 +206,9 @@ git_put_wise_apply_all_accordingly () {
     local_cnt="$(patches_repo_commit_count)"
     other_cnt="$(patches_repo_commit_count "${REMOTE_BRANCH_SCOPING}")"
 
+    debug "${PW_PATCHES_REPO_MESSAGE_CHCHCHANGES:-🌽}" \
+      "/ local_cnt: ${local_cnt} / other_cnt: ${other_cnt}"
+
     if [ ${local_cnt} -lt ${other_cnt} ]; then
       # git-put-wise --pull "$@"
       prompt_user_to_push_or_pull_patches_repo "pull"
