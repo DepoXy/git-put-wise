@@ -962,6 +962,17 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# SAVVY:
+#
+# - Use --committer-date-is-author-date to keep original commit date.
+#
+# - Use --3way so user can resolve conflicts (otherwise git-status
+#   doesn't show file with conflict (nor does file with conflict
+#   contain markings, e.g., "<<<<<<< HEAD"); and if you determine
+#   what's the conflict, edit it (however you want), git-add that
+#   file, and `git am --continue`, whatever you changed is committed
+#   with the patch commit messge, but not the patch changes).
+
 apply_patches_unless_dry_run () {
   local patch_path="$1"
 
@@ -1002,13 +1013,6 @@ apply_patches_unless_dry_run () {
     done
   fi
 
-  # - Use --committer-date-is-author-date to keep original commit date.
-  # - Use --3way so user can resolve conflicts (otherwise git-status
-  #   doesn't show file with conflict (nor does file with conflict
-  #   contain markings, e.g., "<<<<<<< HEAD"); and if you determine
-  #   what's the conflict, edit it (however you want), git-add that
-  #   file, and `git am --continue`, whatever you changed is committed
-  #   with the patch commit messge, but not the patch changes).
   if ! ${DRY_ECHO} git am --3way --committer-date-is-author-date "${patch_path}"/*.patch; then
     # This program flow should be extremely rare, perhaps unreachable
     # if the user is using put-wise how we expect, and not playing with
