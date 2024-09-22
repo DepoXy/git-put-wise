@@ -84,6 +84,8 @@ _pw_putwisely () {
     cli_parse_params "$@"
   fi
 
+  cli_setup_log_level
+
   _pw_putwisely_act \
     ${action_in} \
     ${action_out} \
