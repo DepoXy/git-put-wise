@@ -471,6 +471,8 @@ process_unpacked_patchkage () {
 
   git_insist_not_applied_per_tags "${patch_branch}" "${starting_sha}"
 
+  git_insist_not_applied_per_history "${patch_branch}" "${starting_sha}" "${endingat_sha}"
+
   # Insist that the ephemeral branch does not exist.
   must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"
 
@@ -906,6 +908,49 @@ git_insist_not_applied_per_tags () {
   >&2 git --no-pager log -1 "${tagged_sha}"
 
   exit_1
+}
+
+# ***
+
+git_insist_not_applied_per_history () {
+  local patch_branch="$1"
+  local starting_sha="$2"
+  local endingat_sha="$3"
+
+  if ! git_branch_exists "${patch_branch}"; then
+
+    return 0
+  fi
+
+  # See if the local and remote repos are using the same SHAs.
+  local start_is_known_commit=false
+
+  # ALTLY: if [ "${starting_sha}" != "${GIT_EMPTY_TREE}" ] \
+  #         && git_is_valid_object "${starting_sha}" \
+  #         && git merge-base --is-ancestor "${starting_sha}" "${patch_branch}" \
+  if git_commit_object_name "${starting_sha}" > /dev/null \
+    && git merge-base --is-ancestor "${starting_sha}" "${patch_branch}" \
+  ; then
+
+    start_is_known_commit=true
+  fi
+
+  if git_is_valid_object "${endingat_sha}" \
+    && git merge-base --is-ancestor "${endingat_sha}" "${patch_branch}" \
+  ; then
+    >&2 echo "ERROR: The incoming archive has already been applied, apparently!"
+    >&2 echo
+    >&2 echo "- The ending-at sha is already in history"
+    >&2 echo
+    >&2 echo "    patch_branch: ${patch_branch}"
+    >&2 echo "    starting_sha: ${starting_sha}"
+    >&2 echo "    endingat_sha: ${endingat_sha}"
+    >&2 echo
+
+    exit_1
+  fi
+
+  return 0
 }
 
 # ***
