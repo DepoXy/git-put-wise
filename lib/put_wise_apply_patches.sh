@@ -757,13 +757,12 @@ fake_the_return_receipt () {
 
   # Without the original archive, this script doesn't know what IDs to use
   # to recreate the return receipt or its filename.
-  # - Some of the IDs, like the starting_sha and endingat_sha, are meaningless
-  #   after --apply, but they're used in the return-receipt filename. This was
-  #   probably as a convenience when debugging, so the DEV (me) could tell
-  #   which encrypted receipt file belongs with which archive, but it's not
-  #   necessary. Only the first two components, the host SHA and the project
-  #   SHA (and later, we'll add the branch SHA), are used when the remote
-  #   processes the receipt.
+  # - Some of the IDs, like the starting_sha and endingat_sha, might be
+  #   meaningless after --apply, but the return-receipt filename uses the
+  #   full archive name, plus an extension. This makes it easy to identify
+  #   which encrypted receipt file belongs with which archive. Technically
+  #   the --apply host only needs the first two components, the host SHA
+  #   and the project SHA to process the receipt.
   local gpgf="${PW_OPTION_REGENERATE_RECEIPTS}"
 
   # Strip trailing receipt extension suffix, if exists.
