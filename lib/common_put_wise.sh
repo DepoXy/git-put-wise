@@ -370,6 +370,9 @@ put_wise_reset_patches_repo () {
   maybe_prompt_user_to_create_parent_path
 
   create_patches_parents_and_repo
+
+  echo "A fresh patches repo is ready at: ${PW_PATCHES_REPO}"
+  echo "- Hint: Now wire the remote, set the upstream, and force-push"
 }
 
 prompt_user_to_recreate_patches_repo () {
