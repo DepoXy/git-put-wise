@@ -144,6 +144,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   local sortless_msg=""
 
+  # E.g., pw/release/in
   local applied_tag="$(format_pw_tag_applied "${branch_name}")"
 
   # true if branch_name is 'release' or 'private'.

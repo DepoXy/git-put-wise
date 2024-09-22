@@ -493,7 +493,7 @@ must_identify_rebase_base () {
     # branch absent, i.e., if user can create new branch on push. So
     # here we also check if branch actually exists.
     if git_remote_branch_exists "${remote_protected}"; then
-      # Exits 1 if diverged, or exits 11 if up-to-date or ahead of remote.
+      # Exits 1 if diverged, or exits 0/11 if up-to-date or ahead of remote.
       must_confirm_upstream_shares_history_with_head "${remote_protected}"
 
       upstream_ref="${remote_protected}"

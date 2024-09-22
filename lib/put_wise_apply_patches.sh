@@ -418,6 +418,7 @@ process_unpacked_patchkage () {
 
   local patch_branch="${PW_OPTION_BRANCH:-${remoteish_br}}"
 
+  # E.g., 'pw/private/apply'... though used as ephemeral branch name.
   local ephemeral_branch="$(format_pw_tag_ephemeral_apply "${patch_branch}")"
 
   cd "${project_path}"
@@ -1170,6 +1171,8 @@ manage_pw_tracking_tags () {
   ${DRY_ECHO} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 
   # Move pw/work.
+  # - This is purely referencial, for the user, and shows where latest
+  #   --apply started.
   echo "git tag -f \"${pw_tag_starting}\" \"${patch_base}\""
   ${DRY_ECHO} git tag -f "${pw_tag_starting}" "${patch_base}" > /dev/null
 
