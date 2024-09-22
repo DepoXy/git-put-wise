@@ -603,7 +603,16 @@ must_produce_nonempty_patch () {
   # starting_ref to empty tree SHA if root should be included.
   local rev_range="${starting_ref}..${commit_range_end}"
 
-  git -c diff.noprefix=false format-patch -q -o "${patch_dir}" ${rev_range}
+  # Exclude the signature, which defaults to appending a double-dash
+  # and the Git version to the patch file. E.g.,
+  #   --
+  #   2.46.1
+  # and sometimes this ends up in the commit message.
+  # - SAVVY: Normally these two lines are ignored, but for empty commits
+  #   (e.g., via `git am --empty=keep`, or `git am --allow-empty`), the
+  #   two lines are added to the commit message.
+
+  git -c diff.noprefix=false format-patch -q --no-signature -o "${patch_dir}" ${rev_range}
 
   if [ -z "$(command ls -A "${patch_dir}")" ]; then
     >&2 echo -e "Unexpected: Nothing archived! Try:\n" \
