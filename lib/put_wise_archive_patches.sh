@@ -92,34 +92,37 @@ put_wise_archive_patches_go () {
   local crypt_name
   compose_filenames "${starting_ref}" "${projpath_sha}" "${commit_range_end}"
 
-  # Exit 0/11 is archive already exists.
+  local already_archived=false
   must_not_already_be_archived "${crypt_name}" \
     "${hostname_sha}" "${projpath_sha}" \
-    "${starting_sha}" "${endingat_sha}"
+    "${starting_sha}" "${endingat_sha}" \
+  || already_archived=true
 
-  # Create the patch directory.
-  must_produce_nonempty_patch "${starting_ref}" "${commit_range_end}" "${patch_dir}"
+  if ! ${already_archived}; then
+    # Create the patch directory.
+    must_produce_nonempty_patch "${starting_ref}" "${commit_range_end}" "${patch_dir}"
 
-  # Archive and encrypt the format-patch directory.
-  local cleartext_name
-  cleartext_name="${temp_dir}/${patch_name}.xz"
+    # Archive and encrypt the format-patch directory.
+    local cleartext_name
+    cleartext_name="${temp_dir}/${patch_name}.xz"
 
-  local crypt_path
-  local success=true
-  # Bash let's you assign in a conditional statement, e.g.,
-  #   if crypt_path="$(encrypt_archive_and_cleanup)"; then
-  # but how silly would that be?
-  # - If false, means `pass` or `gpg` failed.
-  crypt_path="$(encrypt_archive_and_cleanup)" || success=false
+    local crypt_path
+    local success=true
+    # Bash let's you assign in a conditional statement, e.g.,
+    #   if crypt_path="$(encrypt_archive_and_cleanup)"; then
+    # but how silly would that be?
+    # - If false, means `pass` or `gpg` failed.
+    crypt_path="$(encrypt_archive_and_cleanup)" || success=false
 
-  # Really if ! ${success}, ${crypt_path} also always empty,
-  # but being explicit about intent. (And I love commenting.)
-  if ! ${success} || [ -z "${crypt_path}" ]; then
-    >&2 echo "ERROR: Unable to encrypt patches." \
-      "What went wrong, I thought we were a perfect match."
+    # Really if ! ${success}, ${crypt_path} also always empty,
+    # but being explicit about intent. (And I love commenting.)
+    if ! ${success} || [ -z "${crypt_path}" ]; then
+      >&2 echo "ERROR: Unable to encrypt patches." \
+        "What went wrong, I thought we were a perfect match."
 
-    exit_1
-  else
+      exit_1
+    fi
+
     local before_cd="$(pwd -L)"
 
     cd "${PW_PATCHES_REPO}"
@@ -135,13 +138,18 @@ put_wise_archive_patches_go () {
     git_gc_expire_all_prune_now
 
     cd "${before_cd}"
-
-    update_archive_tags \
-      "${pw_tag_applied}" "${starting_sha}" \
-      "${pw_tag_archived}" "${endingat_sha}"
-
-    report_success "${crypt_path}"
   fi
+
+  update_archive_tags \
+    "${pw_tag_applied}" "${starting_sha}" \
+    "${pw_tag_archived}" "${endingat_sha}"
+
+  # Exit 0/11 is archive already exists.
+  if ${already_archived}; then
+    exit_elevenses
+  fi
+
+  report_success "${crypt_path}"
 
   return 0
 }
@@ -708,7 +716,7 @@ must_not_already_be_archived () {
       >&2 echo "- Where the archive name is formatted thusly: hostname_sha--projpath_sha--starting_sha--endingat_sha--YYYY_MM_DD_XXhXXmXXs"
     fi
 
-    exit_elevenses
+    return 1
   fi
 
   return 0
