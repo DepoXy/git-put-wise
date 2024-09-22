@@ -273,12 +273,17 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
           return 1
         elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
-          # Don't use publish/release as boundary if force-pushing
-          # to it (because if user force-pushing, likely diverged).
-          if git merge-base --is-ancestor "${scoping_remote_ref}" "${branch_name}"; then
+          # Force-pushing, so don't use publish/release as boundary
+          # (because if user force-pushing, likely diverged).
+          if [ -n "${scoping_remote_ref}" ] \
+            && git merge-base --is-ancestor "${scoping_remote_ref}" "${branch_name}" \
+          ; then
             rebase_boundary="${scoping_remote_ref}"
-          else
+          elif git_tag_exists "${applied_tag}"; then
             rebase_boundary="${applied_tag}"
+          else
+            # Fallback latest version tag (see below).
+            rebase_boundary=""
           fi
         fi
       fi
