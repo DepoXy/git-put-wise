@@ -698,7 +698,11 @@ must_not_already_be_archived () {
   )" || true
 
   if [ -n "${matching_archives}" ]; then
-    >&2 echo "Nothing to do: Archive already exists: $(echo ${matching_archives} | head -1)"
+    >&2 echo "ALERT: Nothing to do: Archive already exists: $(echo ${matching_archives} | head -1)"
+    if [ ${LOG_LEVEL} -le ${LOG_LEVEL_DEBUG} ]; then
+      # E.g.,    ALERT: Nothing to do: Archive already exists: XXXXXXXXXXXX--XXXXXXXXXXXX--XXXXXXXXXXXX--XXXXXXXXXXXX--2024_09_20_19h09m46s
+      >&2 echo "- Where the archive name is formatted thusly: hostname_sha--projpath_sha--starting_sha--endingat_sha--YYYY_MM_DD_XXhXXmXXs"
+    fi
 
     exit_elevenses
   fi
@@ -807,6 +811,10 @@ report_success () {
   local crypt_path="$1"
 
   echo "Prepared patchkage: ${crypt_path}"
+  if [ ${LOG_LEVEL} -le ${LOG_LEVEL_DEBUG} ]; then
+    #    "Prepared patchkage: ${crypt_path}"
+    echo "- Formatted thusly: ${PW_PATCHES_REPO}/hostname_sha--projpath_sha--starting_sha--endingat_sha--YYYY_MM_DD_XXhXXmXXs"
+  fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
