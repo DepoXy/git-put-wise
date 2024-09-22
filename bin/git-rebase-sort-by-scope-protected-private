@@ -144,7 +144,7 @@ git-rebase-sort-by-scope-protected-private () {
 
   local retcode=0
 
-  git_prepare_push_resort_scoped_and_sign_commits \
+  git_rebase_resort_scoped_and_sign_commits \
     "${seq_editor}" \
     "${gpg_sign}" \
     "${rebase_boundary}" \
@@ -356,7 +356,7 @@ print_rebase_boundary () {
 # resort generally runs in a split second, faster than you'd care
 # about, or could read, in the moment.
 
-git_prepare_push_resort_scoped_and_sign_commits () {
+git_rebase_resort_scoped_and_sign_commits () {
   local seq_editor="$1"
   local gpg_sign="$2"
   local rebase_boundary="$3"
