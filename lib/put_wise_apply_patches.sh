@@ -583,6 +583,8 @@ process_unpacked_patchkage () {
 
   apply_patches_unless_dry_run "${patch_path}"
 
+  set_committer_same_as_author "${patch_path}" "${old_head}"
+
   local last_patch="$(git_commit_object_name)"
 
   local rev_count
@@ -1021,6 +1023,9 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
 #
 # - Use --committer-date-is-author-date to keep original commit date.
 #
+#   - We'll have to "restore" committer name/email later, though,
+#     because git-am will always use the current user name/email.
+#
 # - Use --3way so user can resolve conflicts (otherwise git-status
 #   doesn't show file with conflict (nor does file with conflict
 #   contain markings, e.g., "<<<<<<< HEAD"); and if you determine
@@ -1074,33 +1079,6 @@ apply_patches_unless_dry_run () {
   #   fetch is costly, so is put-wise, and it's not something you run
   #   all the time (and the commands you might run most, --archive
   #   and --push, can be optimized).
-
-  # Set commit author to, e.g., "$(git config user.name) <$(git config user.email)>"
-  #
-  # SAVVY: If you preserve the name and email from the patch, and because
-  #        we use --committer-date-is-author-date, then the SHA will match
-  #        the original commit SHA. If you care about that. But all the
-  #        put-wise operations will work regardless of matching SHAs (e.g.,
-  #        you can archive from one machine, apply to another, archive from
-  #        that one, apply back to the first, etc., regardless of matching
-  #        SHAs; because put-wise is just that clever).
-  if ! ${PW_OPTION_RESET_AUTHOR_DISABLE:-false}; then
-    local author_name=${PW_OPTION_APPLY_AUTHOR_NAME:-$(git config user.name)}
-    local author_email=${PW_OPTION_APPLY_AUTHOR_EMAIL:-$(git config user.email)}
-
-    for patch_file in "${patch_path}"/*.patch; do
-      awk '
-        BEGIN { changed = 0; }
-        /^From: / && ! changed {
-          print "From: \"'${author_name}'\" <'${author_email}'>";
-          changed = 1;
-          next;
-        }
-        { print $0 }
-      ' "${patch_file}" > "${patch_file}.tmp"
-      mv -f "${patch_file}.tmp" "${patch_file}"
-    done
-  fi
 
   if ! \
     ${DRY_ECHO} \
@@ -1173,6 +1151,125 @@ must_await_user_resolve_conflicts () {
 
   [ ! -f "${GIT_REBASE_TODO_PATH}" ] \
     || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# SAVVY: Not that it's necessary, but if you want matching SHAs on both
+# hosts of a private-private project, ensure that the author date, name,
+# and email, and committer date, name, and email all match.
+#
+# If you care about that.
+#
+# All the put-wise operations will work regardless of matching SHAs
+# (e.g., you can archive from one machine, apply to another, archive
+#  from that one, apply back to the first, etc., regardless of matching
+#  SHAs; because put-wise is just that clever). But we'll also strive
+# to ensure that SHAs match.
+#
+# UCASE: The author uses different Git usernames on different hosts,
+# e.g., userA@host1, userB@host2, etc., so I can identify what host
+# I was using when I made a specific commit.
+# - But, normally, whenever you rebase, the committer date, name,
+#   and email are changed to the current time and user.
+#   - E.g., if you author a commit on one host and then rebase
+#     later on a different host, the committer meta data changes
+#     (which affects the SHA).
+# - The easiest approach is to just "reset" the committer data
+#   to match the author data (date, name, and email).
+#   - While we could plumb this into *every single* Git command
+#     we might run (eek), it's easier to just rebase before archive
+#     (similar to only running sort & sign before push or archive).
+# - Note this comes at the expense at keeping a "last modified" time
+#   and last modified host. Though the author has never used that data
+#   for anything... I've seen it, and it's a curiosity, but I don't
+#   think I've used it to solve any problems. That said, this feature
+#   comes at a minor expense, but we're not sacrificing anything
+#   important.
+
+# BWARE: If the author name has an '@' symbol in it, the author email
+# is ignored, e.g., if the patch header looks like this:
+#
+#   From: "Auth@Name" <auth@email>
+#
+# then after `git-am` you'll see:
+#
+#   $ git log --format="%ad %an <%ae>%n" -1
+#   Sat Sep 21 17:07:27 2024 -0500 Auth@Name <Auth@Name>
+#
+# Which we'll fix here. (Sigh.)
+
+set_committer_same_as_author () {
+  local patch_path="$1"
+  local old_head="$2"
+
+  local exec_reset_committer="$(print_exec_fcn_reset_committer "$@")"
+
+  local gitref="${old_head}"
+  if [ "${gitref}" = "${GIT_EMPTY_TREE}" ]; then
+    gitref="--root"
+  fi
+
+  ${DRY_ECHO} git rebase --exec "${exec_reset_committer}; exec_reset_committer" ${gitref}
+}
+
+print_exec_fcn_reset_committer () {
+  print_exec_fcn_reset_committer_raw "$@" | sanitize_exec_fcn
+}
+
+print_exec_fcn_reset_committer_raw () {
+  local patch_path="$1"
+  local old_head="$2"
+
+  local gitrange
+  if [ "${old_head}" != "${GIT_EMPTY_TREE}" ]; then
+    gitrange="${old_head}.."
+  fi
+  gitrange="${gitrange}HEAD"
+
+  # Use `find` to locate patch file for this commit, e.g., for the first
+  # patch file:
+  #   find . -regex ".*\/0+1-[^\/]*"
+  # or for the 34th:
+  #   find . -regex ".*\/0+34-[^\/]*"
+  # then parse the "From: " header and amend the commit.
+  # - We'll fix the author email (as noted above, if author name has '@',
+  #   then git-am used author name for author email).
+  # - We'll change the committer date, name, and email to match the
+  #   author meta data, so that SHAs will match between hosts.
+  echo '
+    exec_reset_committer () {
+      local count=0;
+      count="$(git rev-list --count '"${gitrange}"')";
+
+      local patch_file;
+      patch_file="$(find "'"${patch_path}"'" -regex ".*\/0*${count}-[^\/]*.patch")";
+
+      local from_author;
+      from_author="$(
+        awk '"'"'
+          /^From: / {
+            print $0;
+            exit 0;
+          }
+          /^$/ { exit 0; }
+        '"'"' "${patch_file}"
+      )";
+
+      local author_name;
+      local author_email;
+      if [ -n "${from_author}" ]; then
+        author_name="$(echo "${from_author}" | sed '"'"'s/From: "\?\(.*\)"\? <\(.*\)>$/\1/'"'"')";
+        author_email="$(echo "${from_author}" | sed '"'"'s/From: "\?\(.*\)"\? <\(.*\)>$/\2/'"'"')";
+      fi;
+
+      GIT_COMMITTER_DATE="$(git log --no-walk --format=%ad)"
+      GIT_COMMITTER_NAME="${author_name}"
+      GIT_COMMITTER_EMAIL="${author_email}"
+        git commit --amend --allow-empty --no-edit --no-verify
+        --author="${author_name} <${author_email}>";
+    }
+  '
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
