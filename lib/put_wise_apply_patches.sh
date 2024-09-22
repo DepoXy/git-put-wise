@@ -973,6 +973,34 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
 #   file, and `git am --continue`, whatever you changed is committed
 #   with the patch commit messge, but not the patch changes).
 #
+# - Unlike, say, `git commit --allow-empty...`, the `git am --allow-empty...`
+#   command only works if git-am stops. The equivalent command to specify on
+#   the initial git-am command is --empty=<>:
+#   - Per `man git-am`:
+#     --empty=(drop|keep|stop)
+#       How to handle an e-mail message lacking a patch:
+#         drop: The e-mail message will be skipped.
+#         keep: An empty commit will be created, with the contents of
+#                 the e-mail message as its log.
+#               [Except the `git format-patch` <signature>, which defaults
+#                to the Git version, is (erroneously, I'd say) misinterpreted
+#                as the log message (and why put-wise-archive specifies
+#                --no-signature).]
+#         stop: The command will fail, stopping in the middle of the current
+#               am session. This is the default behavior.
+#   - Note that if you do use --allow-empty, you want to include all the
+#     options initially specified, e.g.,
+#       $ git am --3way --committer-date-is-author-date --empty=stop .../*.patch
+#       ...
+#       Patch is empty.
+#       $ git am --3way --committer-date-is-author-date --allow-empty
+#   - Also just FYI, if you use --allow-empty at any other time, the
+#     Git error message isn't that obvious (IMHO). It basically says
+#     that --allow-empty only works after a previous git-am stops:
+#       $ git am --abort
+#       $ git am --3way --committer-date-is-author-date --allow-empty .../*.patch
+#       fatal: Resolve operation not in progress, we are not resuming.
+#
 # - Note that git-format-patch prefixes the *.patch file names with sequential
 #   ordinal numbers (e.g., 0001-foo.patch, 0002-bar.patch, etc.), and that
 #   shell glob (*.patch) reports them in alphabetical order, so that git-am
@@ -1024,6 +1052,7 @@ apply_patches_unless_dry_run () {
     git am \
       --3way \
       --committer-date-is-author-date \
+      --empty=keep \
       "${patch_path}"/*.patch \
   ; then
     # This program flow should be extremely rare, perhaps unreachable
