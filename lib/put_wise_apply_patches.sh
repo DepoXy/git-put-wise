@@ -178,6 +178,12 @@ must_not_be_patches_repo_or_hint_and_exit () {
 
 # ***
 
+# SAVVY: When testing --archive/--apply on the same host, use
+# PW_OPTION_TEST_LOCAL_APPLY=true to test applying patches from
+# same host (which are otherwise ignored).
+#
+# - UCASE: Run `pw archive -v`, remove local project, then test `pw apply`.
+
 must_find_one_patches_archive_for_project_path_and_print () {
   local projpath_sha="$(print_project_path_ref)"
 
@@ -188,10 +194,18 @@ must_find_one_patches_archive_for_project_path_and_print () {
 
   cd "${PW_PATCHES_REPO}"
 
-  local repo_matches
+  local archive_list
+  if ! ${PW_OPTION_TEST_LOCAL_APPLY:-false}; then
+    archive_list="$(print_repo_archive_list "" ":!:${hostname_sha}*")"
+  else
+    # Finds archive from local host, for testing; see comment above.
+    archive_list="$(print_repo_archive_list "")"
+  fi
 
-  repo_matches="$(print_repo_archive_list "" ":!:${hostname_sha}*" |
-    grep -e "^[[:xdigit:]]\+--${projpath_sha}[[:xdigit:]]*--[[:xdigit:]]\+--.*"
+  local repo_matches
+  repo_matches="$( \
+    echo "${archive_list}" \
+    | grep -e "^[[:xdigit:]]\+--${projpath_sha}[[:xdigit:]]*--[[:xdigit:]]\+--.*"
   )"
 
   cd "${before_cd}"
