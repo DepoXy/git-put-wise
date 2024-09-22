@@ -833,11 +833,13 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
     return 0
   fi
 
+  local arch_tag="$(format_pw_tag_archived "${branch_name}")"
+
   local work_tag="$(format_pw_tag_starting "${branch_name}")"
 
   for tag_name in \
     "${applied_tag}" \
-    "$(format_pw_tag_archived "${branch_name}")" \
+    "${arch_tag}" \
     "${work_tag}" \
   ; do
     if ! git_tag_exists "${tag_name}"; then
