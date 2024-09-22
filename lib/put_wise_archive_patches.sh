@@ -62,7 +62,7 @@ put_wise_archive_patches_go () {
     context=" [magic empty tree object]"
   fi
 
-  debug "starting_ref: ${starting_ref}${context}"
+  debug "starting_ref: $(git_sha_shorten "${starting_ref}")${context}"
 
   # ***
 

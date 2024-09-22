@@ -727,11 +727,11 @@ fake_the_return_receipt () {
   #   - CXREF: crypt_name=, in --archive's compose_filenames.
   # - CXREF: See similar `  ret_rec_plain_name=` in put_wise_apply_patches_cleanup.
   ret_rec_plain_name="${gpgf}${PW_RETURN_RECEIPT_PLAIN}--${remoteish_br_encoded}--${project_name}"
-  echo "ret_rec_plain_name/1: ${ret_rec_plain_name}"
+  debug "ret_rec_plain_name (fake_the_return_receipt):\n  ${ret_rec_plain_name}"
 
   local last_patch_tag
   last_patch_tag="refs/tags/$(format_pw_tag_applied "${remoteish_br}")"
-  # echo "last_patch_tag: ${last_patch_tag}"
+  # debug "last_patch_tag: ${last_patch_tag}"
 
   local rev_count
   rev_count="$(git_number_of_commits "${last_patch_tag}")"
@@ -739,7 +739,7 @@ fake_the_return_receipt () {
 
   local last_patch
   last_patch="$(git_commit_object_name "${last_patch_tag}" "--short=${PW_SHA1SUM_LENGTH}")"
-  # echo "last_patch: ${last_patch}"
+  # debug "last_patch: ${last_patch}"
 
   cd "${PW_PATCHES_REPO}"
 
@@ -1171,7 +1171,7 @@ prepare_return_receipt_hydrate () {
   local starting_sha="$4"
   local last_patch="$5"
 
-  echo "ret_rec_plain_name/2: ${ret_rec_plain_name}"
+  debug "ret_rec_plain_name (prepare_return_receipt_hydrate):\n  ${ret_rec_plain_name}"
 
   local hostname_sha
   hostname_sha="$(print_sha "$(hostname)")"

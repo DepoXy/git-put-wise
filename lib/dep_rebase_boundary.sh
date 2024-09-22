@@ -848,7 +848,7 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
           "tag-name" "sort-from" \
             > /dev/null 2>&1 \
       ); then
-        >&2 debug "FYI: '${tag_name}' tag moving to headless sequence" \
+        >&2 debug "- FYI: '${tag_name}' tag moving to headless sequence" \
           "until reused by future put-wise"
       fi
     fi
