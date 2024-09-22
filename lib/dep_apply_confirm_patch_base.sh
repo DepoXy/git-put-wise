@@ -130,6 +130,10 @@ choose_patch_base_or_ask_user () {
     git tag -d "${PW_TAG_APPLY_INSERT_HERE_TAG}" > /dev/null 2>&1 || true
 
     ${coach_said_not_to} || exit_1
+  else
+    info "Auto-verified the patch commit — we'll insert patches here:"
+    info "- Patch starting: ${patch_base:-<empty tree>}"
+    info "- Chosen because: ${describe_patch}"
   fi
 
   # ***
