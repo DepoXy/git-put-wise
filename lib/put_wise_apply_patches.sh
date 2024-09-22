@@ -208,20 +208,12 @@ must_not_be_patches_repo_or_hint_and_exit () {
 must_find_one_patches_archive_for_project_path_and_print () {
   local projpath_sha="$(print_project_path_ref "${PW_PROJECT_PATH}")"
 
-  local hostname_sha
-  hostname_sha="$(print_sha "$(hostname)")"
-
   local before_cd="$(pwd -L)"
 
   cd "${PW_PATCHES_REPO}"
 
   local archive_list
-  if ! ${PW_OPTION_TEST_LOCAL_APPLY:-false}; then
-    archive_list="$(print_repo_archive_list "" ":!:${hostname_sha}*")"
-  else
-    # Finds archive from local host, for testing; see comment above.
-    archive_list="$(print_repo_archive_list "")"
-  fi
+  archive_list="$(print_repo_archive_list_filtered "")"
 
   local repo_matches
   repo_matches="$( \
@@ -279,6 +271,23 @@ unpack_target_is_not_nonempty_else_info_stderr () {
   return ${nonempty}
 }
 
+# ***
+
+print_repo_archive_list_filtered () {
+  local option="$1"
+
+  local hostname_sha
+  hostname_sha="$(print_sha "$(hostname)")"
+
+  local ignore_local_host_archives=":!:${hostname_sha}*"
+  if ${PW_OPTION_TEST_LOCAL_APPLY:-false}; then
+    # Finds archive from local host, for testing.
+    ignore_local_host_archives=""
+  fi
+
+  print_repo_archive_list "${option}" ${ignore_local_host_archives}
+}
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 unpack_apply_all_patchkages () {
@@ -297,7 +306,7 @@ unpack_all_encrypted_patchkage_archives () {
   # BWARE: If unpacked path already exists, tar overwrites silently.
   while IFS= read -r -d $'\0' gpgf; do
     decrypt_and_unpack_patchkage "${gpgf}"
-  done < <(print_repo_archive_list "-z")
+  done < <(print_repo_archive_list_filtered "-z")
 }
 
 # ***
@@ -313,7 +322,7 @@ apply_all_decrypted_unpacked_patchkages () {
   # stdin, which prevents us from being able to prompt the user.
   while IFS= read -r -d $'\0' gpgf; do
     patchkages+=("${gpgf}")
-  done < <(print_repo_archive_list "-z")
+  done < <(print_repo_archive_list_filtered "-z")
 
   for gpgf in "${patchkages[@]}"; do
     process_patch_archive "${gpgf}" \

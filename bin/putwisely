@@ -196,7 +196,10 @@ putwisely commands & options
 # branches to know whether to push, pull, or do nothing. (Silly that
 # the gimmicky commit count is more than just a gimmick.)
 git_put_wise_apply_all_accordingly () {
-  if [ -n "$(print_repo_archive_list)" ]; then
+  # Load: print_repo_archive_list_filtered
+  source_dep "lib/put_wise_apply_patches.sh"
+
+  if [ -n "$(print_repo_archive_list_filtered)" ]; then
     git-put-wise --apply-all "$@"
   else
     git_fetch_with_backoff "${SCOPING_REMOTE_NAME}"
