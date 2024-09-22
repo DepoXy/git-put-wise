@@ -251,13 +251,28 @@ must_canonicalize_path_and_verify_nothing_staged () {
 
   cd "${PW_PATCHES_REPO}"
 
-  git_insist_git_repo
+  git_insist_git_repo_and_is_git_repo_root
 
   PW_PATCHES_REPO="$(git_repo_canonicalize_environ_path "PW_PATCHES_REPO")"
 
   git_insist_nothing_staged
 
   cd "${before_cd}"
+}
+
+git_insist_git_repo_and_is_git_repo_root () {
+  git_insist_git_repo
+
+  git_insist_is_git_repo_root
+}
+
+git_insist_is_git_repo_root () {
+  if ! git_is_git_repo_root; then
+    # This might be a GAFFE, i.e., dev mistake...
+    >&2 echo "ERROR: Expected a Git repo root: ${PW_PATCHES_REPO}"
+
+    return 1
+  fi
 }
 
 prompt_user_to_create_patches_repo () {
@@ -322,7 +337,7 @@ put_wise_reset_patches_repo () {
       # Me being paranoid.
 
       # Might be overcheckill.
-      git_insist_git_repo
+      git_insist_git_repo_and_is_git_repo_root
 
       PW_PATCHES_REPO="$(git_repo_canonicalize_environ_path "PW_PATCHES_REPO")"
 
