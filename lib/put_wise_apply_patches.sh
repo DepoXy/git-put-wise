@@ -306,7 +306,8 @@ apply_all_decrypted_unpacked_patchkages () {
   done < <(print_repo_archive_list "-z")
 
   for gpgf in "${patchkages[@]}"; do
-    process_patch_archive "${gpgf}"
+    process_patch_archive "${gpgf}" \
+      || true
   done
 }
 
