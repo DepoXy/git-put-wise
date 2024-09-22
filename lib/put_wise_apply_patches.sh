@@ -142,7 +142,9 @@ put_wise_apply_patches_apply_one () {
   if ! ${patch_dir_exists} || ! ${skip_if_decrypted}; then
     decrypt_and_unpack_patchkage "${gpgf}"
   fi
-  process_patch_archive "${gpgf}"
+
+  process_patch_archive "${gpgf}" \
+    || exit_1
 }
 
 decrypt_and_unpack_patchkage () {
