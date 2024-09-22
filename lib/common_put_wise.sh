@@ -794,8 +794,6 @@ is_already_sorted_and_signed () {
   local enable_gpg_sign="$2"
   local until_ref="${3:-HEAD}"
 
-  local retcode=1
-
   already_sorted=false
   already_signed=false
 
@@ -810,6 +808,8 @@ is_already_sorted_and_signed () {
 
     return 1
   fi
+
+  local retcode=1
 
   already_sorted=true
 
