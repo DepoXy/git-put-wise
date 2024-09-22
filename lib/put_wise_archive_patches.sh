@@ -493,7 +493,8 @@ must_have_non_empty_rev_range_not_already_tagged () {
   local archive_upto
   archive_upto="$(git_commit_object_name "${commit_range_end}")"
 
-  debug "archive_from ${archive_from} / archive_upto ${archive_upto}"
+  debug "archive_from ${archive_from:-${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}}" \
+    "/ archive_upto ${archive_upto}"
 
   # If archive bounds are the same, means only PRIVATE..HEAD.
   if [ "${archive_from}" = "${archive_upto}" ]; then
