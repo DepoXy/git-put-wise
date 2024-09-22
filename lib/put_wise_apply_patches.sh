@@ -47,6 +47,9 @@ put_wise_apply_patches () {
 
   local before_cd="$(pwd -L)"
 
+  local projects_patched=()
+  local projects_failed=()
+
   if ${PW_ACTION_APPLY_ALL:-false}; then
     put_wise_apply_patches_apply_all
   else
@@ -75,9 +78,6 @@ put_wise_apply_patches_apply_all () {
 
     exit_1
   fi
-
-  local projects_patched=()
-  local projects_failed=()
 
   unpack_apply_all_patchkages
 
