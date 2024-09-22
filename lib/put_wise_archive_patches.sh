@@ -477,11 +477,13 @@ must_have_non_empty_rev_range_not_already_tagged () {
   # at least know that reference is not HEAD (and we also know that
   # a commit_range_end was also identified).
   # - The range lhs, aka 'from'.
-  local archive_from="$(git_commit_object_name "${starting_ref}")"
+  local archive_from
+  archive_from="$(git_commit_object_name "${starting_ref}")"
   # However, we have not verified if archive_upto → archive_from, which
   # means all commits since pw/in are PRIVATE commits.
   # - The range rhs, aka 'upto'.
-  local archive_upto="$(git_commit_object_name "${commit_range_end}")"
+  local archive_upto
+  archive_upto="$(git_commit_object_name "${commit_range_end}")"
 
   debug "archive_from ${archive_from} / archive_upto ${archive_upto}"
 
