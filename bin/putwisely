@@ -146,14 +146,14 @@ _pw_putwisely_act () {
     #     cdps && git p && popd && pw "in"
     # - Readable command:
     (cd "${PW_PATCHES_REPO}" && git pull --rebase --autostash) \
-      && "$0" "in"
+      && (${is_patches_repo} || "$0" "in")
   elif ${action_pout}; then
     # Very esoteric DepoXy aliases being used here.
     # MAYBE/2022-12-25: Honor -U and don't -f[orce] push.
     # - Esoteric command:
     #     pw "out" && cdps && git push -f && popd
     # - Readable command:
-    "$0" "out" \
+    (${is_patches_repo} || "$0" "out") \
       && (cd "${PW_PATCHES_REPO}" && git push -f)
   elif ${is_patches_repo}; then
     git_put_wise_apply_all_accordingly "$@"
