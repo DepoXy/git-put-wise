@@ -469,7 +469,7 @@ process_unpacked_patchkage () {
   local local_projpath_sha="$(print_project_path_ref)"
   must_confirm_projpath_sha_identical "${projpath_sha}" "${local_projpath_sha}"
 
-  git_insist_not_applied "${patch_branch}" "${starting_sha}"
+  git_insist_not_applied_per_tags "${patch_branch}" "${starting_sha}"
 
   # Insist that the ephemeral branch does not exist.
   must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"
@@ -888,7 +888,7 @@ print_applying_onto_progress () {
 # - The tag has the format:
 #     pw/<branch>/<apply-datetime>/starting/<starting-sha>
 #   We know everything but the datetime, which we'll glob out.
-git_insist_not_applied () {
+git_insist_not_applied_per_tags () {
   local patch_branch="$1"
   local starting_sha="$2"
 
