@@ -730,11 +730,11 @@ resort_and_sign_commits_since_boundary () {
 
   # ***
 
-  resort_and_sign_commits_before_push_unless_unnecessary \
+  resort_and_sign_commits_since_boundary_unless_unnecessary \
     "${starting_sha_or_HEAD}" "${enable_gpg_sign}"
 }
 
-resort_and_sign_commits_before_push_unless_unnecessary () {
+resort_and_sign_commits_since_boundary_unless_unnecessary () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
