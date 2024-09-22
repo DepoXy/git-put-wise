@@ -77,6 +77,7 @@ put_wise_apply_patches_apply_all () {
   fi
 
   local projects_patched=()
+  local projects_failed=()
 
   unpack_apply_all_patchkages
 
@@ -85,6 +86,14 @@ put_wise_apply_patches_apply_all () {
   for project in "${projects_patched[@]}"; do
     echo "  ${project}"
   done
+
+  if [ "${#projects_failed}" -gt 0 ]; then
+    >&2 echo
+    >&2 echo "EROR: One or more projects had non-todo-related git-rebase failures:"
+    for project in "${projects_failed[@]}"; do
+      >&2 echo "  ${project}"
+    done
+  fi
 }
 
 put_wise_apply_patches_apply_one () {
@@ -528,7 +537,11 @@ process_unpacked_patchkage () {
     || retcode=$?
 
   if [ ${retcode} -ne 0 ]; then
-    cleanup_func="git_post_rebase_exec_inject_callback ${cleanup_func}"
+    if must_rebase_todo_exist; then
+      cleanup_func="git_post_rebase_exec_inject_callback ${cleanup_func}"
+    else
+      projects_failed+=("${project_path}")
+    fi
 
     badger_user_rebase_failed
   fi

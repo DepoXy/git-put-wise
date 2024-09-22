@@ -1296,7 +1296,7 @@ must_rebase_todo_exist () {
 # ***
 
 git_post_rebase_exec_inject_callback () {
-  must_rebase_todo_exist
+  must_rebase_todo_exist || return 1
 
   # Must sleep so git-rebase finishes (cannot cleanup while detached
   # HEAD or mess with branch too much, lest git-rebase fault us).

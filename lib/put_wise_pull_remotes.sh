@@ -366,7 +366,9 @@ bind generic E !sh -c \" \\
     unset -v GIT_SEQUENCE_EDITOR
 
     if [ ${retcode} -ne 0 ]; then
-      cleanup_func="git_post_rebase_exec_inject_callback ${cleanup_func}"
+      if must_rebase_todo_exist; then
+        cleanup_func="git_post_rebase_exec_inject_callback ${cleanup_func}"
+      fi
 
       badger_user_rebase_failed
     fi
