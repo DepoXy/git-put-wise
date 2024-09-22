@@ -407,6 +407,8 @@ print_exec_gpg_sign () {
   print_exec_gpg_sign_raw | sanitize_exec_fcn | escape_double_quotes
 }
 
+# ***
+
 # Drop comment-only lines;
 # remove forbidden newlines;
 # condense whitespace for readability; and
@@ -421,6 +423,8 @@ sanitize_exec_fcn () {
 escape_double_quotes () {
   sed -e 's/"/\\"/g'
 }
+
+# ***
 
 # - git-commit options used to GPG sign via rebase exec:
 #     -n : --no-verify (skip hooks)
