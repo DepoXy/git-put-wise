@@ -398,23 +398,26 @@ seq_editor_cleanup_rebase_files () {
 
 # Remove forbidden newlines, and condense whitespace for readability.
 print_exec_fcn_countdown () {
-  print_exec_fcn_countdown_raw | sanitize_exec_fcn
+  print_exec_fcn_countdown_raw | sanitize_exec_fcn | escape_double_quotes
 }
 
 print_exec_gpg_sign () {
-  print_exec_gpg_sign_raw | sanitize_exec_fcn
+  print_exec_gpg_sign_raw | sanitize_exec_fcn | escape_double_quotes
 }
 
-# Drop comment-only likes;
+# Drop comment-only lines;
 # remove forbidden newlines;
 # condense whitespace for readability; and
-# escape double quotes.
+# sometimes followed by escape_double_quotes.
 sanitize_exec_fcn () {
   sed -e '/^ *#/d' \
   | tr -d '\n' \
-  | sed \
-    -e 's/ \+/ /g' \
-    -e 's/"/\\"/g'
+  | sed -e 's/ \+/ /g'
+}
+
+# Escape double quotes.
+escape_double_quotes () {
+  sed -e 's/"/\\"/g'
 }
 
 # - git-commit options used to GPG sign via rebase exec:
@@ -472,11 +475,11 @@ print_exec_gpg_sign_raw () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-main () {
+_seq_editor_sort_by_scope_protected_private_main () {
   git_rebase_sort_by_scope "$@"
 }
 
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
-  main "$@"
+  _seq_editor_sort_by_scope_protected_private_main "$@"
 fi
 

@@ -65,6 +65,9 @@ source_deps () {
   source_dep "lib/cli_parse_params.sh"
 
   source_dep "lib/common_put_wise.sh"
+
+  # Load: sanitize_exec_fcn
+  source_dep "bin/seq-editor-sort-by-scope-protected-private"
 }
 
 source_dep () {

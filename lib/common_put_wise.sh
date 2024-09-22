@@ -1104,6 +1104,9 @@ git_sort_by_scope () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
+  # Load: prepare_progress_messaging
+  _common_source_dep "bin/seq-editor-sort-by-scope-protected-private"
+  # Load: git-rebase-sort-by-scope-protected-private
   _common_source_dep "bin/git-rebase-sort-by-scope-protected-private"
 
   # CXREF: ~/.kit/git/git-put-wise/bin/git-rebase-sort-by-scope-protected-private

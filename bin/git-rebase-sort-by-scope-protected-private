@@ -125,8 +125,6 @@ git-rebase-sort-by-scope-protected-private () {
   local n_commits
   n_commits="$(git rev-list --count ${rev_list_commits})"
 
-  . "${seq_editor}"
-
   local progress_orig_msg=""
   if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign}; then \
     progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
