@@ -195,11 +195,6 @@ git_rebase_sort_by_scope () {
 
   # ***
 
-  local exec_countdown="$(print_exec_fcn_countdown)"
-  local exec_gpg_sign="$(print_exec_gpg_sign)"
-  # >&2 echo "exec_countdown: ${exec_countdown}"
-  # >&2 echo "exec_gpg_sign: ${exec_gpg_sign}"
-
   # USAGE: Set PW_REBASE_COUNTDOWN_ALWAYS=true to always show countdown.
   # - But on dozens of commits, rebase without exec countdown is almost
   #   instantaneous, whereas rebase with exec countdown takes a noticeable
@@ -217,6 +212,13 @@ git_rebase_sort_by_scope () {
     do_exec_gpg_sign=1
     enable_countdown=1
   fi
+
+  # ***
+
+  local exec_countdown="$(print_exec_fcn_countdown)"
+  local exec_gpg_sign="$(print_exec_gpg_sign)"
+  # >&2 echo "exec_countdown: ${exec_countdown}"
+  # >&2 echo "exec_gpg_sign: ${exec_gpg_sign}"
 
   # ***
 
