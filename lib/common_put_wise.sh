@@ -806,36 +806,38 @@ is_already_sorted_and_signed () {
   n_commits="$(git rev-list --count ${rev_list_commits})"
 
   local scoped_count
+  if ! scoped_count="$(is_sorted_by_scope "${rebase_boundary}" "${until_ref}")"; then
 
-  if scoped_count="$(is_sorted_by_scope "${rebase_boundary}" "${until_ref}")"; then
-    already_sorted=true
-
-    local msg_prefix="Verified "
-    local msg_postfix=" sorted"
-
-    local since_commit=""
-    if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
-      since_commit="${rebase_boundary}"
-    fi
-
-    local exclude_pattern="^(${PRIVATE_PREFIX:-PRIVATE: }|${SCOPING_PREFIX:-PROTECTED: }).*\$"
-
-    if ! ${enable_gpg_sign} \
-      || git_is_gpg_signed_since_commit \
-        "${since_commit}" "${until_ref}" "${exclude_pattern}" \
-    ; then
-      if ${enable_gpg_sign}; then
-        already_signed=true
-
-        msg_postfix=" sorted & signed"
-      fi
-
-      retcode=0
-    fi
-
-    print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
-      "${n_commits}" "${_scoped_count_arg+}"
+    return 1
   fi
+
+  already_sorted=true
+
+  local msg_prefix="Verified "
+  local msg_postfix=" sorted"
+
+  local since_commit=""
+  if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    since_commit="${rebase_boundary}"
+  fi
+
+  local exclude_pattern="^(${PRIVATE_PREFIX:-PRIVATE: }|${SCOPING_PREFIX:-PROTECTED: }).*\$"
+
+  if ! ${enable_gpg_sign} \
+    || git_is_gpg_signed_since_commit \
+      "${since_commit}" "${until_ref}" "${exclude_pattern}" \
+  ; then
+    if ${enable_gpg_sign}; then
+      already_signed=true
+
+      msg_postfix=" sorted & signed"
+    fi
+
+    retcode=0
+  fi
+
+  print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
+    "${n_commits}" "${_scoped_count_arg+}"
 
   return ${retcode}
 }
