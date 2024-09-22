@@ -70,7 +70,8 @@ put_wise_archive_patches_go () {
   # (because no-op); or exit_1 if ahead of HEAD, or diverged.
   resort_and_sign_commits_since_boundary \
     "${_rebase_boundary:-${starting_ref}}" \
-    ${_enable_gpg_sign:-false}
+    ${_enable_gpg_sign:-false} \
+    ${_normalize_committer:-true}
 
   # Determine the extent of the diff range.
   # - Note this local is set as a side effect.
@@ -356,6 +357,8 @@ identify_first_upstream_branch () {
   if put_wise_identify_rebase_boundary_and_remotes \
     "${_action_desc:-archive}" \
     "${_inhibit_exit_if_unidentified:-true}" \
+    "${_skip_integrity_checks:-false}" \
+    "${_normalize_committer:-true}" \
   ; then
     # Identify first put-wise upstream: Check first for remote scoping
     # branch, then remote feature branch, then remote release branch,

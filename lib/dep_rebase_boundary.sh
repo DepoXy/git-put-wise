@@ -127,6 +127,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   #   does: git-bump-version-tag.
   local inhibit_exit_if_unidentified="${2:-false}"
   local skip_integrity_checks="${3:-false}"
+  local normalize_committer="${4:-false}"
 
   # Caller vars set below:
   branch_name="$(git_branch_name)"
@@ -141,6 +142,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # *all* commits scanned as fallback.
   already_sorted=false
   already_signed=false
+  already_normed=false
 
   local sortless_msg=""
 
@@ -445,10 +447,12 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if ! verify_rebase_boundary_exists "${rebase_boundary}"; then
       # Use empty rebase_boundary so already-sorted checks all commits.
       rebase_boundary=""
-      # Side-effect: Sets bools: already_sorted, already_signed
+      # Side-effect: Sets bools: already_sorted, already_signed, already_normed
       if is_already_sorted_and_signed \
         "${rebase_boundary}" \
         "${enable_gpg_sign}" \
+        "${_until_ref:-HEAD}" \
+        "${normalize_committer}" \
           > /dev/null \
       ; then
         # Tells caller all commits are sorted and signed, and that
@@ -475,7 +479,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if ! rebase_boundary="$( \
       insist_rebase_range_free_from_canonicals \
         "${rebase_boundary}" \
-        "${enable_gpg_sign}"
+        "${enable_gpg_sign}" \
+        "${normalize_committer}"
     )"; then
 
       return 1
@@ -572,17 +577,18 @@ verify_rebase_boundary_exists () {
 insist_rebase_range_free_from_canonicals () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
+  local normalize_committer="${3:-false}"
 
   local failed_checks=false
 
   if ! rebase_boundary="$( \
-    insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}"
+    insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}" "${normalize_committer}"
   )"; then
     failed_checks=true
   fi
 
   if ! rebase_boundary="$( \
-    insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}"
+    insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}" "${normalize_committer}"
   )"; then
     failed_checks=true
   fi
@@ -599,6 +605,7 @@ PW_OPTION_ORPHAN_TAGS="${PW_OPTION_ORPHAN_TAGS:-false}"
 insist_nothing_tagged_after () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
+  local normalize_committer="${3:-false}"
 
   local exclusive_boundary="${rebase_boundary}"
 
@@ -647,7 +654,7 @@ insist_nothing_tagged_after () {
     fi
 
     if is_range_sorted_and_signed_and_nothing_scoped_follows \
-      "${rebase_boundary}" "${enable_gpg_sign}" "${newer_tag}" \
+      "${rebase_boundary}" "${enable_gpg_sign}" "${newer_tag}" "${normalize_committer}" \
     ; then
       tags_will_not_be_orphaned=true
 
@@ -718,6 +725,7 @@ insist_nothing_tagged_after () {
 insist_single_author_used_since () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
+  local normalize_committer="${3:-false}"
 
   local exclusive_boundary="${rebase_boundary}"
 
@@ -757,7 +765,7 @@ insist_single_author_used_since () {
     local commits_will_not_be_changed=false
 
     if is_range_sorted_and_signed_and_nothing_scoped_follows \
-      "${rebase_boundary}" "${enable_gpg_sign}" "${latest_other_commit}" \
+      "${rebase_boundary}" "${enable_gpg_sign}" "${latest_other_commit}" "${normalize_committer}" \
     ; then
       commits_will_not_be_changed=true
 
@@ -811,9 +819,11 @@ is_range_sorted_and_signed_and_nothing_scoped_follows () {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local until_ref="$3"
+  local normalize_committer="${4:-false}"
 
+  # Side-effect: Sets bools: already_sorted, already_signed, already_normed
   if is_already_sorted_and_signed \
-    "${rebase_boundary}" "${enable_gpg_sign}" "${until_ref}" \
+    "${rebase_boundary}" "${enable_gpg_sign}" "${until_ref}" "${normalize_committer}" \
     > /dev/null \
   ; then
     local scoping_boundary_or_HEAD

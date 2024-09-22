@@ -709,6 +709,7 @@ format_pw_tag_ephemeral_pull () {
 resort_and_sign_commits_since_boundary () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
+  local normalize_committer="${3:-false}"
 
   local starting_sha_or_HEAD
   starting_sha_or_HEAD="$( \
@@ -731,12 +732,14 @@ resort_and_sign_commits_since_boundary () {
   # ***
 
   resort_and_sign_commits_since_boundary_unless_unnecessary \
-    "${starting_sha_or_HEAD}" "${enable_gpg_sign}"
+    "${starting_sha_or_HEAD}" "${enable_gpg_sign}" \
+    "${normalize_committer}"
 }
 
 resort_and_sign_commits_since_boundary_unless_unnecessary () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
+  local normalize_committer="${3:-false}"
 
   local retcode=0
 
@@ -744,6 +747,7 @@ resort_and_sign_commits_since_boundary_unless_unnecessary () {
   git_sort_by_scope \
     "${rebase_boundary}" \
     "${enable_gpg_sign}" \
+    "${normalize_committer}" \
       || retcode=$?
 
   if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
@@ -787,15 +791,19 @@ exit_11 () {
 #   to load (at least author's is, will uses lots of mrconfig files)).
 #
 # Side-effect: Sets already_sorted=true|false
+#                   already_signed=true|false
+#                   already_normed=true|false
 
 is_already_sorted_and_signed () {
   # rebase_boundary is a commit object, or magic name "ROOT".
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local until_ref="${3:-HEAD}"
+  local normalize_committer="${4:-false}"
 
   already_sorted=false
   already_signed=false
+  already_normed=false
 
   local rev_list_commits
   rev_list_commits="$(print_git_rev_list_commits "${rebase_boundary}" "${until_ref}")"
@@ -809,12 +817,13 @@ is_already_sorted_and_signed () {
     return 1
   fi
 
-  local retcode=1
+  local retcode=0
 
   already_sorted=true
 
   local msg_prefix="Verified "
   local msg_postfix=" sorted"
+  local but_not=""
 
   local since_commit=""
   if [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
@@ -832,8 +841,35 @@ is_already_sorted_and_signed () {
 
       msg_postfix=" sorted & signed"
     fi
+  elif ${enable_gpg_sign}; then
+    retcode=1
 
-    retcode=0
+    but_not="but not signed"
+  fi
+
+  if ! ${normalize_committer} \
+    || [ -z "$( \
+      git_oldest_commit_with_committer_different_than_author \
+        "${since_commit}" "${until_ref}" \
+      )" ] \
+  ; then
+    if ${normalize_committer}; then
+      already_normed=true
+
+      msg_postfix="${msg_postfix}, & committer normalized"
+    fi
+  elif ${normalize_committer}; then
+    retcode=1
+
+    if [ -n "${but_not}" ]; then
+      but_not="${but_not}, nor normalized"
+    else
+      but_not="but not normalized"
+    fi
+  fi
+
+  if [ -n "${but_not}" ]; then
+    msg_postfix="${msg_postfix} (${but_not})"
   fi
 
   print_generic_status_message "${msg_prefix}" "${msg_postfix}" \
@@ -887,17 +923,24 @@ print_generic_status_message () {
 print_sorted_and_signed_message () {
   local gpg_sign="$1"
   local already_sorted="$2"
-  local n_commits="$3"
-  local head_sha_before_rebase="$4"
+  local did_normalize="$3"
+  local n_commits="$4"
+  local head_sha_before_rebase="$5"
 
-  local msg_prefix="Sorted "
+  local msg_prefix="Sorted"
+  local msg_comma=""
   if [ -n "${gpg_sign}" ]; then
     if ${already_sorted}; then
-      msg_prefix="Signed "
+      msg_prefix="Signed"
     else
-      msg_prefix="${msg_prefix}& signed "
+      msg_prefix="${msg_prefix} & signed"
+      msg_comma=","
     fi
   fi
+  if ${did_normalize}; then
+    msg_prefix="${msg_prefix}${msg_comma} & normalized"
+  fi
+  msg_prefix="${msg_prefix} "
 
   local n_commits_inflector=""
   [ ${n_commits} -eq 1 ] || n_commits_inflector="s"
@@ -1124,6 +1167,7 @@ must_confirm_upstream_shares_history_with_head () {
 git_sort_by_scope () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
+  local normalize_committer="${3:-false}"
 
   # Load: prepare_progress_messaging
   _common_source_dep "bin/seq-editor-sort-by-scope-protected-private"
@@ -1135,7 +1179,8 @@ git_sort_by_scope () {
     "${rebase_boundary}" \
     "${_magic_starting_ref:-false}" \
     "${enable_gpg_sign}" \
-    "${_insist_signing_key:-false}"
+    "${_insist_signing_key:-false}" \
+    "${normalize_committer}"
 }
 
 # So that you can source common_put_wise.sh without also sourcing git-put-wise

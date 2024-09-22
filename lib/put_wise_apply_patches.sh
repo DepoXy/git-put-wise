@@ -1226,6 +1226,9 @@ print_exec_fcn_reset_committer () {
   print_exec_fcn_reset_committer_raw "$@" | sanitize_exec_fcn
 }
 
+# CXREF: Compare similar fcns:
+#   print_exec_fcn_reset_committer_raw
+#   print_exec_normalize_committer_raw
 print_exec_fcn_reset_committer_raw () {
   local patch_path="$1"
   local old_head="$2"

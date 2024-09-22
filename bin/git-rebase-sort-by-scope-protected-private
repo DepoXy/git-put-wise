@@ -56,6 +56,7 @@ git-rebase-sort-by-scope-protected-private () {
   local use_magic_starting_ref="${2:-false}"
   local enable_gpg_sign_if_signingkey="${3:-false}"
   local insist_signing_key="${4:-false}"
+  local normalize_committer="${5:-false}"
 
   # CXREF: ~/.kit/git/git-put-wise/bin/seq-editor-sort-by-scope-protected-private
   local seq_editor
@@ -94,6 +95,7 @@ git-rebase-sort-by-scope-protected-private () {
     "${starting_ref}" \
     "${use_magic_starting_ref}" \
     "${enable_gpg_sign}" \
+    "${normalize_committer}" \
   )" || exit_1
 
   if [ -z "${rebase_boundary}" ]; then
@@ -109,11 +111,16 @@ git-rebase-sort-by-scope-protected-private () {
 
   # Sets already_sorted=true and returns 1 if sorted but not signed; or
   # sets already_sorted=false and returns 1 if not sorted; or
-  # returns 0 if sorted, and signed (if requested).
+  # sets already_normed=false and returns 1 if committer not normalized; or
+  # returns 0 if sorted, and signed (if requested), and normalized (if req.).
   local already_sorted=false
+  local already_signed=false
+  local already_normed=false
   if is_already_sorted_and_signed \
     "${rebase_boundary}" \
     "${enable_gpg_sign}" \
+    "${_until_ref:-HEAD}" \
+    "${normalize_committer}" \
   ; then
     maybe_unstash_changes ${pop_after}
 
@@ -129,18 +136,23 @@ git-rebase-sort-by-scope-protected-private () {
   n_commits="$(git rev-list --count ${rev_list_commits})"
 
   local progress_orig_msg=""
-  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign}; then \
+  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign} || ${normalize_committer}; then \
     progress_orig_msg="$( \
       prepare_progress_messaging \
         "${n_commits}" \
+        "${enable_gpg_sign}" \
+        "${normalize_committer}"
     )"
 
     printf "%s\n" "${progress_orig_msg}"
   fi
 
-  seq_editor_cache_options "${gpg_sign}"
+  seq_editor_cache_options "${enable_gpg_sign}" "${normalize_committer}"
 
   # ***
+
+  local did_normalize=false
+  ! ( ${normalize_committer} && ! ${already_normed} ) || did_normalize=true
 
   local retcode=0
 
@@ -149,6 +161,7 @@ git-rebase-sort-by-scope-protected-private () {
     "${gpg_sign}" \
     "${rebase_boundary}" \
     "${already_sorted}" \
+    "${did_normalize}" \
     "${n_commits}" \
     "${head_sha_before_rebase}" \
     "${progress_orig_msg}" \
@@ -251,6 +264,7 @@ print_rebase_boundary () {
   local starting_ref="$1"
   local use_magic_starting_ref="$2"
   local enable_gpg_sign="$3"
+  local normalize_committer="${4:-false}"
 
   local prog_name="$(basename -- "$0")"
 
@@ -288,6 +302,7 @@ print_rebase_boundary () {
       insist_rebase_range_free_from_canonicals \
         "${starting_ref}" \
         "${enable_gpg_sign}" \
+        "${normalize_committer}"
     )"; then
 
       exit_1
@@ -314,9 +329,13 @@ print_rebase_boundary () {
   local rebase_boundary=""
   local already_sorted=false
   local already_signed=false
+  local already_normed=false
   # BWARE: Calls git-fetch, so not the quickest command.
   if ! >&2 put_wise_identify_rebase_boundary_and_remotes \
-    "rebase automatically" \
+    "${_action_desc:-rebase automatically}" \
+    "${_inhibit_exit_if_unidentified:-false}" \
+    "${_skip_integrity_checks:-false}" \
+    "${normalize_committer}" \
   ; then
     >&2 echo "ERROR: Could not identify rebase boundary"
     >&2 echo "- Hint: You can specify the boundary explicitly to skip this step"
@@ -361,9 +380,10 @@ git_rebase_resort_scoped_and_sign_commits () {
   local gpg_sign="$2"
   local rebase_boundary="$3"
   local already_sorted="$4"
-  local n_commits="$5"
-  local head_sha_before_rebase="$6"
-  local progress_orig_msg="$7"
+  local did_normalize="$5"
+  local n_commits="$6"
+  local head_sha_before_rebase="$7"
+  local progress_orig_msg="$8"
 
   local retcode=0
 
@@ -413,6 +433,7 @@ git_rebase_resort_scoped_and_sign_commits () {
     print_sorted_and_signed_message \
       "${gpg_sign}" \
       "${already_sorted}" \
+      "${did_normalize}" \
       "${n_commits}" \
       "${head_sha_before_rebase}"
   fi

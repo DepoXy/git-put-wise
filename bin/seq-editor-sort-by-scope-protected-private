@@ -204,21 +204,33 @@ git_rebase_sort_by_scope () {
   #     adding progress seems helpful.
   local enable_countdown=0
   local do_exec_gpg_sign=0
+  local do_exec_normalize=0
   if ${PW_REBASE_COUNTDOWN_ALWAYS:-false}; then
     enable_countdown=1
   fi
 
-  if [ -s "$(print_rebase_options_gpg_sign_file)" ]; then
+  seq_editor_load_options
+  if ${_PUTWISE_SBS_OPT_ENABLE_GPG_SIGN}; then
     do_exec_gpg_sign=1
+    enable_countdown=1
+  fi
+  if ${_PUTWISE_SBS_OPT_NORMALIZE_COMMITTER}; then
+    do_exec_normalize=1
     enable_countdown=1
   fi
 
   # ***
 
-  local exec_countdown="$(print_exec_fcn_countdown)"
-  local exec_gpg_sign="$(print_exec_gpg_sign)"
+  local exec_countdown="$( \
+    print_exec_fcn_countdown \
+      "${_PUTWISE_SBS_OPT_ENABLE_GPG_SIGN}" \
+      "${_PUTWISE_SBS_OPT_NORMALIZE_COMMITTER}"
+  )"
+  local exec_gpg_sign="$(print_exec_gpg_sign "${_PUTWISE_SBS_OPT_NORMALIZE_COMMITTER}")"
+  local exec_normalize_committer="$(print_exec_normalize_committer)"
   # >&2 echo "exec_countdown: ${exec_countdown}"
   # >&2 echo "exec_gpg_sign: ${exec_gpg_sign}"
+  # >&2 echo "exec_normalize_committer: ${exec_normalize_committer}"
 
   # ***
 
@@ -234,6 +246,7 @@ git_rebase_sort_by_scope () {
       n_extra_merge = 0;
       enable_countdown = ${enable_countdown};
       do_exec_gpg_sign = ${do_exec_gpg_sign};
+      do_exec_normalize = ${do_exec_normalize};
     }
 
     function inject_exec_cmds() {
@@ -242,6 +255,8 @@ git_rebase_sort_by_scope () {
       }
       if (do_exec_gpg_sign) {
         print \"exec ${exec_gpg_sign}; exec_gpg_sign\";
+      } else if (do_exec_normalize) {
+        print \"exec ${exec_normalize_committer}; exec_normalize_committer\";
       }
     }
 
@@ -337,6 +352,8 @@ gnu_awk () {
 
 prepare_progress_messaging () {
   local n_commits="${1:-0}"
+  local enable_gpg_sign="${2:-false}"
+  local normalize_committer="${3:-false}"
 
   local progress_orig_msg=""
 
@@ -344,7 +361,9 @@ prepare_progress_messaging () {
 
   printf "%s" "${n_commits}" > "${countdown_f}"
 
-  local prog_prefix="$(print_rebase_prog_prefix)"
+  local prog_prefix="$( \
+    print_rebase_prog_prefix "${enable_gpg_sign}" "${normalize_committer}"
+  )"
 
   progress_orig_msg="${prog_prefix}${n_commits}..."
 
@@ -352,6 +371,9 @@ prepare_progress_messaging () {
 }
 
 print_rebase_prog_prefix () {
+  local enable_gpg_sign="${1:-false}"
+  local normalize_committer="${2:-false}"
+
   local prog_prefix
 
   # CALSO: Git creates a temporary gpg_sign_opt file when you git-rebase -S,
@@ -360,8 +382,10 @@ print_rebase_prog_prefix () {
   # but we don't use the --gpg-sign arg; rather, we go our own way.
   # - Specifically, git-rebase won't sign all commits in the rebase,
   #   it'll only sign commits that are otherwise changed by the rebase.
-  if [ -s "$(print_rebase_options_gpg_sign_file)" ]; then
+  if ${enable_gpg_sign}; then
     prog_prefix="Signing commits: "
+  elif ${normalize_committer}; then
+    prog_prefix="Normalizing commits: "
   else
     prog_prefix="Sorting commits: "
   fi
@@ -370,11 +394,28 @@ print_rebase_prog_prefix () {
 }
 
 seq_editor_cache_options () {
-  local gpg_sign="$1"
+  local enable_gpg_sign="${1:-false}"
+  local normalize_committer="${2:-false}"
 
-  local opts_gpg_sign_f="$(print_rebase_options_gpg_sign_file)"
+  local opts_gpg_sign_f="$(print_rebase_options_filename)"
 
-  printf "%s" "${gpg_sign}" > "${opts_gpg_sign_f}"
+  cat <<EOF > "${opts_gpg_sign_f}"
+_PUTWISE_SBS_OPT_ENABLE_GPG_SIGN="${enable_gpg_sign}"
+_PUTWISE_SBS_OPT_NORMALIZE_COMMITTER="${normalize_committer}"
+EOF
+}
+
+seq_editor_load_options () {
+  _PUTWISE_SBS_OPT_ENABLE_GPG_SIGN=false
+  _PUTWISE_SBS_OPT_NORMALIZE_COMMITTER=false
+
+  local opts_gpg_sign_f="$(print_rebase_options_filename)"
+
+  if [ -s "${opts_gpg_sign_f}" ]; then
+    # OPSEC: Is this an attack vector? =)
+    # - Sets: _PUTWISE_SBS_OPT_*
+    . "${opts_gpg_sign_f}"
+  fi
 }
 
 # Temporary .git/ file used to persist the countdown value.
@@ -387,24 +428,35 @@ print_rebase_countdown_file () {
   printf "%s" "${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 }
 
-print_rebase_options_gpg_sign_file () {
-  printf "%s" "${PW_REBASE_CACHE_OPTS_GPG_SIGN:-.git/put-wise-opts-gpg-sign}"
+print_rebase_options_filename () {
+  printf "%s" "${PW_REBASE_CACHE_OPTS_GPG_SIGN:-.git/put-wise-sort-by-scope}"
 }
 
 seq_editor_cleanup_rebase_files () {
   command rm -f -- "$(print_rebase_countdown_file)"
-  command rm -f -- "$(print_rebase_options_gpg_sign_file)"
+  command rm -f -- "$(print_rebase_options_filename)"
 }
 
 # ***
 
 # Remove forbidden newlines, and condense whitespace for readability.
 print_exec_fcn_countdown () {
-  print_exec_fcn_countdown_raw | sanitize_exec_fcn | escape_double_quotes
+  local enable_gpg_sign="${1:-false}"
+  local normalize_committer="${2:-false}"
+
+  print_exec_fcn_countdown_raw "${enable_gpg_sign}" "${normalize_committer}" \
+    | sanitize_exec_fcn | escape_double_quotes
 }
 
 print_exec_gpg_sign () {
-  print_exec_gpg_sign_raw | sanitize_exec_fcn | escape_double_quotes
+  local normalize_committer="${1:-false}"
+
+  print_exec_gpg_sign_raw "${normalize_committer}" \
+    | sanitize_exec_fcn | escape_double_quotes
+}
+
+print_exec_normalize_committer () {
+  print_exec_normalize_committer_raw | sanitize_exec_fcn | escape_double_quotes
 }
 
 # ***
@@ -435,11 +487,16 @@ escape_double_quotes () {
 #          "[detached HEAD 76fc9f4] <message>"
 
 print_exec_fcn_countdown_raw () {
+  local enable_gpg_sign="${1:-false}"
+  local normalize_committer="${2:-false}"
+
   # E.g., ".git/put-wise-countdown"
   local countdown_f="$(print_rebase_countdown_file)"
 
   # E.g., "Sorting commits" or "Signing commits"
-  local prog_prefix="$(print_rebase_prog_prefix)"
+  local prog_prefix="$( \
+    print_rebase_prog_prefix "${enable_gpg_sign}" "${normalize_committer}"
+  )"
 
   # SAVVY: Move cursor up one row: \033[1A
   #   So if rebase conflict or error occurs, it prints from
@@ -461,9 +518,14 @@ print_exec_fcn_countdown_raw () {
 }
 
 print_exec_gpg_sign_raw () {
+  local normalize_committer="${1:-false}"
+
+  # Note that we never sign scoped (PROTECTED or PRIVATE) commits.
   echo '
     exec_gpg_sign () {
       set -e;
+
+      local gpgsign="-S";
 
       if git log -1 --format=%s
         | grep -q
@@ -471,10 +533,37 @@ print_exec_gpg_sign_raw () {
           -e "^'"${SCOPING_PREFIX:-PROTECTED: }"'"
       ; then
 
+        gpgsign="";
+      fi;
+
+      if '"${normalize_committer}"'; then
+        export GIT_COMMITTER_DATE="$(git log --no-walk --format=%ad)";
+        export GIT_COMMITTER_NAME="$(git log --no-walk --format=%an)";
+        export GIT_COMMITTER_EMAIL="$(git log --no-walk --format=%ae)";
+      elif [ -z "${gpgsign}" ]; then
+
         return 0;
       fi;
 
-      git commit --amend --no-edit --allow-empty --no-verify -S -q;
+      git commit --amend --no-edit --allow-empty --no-verify ${gpgsign} -q;
+    }
+  '
+}
+
+# CXREF: Compare similar GPW fcns:
+#   print_exec_fcn_reset_committer_raw
+#   print_exec_normalize_committer_raw
+# - See also git-nubs git-rebaser:
+#   git_rebase_set_committer_same_as_author
+print_exec_normalize_committer_raw () {
+  echo '
+    exec_normalize_committer () {
+      set -e;
+
+      GIT_COMMITTER_DATE="$(git log --no-walk --format=%ad)"
+      GIT_COMMITTER_NAME="$(git log --no-walk --format=%an)"
+      GIT_COMMITTER_EMAIL="$(git log --no-walk --format=%ae)"
+        git commit --amend --no-edit --allow-empty --no-verify -q;
     }
   '
 }
