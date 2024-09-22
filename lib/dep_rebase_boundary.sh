@@ -114,7 +114,7 @@
 #
 # BWARE:
 # - This fcn. does not verify rebase_boundary is reachable from HEAD.
-#   - The caller is expected to call resort_and_sign_commits_before_push,
+#   - The caller is expected to call resort_and_sign_commits_since_boundary,
 #     or to call must_confirm_shares_history_with_head directly, which
 #     will `exit 1` (exit_1) if rebase_boundary ahead or divergent.
 

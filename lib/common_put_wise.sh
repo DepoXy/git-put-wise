@@ -706,7 +706,7 @@ format_pw_tag_ephemeral_pull () {
 # - This fcn. is used by PW_ACTION_PUSH and PW_ACTION_ARCHIVE.
 # - Exits 1 if boundary is ahead of HEAD or diverged.
 # - Exits 0/11 if boundary is same as HEAD, i.e., no-op.
-resort_and_sign_commits_before_push () {
+resort_and_sign_commits_since_boundary () {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
 
@@ -972,7 +972,7 @@ print_is_gpg_sign_enabled () {
 #   must_confirm_commit_at_or_behind_commit
 # USERS: Called by:
 # - put-wise archive, and git-wise push
-#     (via resort_and_sign_commits_before_push)
+#     (via resort_and_sign_commits_since_boundary)
 # - git-rebase-sort-by-scope, and git-bump-version-tag
 #     (via directly)
 must_confirm_shares_history_with_head () {

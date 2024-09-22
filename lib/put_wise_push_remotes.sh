@@ -409,7 +409,7 @@ resort_and_sign_commits_before_push_maybe () {
   local rebase_boundary="$1"
   local already_signed="$2"
 
-  # Note that resort_and_sign_commits_before_push checks that
+  # Note that resort_and_sign_commits_since_boundary checks that
   # sort-from shares history with HEAD:
   #   must_confirm_shares_history_with_head "${rebase_boundary}" \
   #     || exit_1
@@ -420,7 +420,7 @@ resort_and_sign_commits_before_push_maybe () {
     if [ -n "${rebase_boundary}" ]; then
       # Sort & sign commits. Unless exit 0/11 if rebase_boundary → HEAD
       # (because no-op); or exit 1 if ahead of HEAD, or diverged.
-      resort_and_sign_commits_before_push "${rebase_boundary}" \
+      resort_and_sign_commits_since_boundary "${rebase_boundary}" \
         ${_enable_gpg_sign:-true}
     elif ! ${PW_OPTION_SKIP_REBASE:-false}; then
       # No rebase boundary identified, but all commits are already
