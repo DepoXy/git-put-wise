@@ -1871,7 +1871,7 @@ split_on_double_dash () {
   python3 -c \
     "import re ; print(
       re.sub(
-        '\-\-',
+        '--',
         ' ',
         '${text}',
         count=${count}
