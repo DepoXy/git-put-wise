@@ -1028,10 +1028,10 @@ apply_patches_unless_dry_run () {
     #     repos with begin to diverge, and put-wise won't know how to
     #     resolve it (the user would have to fix pw/out themselves).
     echo
-    echo "cat ${GIT_AM_INFO_PATH}"
+    echo "cat ${GIT_AM_INFO_PATH:-.git/rebase-apply/info}"
     echo "--------------------------"
     # Print ".git/rebase-apply/info".
-    cat "${GIT_AM_INFO_PATH}"
+    cat "${GIT_AM_INFO_PATH:-.git/rebase-apply/info}"
     echo
     git --no-pager am --show-current-patch=diff
 
