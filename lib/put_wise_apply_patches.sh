@@ -1013,7 +1013,13 @@ apply_patches_unless_dry_run () {
     done
   fi
 
-  if ! ${DRY_ECHO} git am --3way --committer-date-is-author-date "${patch_path}"/*.patch; then
+  if ! \
+    ${DRY_ECHO} \
+    git am \
+      --3way \
+      --committer-date-is-author-date \
+      "${patch_path}"/*.patch \
+  ; then
     # This program flow should be extremely rare, perhaps unreachable
     # if the user is using put-wise how we expect, and not playing with
     # fire.
