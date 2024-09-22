@@ -466,13 +466,13 @@ process_unpacked_patchkage () {
     return 1
   fi
 
+  local local_projpath_sha="$(print_project_path_ref)"
+  must_confirm_projpath_sha_identical "${projpath_sha}" "${local_projpath_sha}"
+
   git_insist_not_applied "${patch_branch}" "${starting_sha}"
 
   # Insist that the ephemeral branch does not exist.
   must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"
-
-  local local_projpath_sha="$(print_project_path_ref)"
-  must_confirm_projpath_sha_identical "${projpath_sha}" "${local_projpath_sha}"
 
   # ***
 
