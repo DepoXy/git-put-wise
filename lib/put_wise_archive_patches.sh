@@ -697,6 +697,8 @@ must_not_already_be_archived () {
     grep -e "^${hostname_sha}[[:xdigit:]]*--${projpath_sha}[[:xdigit:]]*--${starting_sha}[[:xdigit:]]*--${endingat_sha}[[:xdigit:]]*--.*"
   )" || true
 
+  cd "${before_cd}"
+
   if [ -n "${matching_archives}" ]; then
     >&2 echo "ALERT: Nothing to do: Archive already exists: $(echo ${matching_archives} | head -1)"
     if [ ${LOG_LEVEL} -le ${LOG_LEVEL_DEBUG} ]; then
@@ -706,8 +708,6 @@ must_not_already_be_archived () {
 
     exit_elevenses
   fi
-
-  cd "${before_cd}"
 
   return 0
 }
