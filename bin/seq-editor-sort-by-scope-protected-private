@@ -208,13 +208,13 @@ git_rebase_sort_by_scope () {
   #     Will show countdown only when signing, which is a slow op, and
   #     adding progress seems helpful.
   local enable_countdown=0
-  local enable_gpg_sign=0
+  local do_exec_gpg_sign=0
   if ${PW_REBASE_COUNTDOWN_ALWAYS:-false}; then
     enable_countdown=1
   fi
 
   if [ -s "$(print_rebase_options_gpg_sign_file)" ]; then
-    enable_gpg_sign=1
+    do_exec_gpg_sign=1
     enable_countdown=1
   fi
 
@@ -231,14 +231,14 @@ git_rebase_sort_by_scope () {
       n_extra_any = 0;
       n_extra_merge = 0;
       enable_countdown = ${enable_countdown};
-      enable_gpg_sign = ${enable_gpg_sign};
+      do_exec_gpg_sign = ${do_exec_gpg_sign};
     }
 
     function inject_exec_cmds() {
       if (enable_countdown) {
         print \"exec ${exec_countdown}; exec_countdown\";
       }
-      if (enable_gpg_sign) {
+      if (do_exec_gpg_sign) {
         print \"exec ${exec_gpg_sign}; exec_gpg_sign\";
       }
     }
