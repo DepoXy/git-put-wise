@@ -455,7 +455,7 @@ identify_commit_range_end () {
     >&2 echo "- (This is a convention for your own good, so that when you see the "
     >&2 echo "   branch name, you are reminded that the branch contains PRIVATEs.)"
     >&2 echo "- Hint: If you are worried that you might accidentally \`git push\` to"
-    >&2 echo "  a non-private upstream, set git-push to always require a refpec:"
+    >&2 echo "  a non-private upstream, set git-push to always require a refspec:"
     >&2 echo
     >&2 echo "    git config push.default nothing"
   
