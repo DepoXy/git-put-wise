@@ -972,6 +972,12 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
 #   what's the conflict, edit it (however you want), git-add that
 #   file, and `git am --continue`, whatever you changed is committed
 #   with the patch commit messge, but not the patch changes).
+#
+# - Note that git-format-patch prefixes the *.patch file names with sequential
+#   ordinal numbers (e.g., 0001-foo.patch, 0002-bar.patch, etc.), and that
+#   shell glob (*.patch) reports them in alphabetical order, so that git-am
+#   applies the patches in order.
+#   - REFER: `man bash` *Pathname Expansion*: "alphabetically sorted list".
 
 apply_patches_unless_dry_run () {
   local patch_path="$1"
