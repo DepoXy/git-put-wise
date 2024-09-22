@@ -111,7 +111,10 @@ git-rebase-sort-by-scope-protected-private () {
   # sets already_sorted=false and returns 1 if not sorted; or
   # returns 0 if sorted, and signed (if requested).
   local already_sorted=false
-  if is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}"; then
+  if is_already_sorted_and_signed \
+    "${rebase_boundary}" \
+    "${enable_gpg_sign}" \
+  ; then
     maybe_unstash_changes ${pop_after}
 
     return 0
@@ -127,7 +130,10 @@ git-rebase-sort-by-scope-protected-private () {
 
   local progress_orig_msg=""
   if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign}; then \
-    progress_orig_msg="$(prepare_progress_messaging "${n_commits}")"
+    progress_orig_msg="$( \
+      prepare_progress_messaging \
+        "${n_commits}" \
+    )"
 
     printf "%s\n" "${progress_orig_msg}"
   fi
@@ -279,7 +285,9 @@ print_rebase_boundary () {
     #     since author mostly uses this rebase script via tig bindings.
     #   - But I'd rather *harden* the code now, and see how it shakes out.
     if ! starting_ref="$( \
-      insist_rebase_range_free_from_canonicals "${starting_ref}" "${enable_gpg_sign}"
+      insist_rebase_range_free_from_canonicals \
+        "${starting_ref}" \
+        "${enable_gpg_sign}" \
     )"; then
 
       exit_1
@@ -402,8 +410,11 @@ git_prepare_push_resort_scoped_and_sign_commits () {
       printf "\r${one_line_up}%s\r" "$(echo "${progress_orig_msg}" | sed 's/./ /g')"
     fi
 
-    print_sorted_and_signed_message "${gpg_sign}" "${already_sorted}" \
-      "${n_commits}" "${head_sha_before_rebase}"
+    print_sorted_and_signed_message \
+      "${gpg_sign}" \
+      "${already_sorted}" \
+      "${n_commits}" \
+      "${head_sha_before_rebase}"
   fi
 
   return ${retcode}

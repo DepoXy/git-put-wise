@@ -68,7 +68,8 @@ put_wise_archive_patches_go () {
 
   # Sort & sign commits. Unless exit 0/11 if starting_ref → HEAD
   # (because no-op); or exit_1 if ahead of HEAD, or diverged.
-  resort_and_sign_commits_before_push "${_rebase_boundary:-${starting_ref}}" \
+  resort_and_sign_commits_before_push \
+    "${_rebase_boundary:-${starting_ref}}" \
     ${_enable_gpg_sign:-false}
 
   # Determine the extent of the diff range.
@@ -353,7 +354,8 @@ identify_first_upstream_branch () {
   local already_signed=false
   # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
   if put_wise_identify_rebase_boundary_and_remotes \
-    "${_action_desc:-archive}" "${_inhibit_exit_if_unidentified:-true}" \
+    "${_action_desc:-archive}" \
+    "${_inhibit_exit_if_unidentified:-true}" \
   ; then
     # Identify first put-wise upstream: Check first for remote scoping
     # branch, then remote feature branch, then remote release branch,

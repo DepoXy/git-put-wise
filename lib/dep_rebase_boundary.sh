@@ -445,8 +445,12 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if ! verify_rebase_boundary_exists "${rebase_boundary}"; then
       # Use empty rebase_boundary so already-sorted checks all commits.
       rebase_boundary=""
-      # Side-effect: Fcn. sets already_sorted=true|false, already_signed=true|false
-      if is_already_sorted_and_signed "${rebase_boundary}" "${enable_gpg_sign}" > /dev/null; then
+      # Side-effect: Sets bools: already_sorted, already_signed
+      if is_already_sorted_and_signed \
+        "${rebase_boundary}" \
+        "${enable_gpg_sign}" \
+          > /dev/null \
+      ; then
         # Tells caller all commits are sorted and signed, and that
         # no rebase boundary was identified.
         rebase_boundary=""
@@ -469,7 +473,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
     fi
 
     if ! rebase_boundary="$( \
-      insist_rebase_range_free_from_canonicals "${rebase_boundary}" "${enable_gpg_sign}"
+      insist_rebase_range_free_from_canonicals \
+        "${rebase_boundary}" \
+        "${enable_gpg_sign}"
     )"; then
 
       return 1

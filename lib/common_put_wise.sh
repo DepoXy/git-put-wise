@@ -741,8 +741,10 @@ resort_and_sign_commits_before_push_unless_unnecessary () {
   local retcode=0
 
   # Sort commits by "scope" (according to message prefixes).
-  git_sort_by_scope "${rebase_boundary}" "${enable_gpg_sign}" \
-    || retcode=$?
+  git_sort_by_scope \
+    "${rebase_boundary}" \
+    "${enable_gpg_sign}" \
+      || retcode=$?
 
   if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
     # Callee set rebase-todo 'exec' to pop WIP, and to call optional user hook,
