@@ -104,9 +104,14 @@ choose_patch_base_or_ask_user () {
     info "- Ope, cannot start from there (${patch_base_raw}):"
     info "  - That commit is behind one or more upstream branches"
 
-    patch_base="${furthest_along}"
-    describe_patch="This is the furthest along published ref"
-    do_confirm=true
+    if [ -n "${furthest_along}" ]; then
+      patch_base="${furthest_along}"
+      describe_patch="This is the furthest along published ref"
+      do_confirm=true
+    else
+      patch_base=""
+      describe_patch="No published ref found; assuming new branch/work"
+    fi
   fi
 
   # DEVs
