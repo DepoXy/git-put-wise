@@ -66,6 +66,14 @@ put_wise_archive_patches_go () {
 
   # ***
 
+  # ISOFF: Don't sign before generating patches, because the other
+  # host won't be able to recreate the same commit SHAs then. Also
+  # because if you publish commits from the archive, then the other
+  # host can rebase from the public repo, and the archive/apply
+  # mechanism is only used for (generally ephemeral) scoped commits.
+  #
+  #   local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
+
   # Sort & sign commits. Unless exit 0/11 if starting_ref → HEAD
   # (because no-op); or exit_1 if ahead of HEAD, or diverged.
   resort_and_sign_commits_since_boundary \
