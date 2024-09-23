@@ -58,7 +58,7 @@ put_wise_archive_patches_go () {
   )" || exit_1
 
   local context=""
-  if [ "${starting_ref}" = "${GIT_EMPTY_TREE}" ]; then
+  if git_is_empty_tree "${starting_ref}"; then
     context=" [magic empty tree object]"
   fi
 
@@ -491,7 +491,7 @@ must_have_non_empty_rev_range_not_already_tagged () {
   # a commit_range_end was also identified).
   # - The range lhs, aka 'from'.
   local archive_from="${starting_ref}"
-  if [ "${starting_ref}" != "${GIT_EMPTY_TREE}" ]; then
+  if ! git_is_empty_tree "${starting_ref}"; then
     archive_from="$(git_commit_object_name "${starting_ref}")"
   fi
 

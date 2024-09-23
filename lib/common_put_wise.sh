@@ -99,9 +99,6 @@ export PW_TAG_ONTIME_APPLY="${PW_TAG_ONTIME_APPLY:-pw-apply-here}"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# REFER: `printf '' | git hash-object -t tree --stdin`
-GIT_EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-
 PUT_WISE_REBASE_ALL_COMMITS="${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -1046,7 +1043,7 @@ print_is_gpg_sign_enabled () {
 must_confirm_shares_history_with_head () {
   local rebase_boundary="$1"
 
-  if [ "${rebase_boundary}" = "${GIT_EMPTY_TREE}" ]; then
+  if git_is_empty_tree "${rebase_boundary}"; then
     echo "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
 
     return 0
@@ -1465,7 +1462,7 @@ must_confirm_commit_at_or_behind_commit () {
     >&2 echo "GAFFE: Missing early_commit [must_confirm_commit_at_or_behind_commit]"
 
     return 1
-  elif [ "$(git rev-parse "${early_commit}")" = "${GIT_EMPTY_TREE}" ]; then
+  elif git_is_empty_tree "${early_commit}"; then
     # Aka the mother of all commits. Also a tree, so cannot merge-base, e.g.,:
     #   $ git merge-base --is-ancestor ${GIT_EMPTY_TREE} HEAD
     #   error: object 4b825dc642cb6eb9a060e54bf8d69288fbee4904 is a tree, not a commit

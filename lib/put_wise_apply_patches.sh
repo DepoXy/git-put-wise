@@ -925,7 +925,7 @@ git_insist_not_applied_per_history () {
   # See if the local and remote repos are using the same SHAs.
   local start_is_known_commit=false
 
-  # ALTLY: if [ "${starting_sha}" != "${GIT_EMPTY_TREE}" ] \
+  # ALTLY: if ! git_is_empty_tree "${starting_sha}" \
   #         && git_is_valid_object "${starting_sha}" \
   #         && git merge-base --is-ancestor "${starting_sha}" "${patch_branch}" \
   if git_commit_object_name "${starting_sha}" > /dev/null \
@@ -1259,7 +1259,7 @@ set_committer_same_as_author () {
   local exec_reset_committer="$(print_exec_fcn_reset_committer "$@")"
 
   local gitref="${old_head}"
-  if [ "${gitref}" = "${GIT_EMPTY_TREE}" ]; then
+  if git_is_empty_tree "${gitref}"; then
     gitref="--root"
   fi
 
@@ -1283,7 +1283,7 @@ print_exec_fcn_reset_committer_raw () {
   fi
 
   local gitrange
-  if [ "${old_head}" != "${GIT_EMPTY_TREE}" ]; then
+  if ! git_is_empty_tree "${old_head}"; then
     gitrange="${old_head}.."
   fi
   gitrange="${gitrange}HEAD"
