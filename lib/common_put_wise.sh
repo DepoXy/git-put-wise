@@ -2017,7 +2017,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
     >&2 echo "    # Or remove the receipt."
     >&2 echo "    cd ${before_cd}"
     >&2 echo "    git rm $(basename -- "${gpg_rr}")"
-    >&2 echo "    git commit --amend --no-edit"
+    >&2 echo "    git commit --amend --no-edit --allow-empty"
 
     return 1
   fi
