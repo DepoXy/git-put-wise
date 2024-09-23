@@ -27,6 +27,8 @@ choose_patch_base_or_ask_user () {
 
   # MAYBE/2022-12-15: Support --starting-sha option.
 
+  # See below: We'll verify: merge-base --is-ancestor ${patch_base} HEAD.
+
   # E.g., 'pw-apply-here' on --apply, 'pw-start-here' on --archive.
   if git_tag_exists "${pw_ontime_tag_name}"; then
     info "Found explicit user starting tag (${pw_ontime_tag_name})"

@@ -780,19 +780,41 @@ exit_11 () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# If already sorted by scope and signing declined,
-# or already sorted and signing requested and verified,
-# return true, and caller will return without running rebase.
+# Check if commit range rebase_boundary through until_ref is sorted,
+# signed, and/or normalized.
+# - Note that GPW *always* checks that scoped commits are sorted,
+#   but signing and normalizing are optional.
+# - If not sorted, sets already_sorted=false and returns 1 without
+#   checking signed or normalized.
+# - If sorted, sets already_sorted=true and checks both if signed
+#   (if enabled) and if normalized (if enabled).
+#   - If checks pass, returns truthy and sets already_signed=true and/or
+#     already_normed=true as appropriate.
+#   - Otherwise returns nonzero but still checks and sets
+#     already_signed=true and/or already_normed=true as appropriate.
 #
-# - Running the rebase anyway is generally fast, and the final HEAD SHA
-#   remains unchanged. But this way we can also skip the user's
-#   post-rebase exec, which might not be so fast (e.g., DepoXy uses the
-#   post-rebase exec to call `mr` to repair hard links, and `mr` is slow
-#   to load (at least author's is, will uses lots of mrconfig files)).
+# Note that, unless signing, running the rebase anyway if only sorting
+# is a fast no-op, and the final HEAD SHA remains unchanged (because
+# no content changed). (If also normalizing and already normalized, the
+# rebase would also recreate the same final HEAD SHA, but normalizing
+# might take a few seconds, because Git runs an `exec` command for each
+# commit.)
 #
-# Side-effect: Sets already_sorted=true|false
-#                   already_signed=true|false
-#                   already_normed=true|false
+# - But if we skip the rebase, we can also skip the user's post-rebase
+#   exec, which might not be so fast (e.g., DepoXy uses the post-rebase
+#   exec to call `mr` (myrepos) to repair hard links, and `mr` takes a
+#   half-second or two to load (it's a Perl app that loads dozens of
+#   shell-code-containing user config files)).
+#
+# - So we prefer to skip the sort-by-scope rebase when possible.
+#
+# Returns: Zero if sorted, signed (if enabled), and normalized (if enabled).
+# - Returns nonzero otherwise.
+#
+# Side-effect: Sets caller-scoped variables:
+#   already_sorted=true|false
+#   already_signed=true|false
+#   already_normed=true|false
 
 is_already_sorted_and_signed () {
   # rebase_boundary is a commit object, or magic name "ROOT".
@@ -801,6 +823,7 @@ is_already_sorted_and_signed () {
   local until_ref="${3:-HEAD}"
   local normalize_committer="${4:-false}"
 
+  # "Return" values.
   already_sorted=false
   already_signed=false
   already_normed=false
@@ -2051,7 +2074,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
 
 # ***
 
-# USYNC: prompt_user_and_change_branch_if_working_branch_different_patches
+# USYNC: prompt_user_and_change_branch_if_working_branch_different_*
 prompt_user_and_change_branch_if_working_branch_different_retrcpt () {
   local desired_branch="$1"
   local ret_rec_plain_path="$2"

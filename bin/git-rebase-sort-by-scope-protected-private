@@ -109,10 +109,15 @@ git-rebase-sort-by-scope-protected-private () {
   must_confirm_shares_history_with_head "${rebase_boundary}" > /dev/null \
     || exit_1
 
-  # Sets already_sorted=true and returns 1 if sorted but not signed; or
-  # sets already_sorted=false and returns 1 if not sorted; or
-  # sets already_normed=false and returns 1 if committer not normalized; or
-  # returns 0 if sorted, and signed (if requested), and normalized (if req.).
+  # Check if commit range rebase_boundary through HEAD is sorted (always),
+  # and if signed and/or normalized (depending on what's enabled).
+  # - Note that print_rebase_boundary (just above) calls
+  #   put_wise_identify_rebase_boundary_and_remotes, which calls this same
+  #   fcn (is_already_sorted_and_signed), but only if no rebase boundary
+  #   is identified, and then this fcn. would have returned before getting
+  #   here.
+  #   - I.e., is_already_sorted_and_signed will only be called once.
+  # SAVVY: The callee sets these three vars. as a side-effect/return values.
   local already_sorted=false
   local already_signed=false
   local already_normed=false
@@ -319,7 +324,10 @@ print_rebase_boundary () {
   # Load: put_wise_identify_rebase_boundary_and_remotes
   . "$(print_project_root)/lib/dep_rebase_boundary.sh"
 
-  # The following vars are set by the rebase_boundary, etc., susser:
+  # The following vars are set by the identify_rebase_boundary susser.
+  # - We only care about rebase_boundary, but everything's listed
+  #   here so we don't accidentally overwrite a same-named variable
+  #   from the caller's environment.
   local branch_name=""
   local local_release=""
   local remote_release=""
@@ -330,7 +338,7 @@ print_rebase_boundary () {
   local already_sorted=false
   local already_signed=false
   local already_normed=false
-  # BWARE: Calls git-fetch, so not the quickest command.
+  # BWARE: Calls git-fetch (w/ backoff), so not (always) the quickest command.
   if ! >&2 put_wise_identify_rebase_boundary_and_remotes \
     "${_action_desc:-rebase automatically}" \
     "${_inhibit_exit_if_unidentified:-false}" \
