@@ -491,7 +491,7 @@ process_unpacked_patchkage () {
     #   ref: refs/heads/foo
     git branch -m "${patch_branch}"
   elif ! prompt_user_and_change_branch_if_working_branch_different_patches \
-    "${patch_dir}" "${patch_branch}" "${project_path}" "${patch_path}" \
+    "${patch_dir}" "${patch_branch}" "${project_path}" \
   ; then
     ${PW_OPTION_FAIL_ELEVENSES:-false} && return ${PW_ELEVENSES} || return 0
   fi
@@ -1014,7 +1014,6 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
   local patch_dir="$1"
   local patch_branch="$2"
   local project_path="$3"
-  local patch_path="$4"
 
   local branch_name
   branch_name="$(git_branch_name)"
