@@ -588,7 +588,7 @@ process_unpacked_patchkage () {
     # tree, and you cannot git-checkout the empty tree, but you can switch
     # to an "orphan" branch of the same name (and the branch will be
     # created on the next commit).
-    git switch --orphan ${ephemeral_branch}
+    git switch -q --orphan ${ephemeral_branch}
   else
     # Run some checks, then create and checkout ephemeral branch.
     if ! ephemeral_branch="$(\
@@ -1100,7 +1100,7 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
       # Change branch-to-be name, e.g.,
       #   $ cat .git/HEAD
       #   ref: refs/heads/${patch_branch}
-      git switch --orphan ${patch_branch}
+      git switch -q --orphan ${patch_branch}
     fi
   fi
 }
