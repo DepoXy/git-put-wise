@@ -474,7 +474,8 @@ process_unpacked_patchkage () {
   git_insist_not_applied_per_history "${patch_branch}" "${starting_sha}" "${endingat_sha}"
 
   # Insist that the ephemeral branch does not exist.
-  must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}"
+  must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}" \
+    || exit_1
 
   # ***
 
