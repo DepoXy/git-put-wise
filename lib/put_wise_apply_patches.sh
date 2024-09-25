@@ -1186,8 +1186,9 @@ apply_patches_unless_dry_run () {
     # fire.
     # - The way put-wise is setup, git-am should not fail, because
     #   patches are applied to the ephemeral branch, and the ephemeral
-    #   branch matches the same commit (in content, not SHAs) that the
-    #   patches were generated from.
+    #   branch matches the same commit (in content at least, but maybe
+    #   not SHAs if the user isn't normalizing the committer to match
+    #   the author) that the patches were generated from.
     # - If git-am did stop on conflict, the user could mess things up.
     #   - If the user resolves a conflict and finishes the git-am with
     #     either a fewer number or greater number of revisions than
@@ -1198,13 +1199,22 @@ apply_patches_unless_dry_run () {
     #     on the remote won't capture the correct revisions, the two
     #     repos with begin to diverge, and put-wise won't know how to
     #     resolve it (the user would have to fix pw/out themselves).
-    echo
-    echo "cat ${GIT_AM_INFO_PATH:-.git/rebase-apply/info}"
-    echo "--------------------------"
+    >&2 echo "ALERT: git-am failed!"
+    >&2 echo "- Because patches are applied to what's supposedly a"
+    >&2 echo "  common ancestor of both remotes, there should be no"
+    >&2 echo "  conflicts."
+    >&2 echo "- If you decide to resolve conflicts and continue the"
+    >&2 echo "  git-am, you might cause the two remotes to diverge."
+    >&2 echo "- You probably want to cancel this command and to figure"
+    >&2 echo "  out what happened (move tags, redo the archive, etc.)."
+    >&2 echo "  - E.g., <Ctrl-C>, then \`git am --abort\`"
+    >&2 echo
+    >&2 echo "cat ${GIT_AM_INFO_PATH:-.git/rebase-apply/info}"
+    >&2 echo "--------------------------"
     # Print ".git/rebase-apply/info".
-    cat "${GIT_AM_INFO_PATH:-.git/rebase-apply/info}"
-    echo
-    git --no-pager am --show-current-patch=diff
+    >&2 cat "${GIT_AM_INFO_PATH:-.git/rebase-apply/info}"
+    >&2 echo
+    >&2 git --no-pager am --show-current-patch=diff
 
     must_await_user_resolve_conflicts
   fi
