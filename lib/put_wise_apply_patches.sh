@@ -435,10 +435,35 @@ process_unpacked_patchkage () {
   project_path="$(must_determine_project_path_from_meta_file "${patch_dir}")" \
     || exit_1
 
+  # ***
+
   local patch_branch="${PW_OPTION_BRANCH:-${remoteish_br}}"
+
+  # We prefer to apply patches atop the starting_sha, because there
+  # will be no conflicts with the patches. And then we rebase local
+  # work on top of the patches.
+
+  # The starting_sha represents a commit in the remote's history.
+  # - If the remote --pull's code, that commit is also in the local
+  #   history.
+  # - But if local and the remote share code via --archive/--apply,
+  #   and if there are no shared IDs, then we look for the pw-upto tag.
+  #   - Though circa 2024-09-25 private-private remotes can share SHAs
+  #     if the commit committer date/name/email is set to author details.
+  # - When neither matching SHA, nor tag, offer to use scoping boundary
+  #   (or HEAD), but confirm with user.
+
+  # E.g., 'pw/private/in'
+  local pw_tag_applied="$(format_pw_tag_applied "${patch_branch}")"
+  # E.g., 'pw/private/out'
+  local pw_tag_archived="$(format_pw_tag_archived "${patch_branch}")"
+  # E.g., 'pw/private/work'
+  local pw_tag_starting="$(format_pw_tag_starting "${patch_branch}")"
 
   # E.g., 'pw/private/apply'... though used as ephemeral branch name.
   local ephemeral_branch="$(format_pw_tag_ephemeral_apply "${patch_branch}")"
+
+  # ***
 
   local fresh_repo=false
 
@@ -471,7 +496,8 @@ process_unpacked_patchkage () {
 
   git_insist_not_applied_per_tags "${patch_branch}" "${starting_sha}"
 
-  git_insist_not_applied_per_history "${patch_branch}" "${starting_sha}" "${endingat_sha}"
+  git_insist_not_applied_per_history \
+    "${patch_branch}" "${starting_sha}" "${endingat_sha}" "${pw_tag_applied}"
 
   # Insist that the ephemeral branch does not exist.
   must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}" \
@@ -536,25 +562,6 @@ process_unpacked_patchkage () {
   process_return_receipts "${projpath_sha}"
 
   # ***
-
-  # We prefer to apply patches atop the starting_sha, because there
-  # will be no conflicts with the patches. And then we rebase local
-  # work on top of the patches.
-
-  # The starting_sha represents a commit in the remote's history.
-  # - If the remote --pull's code, that commit is also in the local
-  #   history.
-  # - But if local and the remote share code via --archive/--apply,
-  #   then there are no shared IDs, and we look for the pw-upto tag.
-  # - When neither matching SHA, nor tag, offer to use scoping boundary
-  #   (or HEAD), but confirm with user.
-
-  # E.g., 'pw/private/in'
-  local pw_tag_applied="$(format_pw_tag_applied "${patch_branch}")"
-  # E.g., 'pw/private/out'
-  local pw_tag_archived="$(format_pw_tag_archived "${patch_branch}")"
-  # E.g., 'pw/private/work'
-  local pw_tag_starting="$(format_pw_tag_starting "${patch_branch}")"
 
   # Callee sets patch_base as side-effect ("return" value).
   # - Callee leaves patch_base empty if this repo has no commits.
@@ -941,6 +948,7 @@ git_insist_not_applied_per_history () {
   local patch_branch="$1"
   local starting_sha="$2"
   local endingat_sha="$3"
+  local pw_tag_applied="$4"
 
   if ! git_branch_exists "${patch_branch}"; then
 
@@ -973,6 +981,24 @@ git_insist_not_applied_per_history () {
     >&2 echo
 
     exit_1
+  fi
+
+  # The starting commit is a boundary, and not included in the patches.
+  # The changes made by the starting commit are shared between the local
+  # and remote hosts, whether or not the SHA actually matches (though
+  # circa 2024-09-22, now that commit date/name/email and author
+  # date/name/email can be made to match, it's now possible to have
+  # matching SHAs between hosts, hence this new if-block). But the
+  # changes after this commit should be unique.
+  if ${start_is_known_commit} \
+    && ! git_is_same_commit "${starting_sha}" "${pw_tag_applied}" \
+  ; then
+    >&2 warn
+    >&2 warn "ALERT: Unexpected: starting_sha != pw_tag_applied"
+    >&2 warn "- $(git_sha_shorten "${starting_sha}") / starting_sha"
+    >&2 warn "- $(git_sha_shorten "$(git rev-parse "${pw_tag_applied}")") /" \
+      "pw_tag_applied (${pw_tag_applied})"
+    >&2 warn
   fi
 
   return 0
