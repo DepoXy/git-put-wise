@@ -65,22 +65,6 @@ cleanup_ephemeral_branch () {
 
 # ***
 
-must_await_user_resolve_stoppage_read_input () {
-  read input
-
-  local opt_chosen
-  pick_which_option_based_on_key_pressed "y" "n" "${input}"
-
-  # We'll default 'y' and only exit on explicit no, because all
-  # callers will recheck condition and re-prompt if necessary.
-  [ "${opt_chosen}" != "n" ] || exit_1
-
-  >&2 echo "============================================"
-  >&2 echo
-}
-
-# ***
-
 must_insist_ephemeral_branch_does_not_exist () {
   # E.g., pw-patches-<branch_name>
   local ephemeral_branch="$1"

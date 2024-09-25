@@ -1246,6 +1246,20 @@ must_await_user_resolve_conflicts () {
     || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
 }
 
+must_await_user_resolve_stoppage_read_input () {
+  read input
+
+  local opt_chosen
+  pick_which_option_based_on_key_pressed "y" "n" "${input}"
+
+  # We'll default 'y' and only exit on explicit no, because all
+  # callers will recheck condition and re-prompt if necessary.
+  [ "${opt_chosen}" != "n" ] || exit_1
+
+  >&2 echo "============================================"
+  >&2 echo
+}
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # SAVVY: Not that it's necessary, but if you want matching SHAs on both
