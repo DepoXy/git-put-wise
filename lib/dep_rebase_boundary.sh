@@ -391,7 +391,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
     # For feature branch, rebase boundary may have been set above:
     # - ✓ Defaults pw/<branch>/in tag, if exists
-    # - ✓ Changes to 'entrust/<branch>' if found
+    # - ✓ Will use 'entrust/<branch>' if found
     # - ✗ Ignores 'publish/release' for feature branches
     # - ✓ Finally prefers local 'release' branch if found
     # Here we override with tracking branch or same-named counterpart.
