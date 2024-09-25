@@ -1036,6 +1036,7 @@ must_confirm_projpath_sha_identical () {
 # should probably switch back to the previously active branch after it
 # completes, right? It'd be like a shell function that `cd`'s somewhere
 # to do some work, finishes there, and leaves your terminal there.
+
 prompt_user_and_change_branch_if_working_branch_different_patches () {
   local patch_dir="$1"
   local patch_branch="$2"
