@@ -479,9 +479,6 @@ process_unpacked_patchkage () {
 
   # ***
 
-  local branch_name
-  branch_name="$(git_branch_name)"
-
   if ! git_branch_name > /dev/null; then
     if ! ${fresh_repo}; then
       echo "Unpacking project to empty repo: ${project_path}"
