@@ -1033,7 +1033,7 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
     echo
     echo "- Would you like us to checkout the appropriate branch?"
     echo
-    printf "- We will "
+    printf "%s" "- We will "
     if ! ${will_commit_wip}; then
       #  "- We will change from “${branch_name}”"
       echo "change from “${branch_name}”"
