@@ -226,6 +226,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   # ***
 
+  local remote_release_exists=false
+
   # Prefer sorting from local or remote 'release' branch.
   # - Skip for feature branch unless local 'release' exists, to not waste
   #   time pinging it (or showing progress messages), because feature
@@ -236,6 +238,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
         "${RELEASE_REMOTE_NAME}" \
         "${RELEASE_REMOTE_BRANCH}" \
     )"; then
+      remote_release_exists=true
       remote_release="${REMOTE_BRANCH_RELEASE}"
       # May be empty string if remote exists and remote branch absent (first push).
       # - Note this unsets rebase_boundary if remote release branch is absent.
@@ -326,7 +329,22 @@ put_wise_identify_rebase_boundary_and_remotes () {
       local_release=""
       remote_release=""
 
-      if [ "${branch_name}" != "${LOCAL_BRANCH_PRIVATE}" ]; then
+      if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
+        if ${remote_release_exists:-false} \
+          && ! git merge-base --is-ancestor "${REMOTE_BRANCH_RELEASE}" "HEAD" \
+        ; then
+          # Tell user to checkout 'release' to force-push it.
+          # - Note user should sort & sign from the 'private' branch, and
+          #   then `git br -f release <sha>` the 'release' branch to the
+          #   appropriate commit. Otherwise, if user checks-out 'release'
+          #   and signs it, then they'll need to rebase 'private' later
+          #   (e.g., `git co release && pw push --force && git co - &&
+          #   git rebase release`).
+          >&2 echo "ALERT: If you need to force-push '${REMOTE_BRANCH_RELEASE}',"
+          >&2 echo "       please sort & sign commits first, then checkout"
+          >&2 echo "       the local '${LOCAL_BRANCH_RELEASE}' branch and force-push it"
+        fi
+      else
         # When force-pushing feature branch, ignore 'scoping'.
         remote_protected=""
       fi
