@@ -37,8 +37,10 @@ choose_patch_base_or_ask_user () {
     describe_patch="We found your ‘${pw_ontime_tag_name}’ tag"
     do_confirm=true
   # The starting SHA from the GPG filename.
-  elif git_is_commit "${starting_sha}"; then
-    info "Confirmed starting ref is a known object (${starting_sha})"
+  elif git_is_commit "${starting_sha}" \
+    || git_is_empty_tree "${starting_sha}" \
+  ; then
+    info "Package starting ref is a known object (${starting_sha})"
     patch_base="${starting_sha}"
     patch_base_raw="${starting_sha}"
     describe_patch="The given starting ref (${starting_sha}) is valid"
@@ -51,28 +53,25 @@ choose_patch_base_or_ask_user () {
     patch_base_raw="${pw_io_tag_name}"
     describe_patch="We found a ‘${pw_io_tag_name}’ tag from a previous put-wise"
     do_confirm=true
-  # If nothing else, put-wise likely never used on project before.
+  # If nothing else, put-wise likely never used on project before (well, it's
+  # that, or user deleted our tags).
+  elif [ $(git_number_of_commits) -eq 0 ]; then
+    # New branch/repo.
+    info "No known starting ref (${pw_ontime_tag_name}, ${starting_sha}, or ${pw_io_tag_name})"
+    patch_base="${GIT_EMPTY_TREE}"
+    patch_base_raw="${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
+    describe_patch="This is an empty/new (orphan) branch"
+    do_confirm=false
   else
-    # Because put-wise maintains the pw/branch/out tag perennially, this
-    # case only happens once, the first time a project is put-under-wise.
-    # But if the pw/branch/out tag is removed, it'll happen again.
-    local num_commits=$(git_number_of_commits)
-    if [ ${num_commits} -eq 1 ]; then
-      info "Only one commit; no choice but HEAD"
-      patch_base="HEAD"
-      patch_base_raw="HEAD"
-      describe_patch="There's only 1 commit we can apply to"
-      do_confirm=false
-    else
-      patch_base_raw="<none>"
-      # Means pw/branch/out was removed by the user.
-      # - Or fresh `git init .` and no commits yet.
-      warn "No tags, and starting ID unknown; will try furthest along upstream"
-    fi
+    # No reference found.
+    local scoping_starts_at=""
+    scoping_starts_at="$(determine_scoping_boundary "${patch_branch}")"
+    info "No known starting ref (${pw_ontime_tag_name}, ${starting_sha}, or ${pw_io_tag_name})"
+    patch_base="${scoping_starts_at}"
+    patch_base_raw="HEAD"
+    describe_patch="This is the scoping boundary or HEAD (b/c no other ref. found)"
+    do_confirm=true
   fi
-
-  local scoping_starts_at=""
-  scoping_starts_at="$(determine_scoping_boundary "${patch_branch}")"
 
   # Ensure we don't rebase past published work. Compare the desired patch_base
   # against the upstream scoping remote branch, as well as the release remote
@@ -83,50 +82,36 @@ choose_patch_base_or_ask_user () {
   local furthest_along
   suss_which_known_branch_is_furthest_along "${patch_base}"
 
-  if [ -z "${patch_base}" ]; then
-    # Happens when neither tag nor starting-sha, and more than 1 commit.
-    # Essentially means we have zero information about where to start.
-    if [ -n "${furthest_along}" ]; then
-      patch_base="${furthest_along}"
-      describe_patch="This is the furthest along upstream branch"
-    else
-      # No upstream branches, local nor remote.
-      # - Note that scoping_starts_at is empty if there are no commits.
-      patch_base="${scoping_starts_at}"
-      furthest_along="${patch_base}"
-      describe_patch="$(echo "This is the scoping boundary or HEAD" \
-        "(because no upstreams, no tags, unknown starting)")"
-    fi
-
-    prompt_user_to_verify_patching_sha_fallback "${patch_base}" \
-      "${pw_io_tag_name}" "${pw_ontime_tag_name}"
-  fi
-
-  if [ "${furthest_along}" != "${patch_base}" ]; then
+  if [ -n "${furthest_along}" ] && [ "${furthest_along}" != "${patch_base}" ]; then
     info "- Ope, cannot start from there (${patch_base_raw}):"
     info "  - That commit is behind one or more upstream branches"
 
-    if [ -n "${furthest_along}" ]; then
-      patch_base="${furthest_along}"
-      describe_patch="This is the furthest along published ref"
-      do_confirm=true
-    else
-      patch_base=""
-      describe_patch="No published ref found; assuming new branch/work"
-    fi
+    patch_base="${furthest_along}"
+    describe_patch="This is the furthest along published ref"
+    do_confirm=true
   fi
 
-  # DEVs
-  local DEV_prompt_patch_base=false
-  DEV_prompt_patch_base=true
+  if [ -z "${patch_base}" ]; then
+    >&2 echo "GAFFE: Unexpected: patch_base unsussed (choose_patch_base_or_ask_user)"
 
-  if [ -n "${patch_base}" ] && ( ${do_confirm} || ${DEV_prompt_patch_base} ); then
+    exit_1
+  fi
+
+  if git_is_empty_tree "${patch_base}"; then
+    patch_base_raw="${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
+  fi
+
+  local DEV_prompt_patch_base=false
+  # USAGE: Set true to always prompt re: patch_base.
+  #  DEV_prompt_patch_base=true
+
+  if git_branch_name > /dev/null && ( ${do_confirm} || ${DEV_prompt_patch_base} ); then
     git tag -f "${PW_TAG_APPLY_INSERT_HERE_TAG}" "${patch_base}" > /dev/null
 
     local coach_said_not_to=true
 
     prompt_user_to_verify_patching_sha_extrazealous \
-      "${describe_patch}" "${patch_base}" "${pw_ontime_tag_name}" \
+      "${describe_patch}" "${patch_base}" "${patch_base_raw}" "${pw_ontime_tag_name}" \
       || coach_said_not_to=false
 
     git tag -d "${PW_TAG_APPLY_INSERT_HERE_TAG}" > /dev/null 2>&1 || true
@@ -134,7 +119,7 @@ choose_patch_base_or_ask_user () {
     ${coach_said_not_to} || exit_1
   else
     info "Auto-verified the patch commit — we'll insert patches here:"
-    info "- Patch starting: ${patch_base:-<empty tree>}"
+    info "- Patch starting: ${patch_base_raw} (${patch_base})"
     info "- Chosen because: ${describe_patch}"
   fi
 
@@ -157,7 +142,7 @@ choose_patch_base_or_ask_user () {
   #     rare occurrence, especially if the user only uses put-wise to
   #     manage pushing/archiving and pulling/applying changes.
   if [ -n "${patch_base}" ]; then
-    echo "Verifying start commit precedes scoping boundary and HEAD..."
+    echo "Verifying start ref at or before scoped HEAD..."
     (must_confirm_commit_at_or_behind_commit "${patch_base}" "${scoping_starts_at}") ||
       verified=false
   fi
@@ -178,11 +163,11 @@ choose_patch_base_or_ask_user () {
       >&2 echo "The best way out of this mess is to rebase that reference"
       >&2 echo "back into view (or delete or move it if you're confident):"
       >&2 echo
+      >&2 echo "  # Aka ${patch_base_raw}"
       >&2 echo "  ${patch_base}"
     else
-      # AWAIT/2022-12-15: When this hits (you'll know why this hits and
-      # you can) devise a better message.
-      >&2 echo "DEV: Replace this message: Add hint on how to recover."
+      # AFAIK/2024-09-25: Should be unreachable [now] (fcn. only called on apply).
+      >&2 echo "GAFFE: Unreachable path (choose_patch_base_or_ask_user)"
     fi
 
     exit_1
@@ -237,6 +222,8 @@ suss_which_known_branch_is_furthest_along () {
   ; do
     [ -n "${gitref}" ] || continue
 
+    ! git_is_empty_tree "${gitref}" || continue
+
     num_commits="$(git_number_of_commits "${gitref}" 2> /dev/null)"
 
     if [ -z "${num_commits}" ] || [ ${num_commits} -eq 0 ]; then
@@ -256,54 +243,14 @@ suss_which_known_branch_is_furthest_along () {
   furthest_along="$(echo "${branch_counts}" | head -1 | awk '{ print $2 }')"
 }
 
-prompt_user_to_verify_patching_sha_fallback () {
-  local patch_base="$1"
-  local pw_io_tag_name="$2"
-  local pw_ontime_tag_name="$3"
+print_prompt_user_explainer_using_starting_sha_tag () {
+  local pw_ontime_tag_name="$1"
+  local patch_base="$2"
 
-  if [ -z "${patch_base}" ]; then
+  if git_is_empty_tree "${patch_base}"; then
 
     return 0
   fi
-
-  echo
-  echo "You need to verify the SHA on which to git-am apply patches."
-  echo
-  echo "- Ideally, this script prefers the starting SHA, however:"
-  echo
-  echo "  - The archive starting SHA is not an object in our repo"
-  echo "      (so this project is private on both ends)"
-  echo
-  echo "  - There's no ${pw_io_tag_name} tag"
-  echo "      (so this project is new, or that tag was deleted)"
-  echo
-  echo "Unless you want to specify the commit yourself, we'll apply"
-  echo "patches to the furthest along upstream branch, or to the"
-  echo "scoping boundary (if there is one), or to HEAD."
-  echo
-  print_prompt_user_explainer_using_starting_sha_tag "${pw_ontime_tag_name}"
-  echo "Otherwise, answer yes to apply patches after your work,"
-  echo "starting at:"
-  echo
-  echo "    ${patch_base}"
-  echo
-  printf "Would you like to apply patches after your work? [y/N] "
-
-  # MEH: Offer tig-prompt review. But this case rare/obscure, so not pressing.
-
-  local key_pressed
-  local opt_chosen
-  prompt_read_single_keypress "n" "y"
-
-  [ "${opt_chosen}" != "y" ] || return 0
-
-  >&2 echo "${PW_USER_CANCELED_GOODBYE}"
-
-  exit_1
-}
-
-print_prompt_user_explainer_using_starting_sha_tag () {
-  local pw_ontime_tag_name="$1"
 
   echo "- If you want to specify a different revision,"
   echo "  cancel this prompt (Ctrl-c), and set a tag:"
@@ -316,19 +263,21 @@ print_prompt_user_explainer_using_starting_sha_tag () {
 prompt_user_to_verify_patching_sha_extrazealous () {
   local describe_patch="$1"
   local patch_base="$2"
-  local pw_ontime_tag_name="$3"
+  local patch_base_raw="$3"
+  local pw_ontime_tag_name="$4"
 
   echo
   echo "*** Please verify the patch commit — we'll insert patches here"
   echo
   echo "${describe_patch}:"
   echo
-  echo "    ${patch_base}"
+  echo "    ${patch_base} (${patch_base_raw})"
   echo
-  print_prompt_user_explainer_using_starting_sha_tag "${pw_ontime_tag_name}"
+  print_prompt_user_explainer_using_starting_sha_tag \
+    "${pw_ontime_tag_name}" "${patch_base}"
 
   local opt_chosen="y"
-  if ${PW_OPTION_QUICK_TIG:-false}; then
+  if ${PW_OPTION_QUICK_TIG:-false} && ! git_is_empty_tree "${patch_base}"; then
     print_tig_review_instructions_apply "${patch_base}"
 
     prompt_user_to_review_action_plan_using_tig \

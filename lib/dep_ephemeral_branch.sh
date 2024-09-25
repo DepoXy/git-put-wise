@@ -65,21 +65,6 @@ cleanup_ephemeral_branch () {
 
 # ***
 
-# Only called by put-wise-apply, and only when there's no local branch
-# that matches the remote branch for which the patches were generated.
-must_prompt_user_and_await_resolved_uffda () {
-  echo "============================================"
-  echo
-  echo "Uffda! You got work to do ☝ ☝ ☝."
-  echo
-  echo "Come back here when y'all are ready, 👍"
-  echo
-  printf "Answer “y” to continue when you're ready, or die [Y/n] "
-
-  # exit's 1 on anything but 'y' or 'Y'
-  must_await_user_resolve_stoppage_read_input
-}
-
 must_await_user_resolve_stoppage_read_input () {
   read input
 

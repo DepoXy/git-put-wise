@@ -563,8 +563,26 @@ process_unpacked_patchkage () {
     "${PW_TAG_ONTIME_APPLY}" "${patch_branch}"
 
   if [ -z "${patch_base}" ]; then
-    ephemeral_branch=""
+    >&2 echo "GAFFE: Unexpected: No patch_base (apply)"
+
+    exit_1
+  fi
+
+  if ${fresh_repo}; then
+    # The patch_base should already be the empty tree.
+    if ! git_is_empty_tree "${patch_base}"; then
+      >&2 echo "GAFFE: No working branch but patch_base not empty tree? (${patch_base})"
+    fi
     patch_base="${GIT_EMPTY_TREE}"
+    # We called `git branch -m "${patch_branch}"` above, so don't need
+    # to mess with ephemeral branch.
+    ephemeral_branch=""
+  elif git_is_empty_tree "${patch_base}"; then
+    # One or more branches exist, but the apply starting_sha is the empty
+    # tree, and you cannot git-checkout the empty tree, but you can switch
+    # to an "orphan" branch of the same name (and the branch will be
+    # created on the next commit).
+    git switch --orphan ${ephemeral_branch}
   else
     # Run some checks, then create and checkout ephemeral branch.
     if ! ephemeral_branch="$(\
@@ -594,7 +612,7 @@ process_unpacked_patchkage () {
 
   apply_patches_unless_dry_run "${patch_path}"
 
-  set_committer_same_as_author "${patch_path}" "${old_head}"
+  set_committer_same_as_author "${patch_path}" "${patch_base}"
 
   local last_patch="$(git_commit_object_name)"
 
@@ -902,10 +920,17 @@ git_insist_not_applied_per_tags () {
 
   >&2 echo "ERROR: The incoming archive has already been applied, apparently!"
   >&2 echo
-  >&2 echo "- Here's the start commit of the previous --apply,"
-  >&2 echo "  found via '--tags=${tag_match}':"
+  >&2 echo "- Here's the start commit of the previous --apply:"
   >&2 echo
-  >&2 git --no-pager log -1 "${tagged_sha}"
+  >&2 echo "  $ git rev-parse --tags=${tag_match}"
+  >&2 echo "  ${tagged_sha}"
+  >&2 echo
+  if ! git_is_empty_tree "${tagged_sha}"; then
+    >&2 echo "  $ git --no-pager log -1 ${tagged_sha}"
+    >&2 git --no-pager log -1 "${tagged_sha}"
+  else
+    >&2 echo "  # That's the empty tree, aka ROOT"
+  fi
 
   exit_1
 }
@@ -1045,27 +1070,12 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
     then
       maybe_prompt_user_and_change_branch "${LOCAL_BRANCH_PRIVATE}" || return 1
     else
-      echo
-      echo "ERROR: These patches were not generated from the same-named"
-      echo "branch as the current branch and there's no local branch of"
-      echo "the same name."
-      echo "- The patches target branch “${patch_branch}”"
-      echo "  in the project located at “${project_path}”"
-      echo "  from the unpacked archive “${patch_dir}”"
-      echo "- Please address this issue and then continue this script."
-      echo "  - You might just need to create and checkout the branch:"
-      echo "      cd \"${project_path}\""
-      echo "      git checkout -b private"
-      echo "  - If you choose not to continue, you can try again later:"
-      echo "      $(basename -- "$0") apply \"${project_path}\""
-      echo
+      echo "ALERT: Applying patches to new branch: ${patch_branch}"
 
-      while [ "$(git_branch_name)" != "${patch_branch}" ]; do
-        # This will exit_1 on anything but 'y' or 'Y'. Otherwise, it'll
-        # loop to check if user created and checked out ${patch_branch},
-        # or it'll prompt again.
-        must_prompt_user_and_await_resolved_uffda
-      done
+      # Change branch-to-be name, e.g.,
+      #   $ cat .git/HEAD
+      #   ref: refs/heads/${patch_branch}
+      git switch --orphan ${patch_branch}
     fi
   fi
 }
@@ -1132,6 +1142,10 @@ apply_patches_unless_dry_run () {
   #   fetch is costly, so is put-wise, and it's not something you run
   #   all the time (and the commands you might run most, --archive
   #   and --push, can be optimized).
+
+  echo
+  echo "Applying patches..."
+  echo "  git am --3way --committer-date-is-author-date --empty=keep *.patch"
 
   if ! \
     ${DRY_ECHO} \
@@ -1254,11 +1268,11 @@ must_await_user_resolve_conflicts () {
 
 set_committer_same_as_author () {
   local patch_path="$1"
-  local old_head="$2"
+  local patch_base="$2"
 
   local exec_reset_committer="$(print_exec_fcn_reset_committer "$@")"
 
-  local gitref="${old_head}"
+  local gitref="${patch_base}"
   if git_is_empty_tree "${gitref}"; then
     gitref="--root"
   fi
