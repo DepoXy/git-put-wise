@@ -1303,6 +1303,10 @@ set_committer_same_as_author () {
     gitref="--root"
   fi
 
+  echo
+  echo "Resetting committer details..."
+  echo "  git rebase --exec \"${exec_reset_committer}; exec_reset_committer\" ${gitref}"
+
   ${DRY_ECHO} git rebase --exec "${exec_reset_committer}; exec_reset_committer" ${gitref}
 }
 
@@ -1387,7 +1391,10 @@ rebase_working_atop_ephemeral_branch () {
 
   [ -n "${ephemeral_branch}" ] || return 0
 
-  echo "git checkout ${working_branch} && git rebase refs/heads/${ephemeral_branch}"
+  echo
+  echo "Rebasing old work..."
+  echo "  git checkout ${working_branch}" \
+    "&& git rebase refs/heads/${ephemeral_branch}"
 
   checkout_branch_quietly "${working_branch}"
 
