@@ -541,22 +541,20 @@ process_unpacked_patchkage () {
   # who changed the branch, another reason not to set it back.)
   # - Catch nonzero return if no branch name, e.g., fresh repo.
   local working_branch
-  working_branch="$(git_branch_name)" \
-    || true
-
-  local friendly_branch="${working_branch}"
-
-  # Ah, memories.
-  # - Note this prints nothing and returns nonzero if no commits yet.
   local old_head
-  if ! old_head="$(git_commit_object_name)"; then
+  if working_branch="$(git_branch_name)"; then
+    # Note this prints nothing and returns nonzero if no commits yet,
+    # but because git_branch_name succeeded, this should succeed, too.
+    old_head="$(git_commit_object_name)"
+    # CXREF: See echo's that precede these:
+    #   print_applying_onto_progress
+    echo "whose HEAD is at:"
+    echo "  ${working_branch} $(shorten_sha ${old_head})"
+  else
+    # prompt_user_and_change_branch_... will have switched to a new branch.
+    working_branch=""
     old_head="${GIT_EMPTY_TREE}"
-    friendly_branch="<empty tree>"
   fi
-  # CXREF: See echo's that precede these:
-  #   print_applying_onto_progress
-  echo "whose HEAD is at:"
-  echo "  ${friendly_branch} $(shorten_sha ${old_head})"
 
   # Check for a return receipt, so "remote" branch pointer up to date.
   process_return_receipts "${projpath_sha}"
@@ -575,14 +573,15 @@ process_unpacked_patchkage () {
     exit_1
   fi
 
-  if ${fresh_repo}; then
+  if ${fresh_repo} || [ -z "${working_branch}" ]; then
     # The patch_base should already be the empty tree.
     if ! git_is_empty_tree "${patch_base}"; then
       >&2 echo "GAFFE: No working branch but patch_base not empty tree? (${patch_base})"
     fi
     patch_base="${GIT_EMPTY_TREE}"
-    # We called `git branch -m "${patch_branch}"` above, so don't need
-    # to mess with ephemeral branch.
+    # If fresh_repo, we called `git branch -m "${patch_branch}"` above, or
+    # if no working_branch, we called `git switch --orphan ${patch_branch}`,
+    # so don't need to mess with ephemeral branch.
     ephemeral_branch=""
   elif git_is_empty_tree "${patch_base}"; then
     # One or more branches exist, but the apply starting_sha is the empty
