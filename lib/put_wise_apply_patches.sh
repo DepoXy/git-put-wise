@@ -494,6 +494,7 @@ process_unpacked_patchkage () {
   elif ! prompt_user_and_change_branch_if_working_branch_different_patches \
     "${patch_dir}" "${patch_branch}" "${project_path}" \
   ; then
+
     ${PW_OPTION_FAIL_ELEVENSES:-false} && return ${PW_ELEVENSES} || return 0
   fi
 
