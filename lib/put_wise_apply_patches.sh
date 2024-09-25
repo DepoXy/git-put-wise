@@ -445,7 +445,7 @@ process_unpacked_patchkage () {
   if [ ! -d "${project_path}" ]; then
     fresh_repo=true
 
-    echo "Unpacking new project: ${project_path}"
+    echo "Unpacking project to new repo: ${project_path}"
 
     mkdir -p -- "${project_path}"
   fi
@@ -483,6 +483,10 @@ process_unpacked_patchkage () {
   branch_name="$(git_branch_name)"
 
   if ! git_branch_name > /dev/null; then
+    if ! ${fresh_repo}; then
+      echo "Unpacking project to empty repo: ${project_path}"
+    fi
+
     fresh_repo=true
 
     # Configure the empty tree to use the patch branch name, e.g.:
