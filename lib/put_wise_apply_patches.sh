@@ -556,11 +556,8 @@ process_unpacked_patchkage () {
   # E.g., 'pw/private/work'
   local pw_tag_starting="$(format_pw_tag_starting "${patch_branch}")"
 
-  # (lb): I don't normally set variables using Bash's loose variable scoping,
-  # but this function prints progress and might prompt user, so it needs stdout.
-  # But I want to have the patch_base "passed" back, meaning we cannot call
-  # patch_base="$(subprocess)".
-  # Caller leaves patch_base empty if this repo has no commits.
+  # Callee sets patch_base as side-effect ("return" value).
+  # - Callee leaves patch_base empty if this repo has no commits.
   local patch_base=""
   choose_patch_base_or_ask_user "${starting_sha}" "${pw_tag_applied}" \
     "${PW_TAG_ONTIME_APPLY}" "${patch_branch}"
