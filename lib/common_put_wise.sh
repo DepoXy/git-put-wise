@@ -1858,8 +1858,6 @@ process_return_receipts_read_count_and_destroy () {
 
   cd "${project_path}"
 
-  local previous_branch="$(git_branch_name)"
-
   # Currently (and possibly forever), return receipts only apply to the
   # 'private' branch. We could support arbitrary branches, but there's
   # no use case, and it complicates matters: we would need to know what
@@ -1881,7 +1879,7 @@ process_return_receipts_read_count_and_destroy () {
     fi
 
     prompt_user_and_change_branch_if_working_branch_different_retrcpt \
-      "${patch_branch}" "${ret_rec_plain_path}"
+      "${patch_branch}" "${ret_rec_plain_path}" "${gpg_rr}"
   fi
 
   local failed=0
@@ -1919,8 +1917,6 @@ process_return_receipts_read_count_and_destroy () {
 
     [ ${failed} -eq 0 ] || break
   done
-
-  checkout_branch_quietly "${previous_branch}"
 
   cd "${before_cd}"
 
@@ -2028,7 +2024,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
   #             and we cannot proceed with the --apply.
   local divergent_ok=false
   must_confirm_commit_at_or_behind_commit \
-    "refs/tags/${pw_tag_applied}" "HEAD" \
+    "refs/tags/${pw_tag_applied}" "${patch_branch}" \
     ${divergent_ok} \
     "pick-from" "this branch" \
     || exit_1
@@ -2048,7 +2044,9 @@ process_return_receipt_move_remoteish_tracking_branch () {
     # If (n_total_commits - remote_rev_tot) is 0, `set -e` bails, so || true.
     let "skip_commits = ${n_total_commits} - ${remote_rev_tot}" || true
 
-    local commit_hash=$(git --no-pager log --format=%H --skip=${skip_commits} --max-count=1)
+    local commit_hash=$( \
+      git --no-pager log --format=%H --skip=${skip_commits} --max-count=1 "${patch_branch}"
+    )
 
     local prev_tag_sha
     prev_tag_sha="$(shorten_sha "$(git rev-parse --verify -q refs/tags/${pw_tag_applied})")"
@@ -2071,46 +2069,37 @@ process_return_receipt_move_remoteish_tracking_branch () {
 
 # ***
 
-# USYNC: prompt_user_and_change_branch_if_working_branch_different_*
 prompt_user_and_change_branch_if_working_branch_different_retrcpt () {
-  local desired_branch="$1"
+  local patch_branch="$1"
   local ret_rec_plain_path="$2"
+  local gpg_rr="$3"
 
   local project_path="$(pwd -L)"
 
-  local branch_name
-  branch_name="$(git_branch_name)"
+  if ! git_branch_exists "${patch_branch}"; then
+    >&2 echo
+    >&2 echo "ERROR: The patches branch does not exist."
+    >&2 echo "- The return receipt branch: ${patch_branch}"
+    >&2 echo "  in the project located at: ${project_path}"
+    >&2 echo "  per the return receipt at: ${ret_rec_plain_path}"
+    >&2 echo "- You can use the -b|--branch arg (or PW_OPTION_BRANCH var)"
+    >&2 echo "  to specify a specific branch for the receipt."
+    >&2 echo "- Or you can just delete the receipt."
+    >&2 echo
+    >&2 echo "Please either specify the branch, remove the receipt,"
+    >&2 echo "or create the missing branch:"
+    >&2 echo
+    >&2 echo "    # Specify a different branch."
+    >&2 echo "    $(ps -ocommand= -p ${PPID}) -b <branch>"
+    >&2 echo
+    >&2 echo "    # Or remove the receipt."
+    >&2 echo "    cd ${PW_PATCHES_REPO}"
+    >&2 echo "    git rm $(basename -- "${gpg_rr}")"
+    >&2 echo "    git commit --amend --no-edit --allow-empty"
+    >&2 echo
+    >&2 echo "    # Or you do you, maybe create the branch."
 
-  if [ "${branch_name}" != "${desired_branch}" ]; then
-    if git_branch_exists "${desired_branch}"; then
-      echo "ALERT: The return receipt applies to a different branch."
-      echo "- Would you like us to checkout the appropriate branch?"
-      echo "- Okay to switch from “${branch_name}”"
-      echo "                   to “${desired_branch}”"
-      echo "  in project found at “${project_path}”"
-      echo "  from ret receipt at “${ret_rec_plain_path}”?"
-      echo "             [Y/n]"
-      printf "               "
-
-      local key_pressed
-      local opt_chosen
-      prompt_read_single_keypress "y" "n"
-      [ "${opt_chosen}" = "y" ] || return 1
-
-      git checkout -q "${desired_branch}"
-    else
-      >&2 echo
-      >&2 echo "ERROR: These patches were not generated from the same-named"
-      >&2 echo "branch as the current branch and there's no local branch of"
-      >&2 echo "the same name."
-      >&2 echo "- The return receipt branch “${desired_branch}”"
-      >&2 echo "  in the project located at “${project_path}”"
-      >&2 echo "  from the returned receipt “${ret_rec_plain_path}”"
-      >&2 echo "- Please address this issue and then try this receipt again."
-      >&2 echo
-
-      return 1
-    fi
+    return 1
   fi
 }
 
