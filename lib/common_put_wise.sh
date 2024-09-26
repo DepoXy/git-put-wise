@@ -1884,6 +1884,7 @@ process_return_receipts_read_count_and_destroy () {
 
   local failed=0
 
+  # SPIKE/2024-09-26: Why would there be multiple lines in the receipt?
   local host_nrev_line
   for host_nrev_line in "${host_nrev_lines}"; do
     if ! echo "${host_nrev_line}" | grep -q \
