@@ -66,15 +66,10 @@ put_wise_archive_patches_go () {
 
   debug "starting_ref: $(git_sha_shorten "${starting_ref}")${context}"
 
-  # ***
+  if ! insist_archive_commits_not_gpg_signed "${starting_ref}"; then
 
-  # ISOFF: Don't sign before generating patches, because the other
-  # host won't be able to recreate the same commit SHAs then. Also
-  # because if you publish commits from the archive, then the other
-  # host can rebase from the public repo, and the archive/apply
-  # mechanism is only used for (generally ephemeral) scoped commits.
-  #
-  #   local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
+    exit_1
+  fi
 
   # Sort & sign commits. Or exit 0/11 if starting_ref → HEAD
   # (because no-op); or exit_1 if ahead of HEAD, or diverged.
@@ -410,6 +405,69 @@ identify_first_upstream_branch () {
 
       upstream_ref="${local_release}"
     fi
+  fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
+# INERT/2024-09-25: Instead of git-format-patch/git-am, we could use
+# git-bundle to transfer patches, and I think git-bundle preserves
+# `commit.gpgSign` GPG signatures. (I admit I wasn't aware of
+# git-bundle when I learned about git-format-patch/git-am,
+# otherwise maybe I would've used it? Though I do like that format-patch
+# is text, not binary, which has made some debugging easier, at least.)
+
+# ISOFF: Don't sign before generating patches, because the other
+# host won't be able to recreate the same commit SHAs then. Also
+# because if you publish commits from the archive, then the other
+# host can rebase from the public repo, and the archive/apply
+# mechanism is only used for (generally ephemeral) scoped commits.
+#
+#   local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
+#
+# IS_ON: Instead, check if any commits signed and alert user if so.
+
+insist_archive_commits_not_gpg_signed () {
+  local starting_ref="$1"
+
+  if git_has_no_gpg_signage_since_commit \
+    "${starting_ref}" "${_until_ref:-HEAD}" \
+  ; then
+
+    return 0
+  fi
+
+  local fiver="ERROR"
+  ! ${PW_OPTION_ARCHIVE_SIGNED_COMMITS_OK:-false} || fiver="ALERT"
+  >&2 echo "${fiver}: One or more commits are gpg-signed, and won't be preserved"
+
+  local gitref="$(git_sha_shorten ${starting_ref})"
+  ! git_is_empty_tree "${starting_ref}" || gitref="--root"
+
+  if ! ${PW_OPTION_ARCHIVE_SIGNED_COMMITS_OK:-false}; then
+    >&2 echo "- Note that git-format-patch does not preserve GPG signatures."
+    >&2 echo "- As such, \`git-put-wise apply\` (which calls git-am) will not"
+    >&2 echo "  recreate commits with the same SHAs."
+    >&2 echo "- INERT: If you absolutely need GPG signatures, you could"
+    >&2 echo "  modify GPW to use git-bundle instead of format-patch/am."
+    >&2 echo "  - But the current GPW archive/apply use case is"
+    >&2 echo "    transmitting *private* commmits, where GPG"
+    >&2 echo "    signatures shouldn't matter to you."
+    >&2 echo
+    >&2 echo "You can *unsign* commits via rebase:"
+    >&2 echo
+    >&2 echo "  git rebase -i ${gitref}" \
+      "--exec \"git commit --amend --no-edit --no-signoff --allow-empty\""
+    >&2 echo
+    >&2 echo "Or you can skip this check using an environ option, e.g.:"
+    >&2 echo
+    >&2 echo "  PW_OPTION_ARCHIVE_SIGNED_COMMITS_OK=true $(ps -ocommand= -p ${PPID})"
+
+    return 1
+  else
+    >&2 echo "- But per PW_OPTION_ARCHIVE_SIGNED_COMMITS_OK=true, we'll allow this!"
+
+    return 0
   fi
 }
 
