@@ -729,7 +729,8 @@ resort_and_sign_commits_since_boundary () {
   # ***
 
   resort_and_sign_commits_since_boundary_unless_unnecessary \
-    "${starting_sha_or_HEAD}" "${enable_gpg_sign}" \
+    "${starting_sha_or_HEAD}" \
+    "${enable_gpg_sign}" \
     "${normalize_committer}"
 }
 
