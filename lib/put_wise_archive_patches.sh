@@ -74,7 +74,7 @@ put_wise_archive_patches_go () {
   #
   #   local enable_gpg_sign="$(print_is_gpg_sign_enabled)"
 
-  # Sort & sign commits. Unless exit 0/11 if starting_ref → HEAD
+  # Sort & sign commits. Or exit 0/11 if starting_ref → HEAD
   # (because no-op); or exit_1 if ahead of HEAD, or diverged.
   resort_and_sign_commits_since_boundary \
     "${_rebase_boundary:-${starting_ref}}" \
