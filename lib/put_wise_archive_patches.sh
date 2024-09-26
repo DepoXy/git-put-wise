@@ -230,6 +230,10 @@ print_starting_ref_or_upstream_branch () {
   local starting_ref="$1"
   local pw_tag_applied="$2"
 
+  if [ "${starting_ref}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ]; then
+    starting_ref="${GIT_EMPTY_TREE}"
+  fi
+
   if [ -n "${starting_ref}" ]; then
     echo "${starting_ref}"
 
