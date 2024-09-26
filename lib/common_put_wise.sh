@@ -506,6 +506,7 @@ put_wise_print_rebase_boundary () {
   local rebase_boundary=""
   local already_sorted=false
   local already_signed=false
+  local already_normed=false
   if ! put_wise_identify_rebase_boundary_and_remotes \
     "${_action_desc:-probe}" "${_inhibit_exit_if_unidentified:-true}" \
   ; then
@@ -524,6 +525,7 @@ put_wise_print_rebase_boundary () {
     remote_name \
     already_sorted \
     already_signed \
+    already_normed \
   ; do
     echo "${var}: ${!var}"
   done

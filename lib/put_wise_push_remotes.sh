@@ -49,6 +49,7 @@ put_wise_push_remotes_go () {
   local rebase_boundary=""
   local already_sorted=false
   local already_signed=false
+  local already_normed=false
   # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
   if ! put_wise_identify_rebase_boundary_and_remotes "push"; then
 
