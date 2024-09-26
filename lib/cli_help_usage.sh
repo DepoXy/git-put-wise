@@ -176,11 +176,13 @@ Environment variables you can use instead of options above:
 #                             [included in README.md and man page]
 #
 # -11|--fail-elevenses      Exit 11 if action results in no-op
+# ...
 # -11|--fail-elevenses      PW_OPTION_FAIL_ELEVENSES=true|false
 #
 # -g|--regenerate <gpgf>    With --apply, skip \`git am *.patch\`, and
-#                             regenerate return receipt only -- You must
+#                             regenerate return receipt only — You must
 #                             indicate the original encrypted GPG filename
+# ...
 # -g|--regenerate <gpgf>    PW_OPTION_REGENERATE_RECEIPTS=\"<gpgf>\"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
