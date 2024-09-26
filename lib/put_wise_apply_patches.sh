@@ -1505,7 +1505,7 @@ manage_pw_tracking_tags () {
   ${DRY_ECHO} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
 
   # Move pw/work.
-  # - This is purely referencial, for the user, and shows where latest
+  # - This is purely referential, for the user, and shows where latest
   #   --apply started.
   echo "git tag -f \"${pw_tag_starting}\" \"${patch_base}\""
   ${DRY_ECHO} git tag -f "${pw_tag_starting}" "${patch_base}" > /dev/null
