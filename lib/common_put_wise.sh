@@ -1592,7 +1592,7 @@ is_git_fetch_backoff_expired () {
   local last_update="$(git config ${cfg_section}.${cfg_last_fetch})"
 
   local backoff_time_ago
-  backoff_time_ago="$(date -d "${PW_OPTIONS_FETCH_BACKOFF:--1 hour}" +'%s')"
+  backoff_time_ago="$(date -d "${PW_OPTION_FETCH_BACKOFF:--1 hour}" +'%s')"
 
   [ -z "${last_update}" ] || [ ${last_update} -le ${backoff_time_ago} ]
 }

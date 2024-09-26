@@ -62,7 +62,7 @@ PW_OPTION_AUTO_CONFIRM=${PW_OPTION_AUTO_CONFIRM:-false}
 PW_OPTION_SKIP_REBASE=${PW_OPTION_SKIP_REBASE:-false}
 PW_OPTION_ORPHAN_TAGS=${PW_OPTION_ORPHAN_TAGS:-false}
 PW_OPTION_IGNORE_AUTHOR=${PW_OPTION_IGNORE_AUTHOR:-false}
-PW_OPTIONS_FETCH_BACKOFF=${PW_OPTIONS_FETCH_BACKOFF:--1 hour}
+PW_OPTION_FETCH_BACKOFF=${PW_OPTION_FETCH_BACKOFF:--1 hour}
 
 PW_OPTION_SKIP_SQUASH=${PW_OPTION_SKIP_SQUASH:-false}
 
@@ -343,13 +343,13 @@ cli_parse_params () {
         ;;
 
       --fetch-backoff)
-        PW_OPTIONS_FETCH_BACKOFF="$2"
+        PW_OPTION_FETCH_BACKOFF="$2"
 
         shift 2
         ;;
 
       --no-fetch-backoff)
-        PW_OPTIONS_FETCH_BACKOFF=""
+        PW_OPTION_FETCH_BACKOFF=""
 
         shift
         ;;
@@ -475,7 +475,7 @@ cli_parse_params () {
               #   PW_OPTION_SKIP_REBASE=false|true
               #   PW_OPTION_ORPHAN_TAGS=false|true
               #   PW_OPTION_IGNORE_AUTHOR=false|true
-              #   PW_OPTIONS_FETCH_BACKOFF=<time>
+              #   PW_OPTION_FETCH_BACKOFF=<time>
               J)
                 option_value_must_be_specified "-J" "$@"
                 PW_PROJECT_PATH="$1"

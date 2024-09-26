@@ -157,7 +157,7 @@ Environment variables you can use instead of options above:
   --ignore-author/--no-ignore-author
                             PW_OPTION_IGNORE_AUTHOR=true|false
   --fetch-backoff <time>/--no-fetch-backoff
-                            PW_OPTIONS_FETCH_BACKOFF=\"<time>\"
+                            PW_OPTION_FETCH_BACKOFF=\"<time>\"
 
   -U|--no-squash            PW_OPTION_SKIP_SQUASH=true
   -u|--squash               PW_OPTION_SKIP_SQUASH=false
