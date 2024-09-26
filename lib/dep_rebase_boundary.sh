@@ -883,14 +883,15 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
   # E.g., 'pw/private/out'
   local pw_tag_archived="$(format_pw_tag_archived "${branch_name}")"
 
-  local work_tag="$(format_pw_tag_starting "${branch_name}")"
+  # E.g., 'pw/private/work'
+  local pw_tag_starting="$(format_pw_tag_starting "${branch_name}")"
 
-  >&2 debug "Checking tags: ${applied_tag}, ${pw_tag_archived}, ${work_tag}"
+  >&2 debug "Checking tags: ${applied_tag}, ${pw_tag_archived}, ${pw_tag_starting}"
 
   for tag_name in \
     "${applied_tag}" \
     "${pw_tag_archived}" \
-    "${work_tag}" \
+    "${pw_tag_starting}" \
   ; do
     if ! git_tag_exists "${tag_name}"; then
 
