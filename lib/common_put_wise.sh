@@ -664,6 +664,7 @@ print_repo_return_receipts () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# Used on --apply to know where to start applying patches.
 format_pw_tag_applied () {
   local patch_branch="$1"
 
@@ -671,6 +672,7 @@ format_pw_tag_applied () {
   printf "${PW_TAG_APPLIED_FORMAT}" "${patch_branch}"
 }
 
+# Used on --archive just to show user extent of latest archive.
 format_pw_tag_archived () {
   local patch_branch="$1"
 
@@ -678,6 +680,7 @@ format_pw_tag_archived () {
   printf "${PW_TAG_ARCHIVED_FORMAT}" "${patch_branch}"
 }
 
+# Moved on --apply to show indicate where previous pw/in was.
 format_pw_tag_starting () {
   local patch_branch="$1"
 
@@ -685,6 +688,7 @@ format_pw_tag_starting () {
   printf "${PW_TAG_STARTING_FORMAT}" "${patch_branch}"
 }
 
+# Used on --apply to name the ephemeral branch.
 format_pw_tag_ephemeral_apply () {
   local patch_branch="$1"
 
@@ -692,6 +696,7 @@ format_pw_tag_ephemeral_apply () {
   printf "${PW_TAG_TMP_APPLY_FORMAT}" "${patch_branch}"
 }
 
+# Used on --pull to name the ephemeral branch.
 format_pw_tag_ephemeral_pull () {
   local patch_branch="$1"
 
