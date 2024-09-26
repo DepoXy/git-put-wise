@@ -1887,6 +1887,7 @@ process_return_receipts_read_count_and_destroy () {
 
   local failed=0
 
+  local host_nrev_line
   for host_nrev_line in "${host_nrev_lines}"; do
     if ! echo "${host_nrev_line}" | grep -q \
       -e "^[[:digit:]]\+ [[:xdigit:]]\+ [^[:space:]]\+ [[:xdigit:]]\+ [[:xdigit:]]\+$"; \
