@@ -230,7 +230,11 @@ print_starting_ref_or_upstream_branch () {
   local starting_ref="$1"
   local pw_tag_applied="$2"
 
-  [ -n "${starting_ref}" ] && echo "${starting_ref}" && return 0 || true
+  if [ -n "${starting_ref}" ]; then
+    echo "${starting_ref}"
+
+    return 0
+  fi
 
   # ***
 
