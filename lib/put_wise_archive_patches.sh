@@ -33,8 +33,10 @@ put_wise_archive_patches_go () {
   local starting_ref_arg="${PW_OPTION_STARTING_REF}"
 
   if [ -n "${starting_ref_arg}" ]; then
-    info "ALERT: Using --starting-ref is unchartered territory." \
-      "What's wrong with using the upstream branch as the ref?"
+    # Generally prefer using the upstream branch or pw/in as the ref,
+    # or auto-sussing the archive-from boundary. But we'll let user
+    # be specific... though probably only useful when hacking on GPW.
+    info "ALERT: Using --starting-ref is basically *expert mode*, good luck"
   fi
 
   local projpath_sha
