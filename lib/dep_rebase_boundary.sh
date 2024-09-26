@@ -216,11 +216,16 @@ put_wise_identify_rebase_boundary_and_remotes () {
       "${scoping_branch}" \
   )"; then
     remote_protected="${SCOPING_REMOTE_NAME}/${scoping_branch}"
-    # Prefer pw/in over scoping boundary (i.e., if rebase_boundary
-    # already set, leave it set to pw/in).
-    # - Ref is empty string if remote exists but not branch (before first push).
-    if [ -z "${rebase_boundary}" ] && [ -n "${remote_ref}" ]; then
-      rebase_boundary="${scoping_remote_ref}"
+    # The scoping_remote_ref is the empty string if the remote
+    # exists but not the branch (i.e., it's before first push).
+    if [ -n "${scoping_remote_ref}" ]; then
+      # Pick the ref that's further along, so that you don't cause
+      # a divergence ("in the force").
+      if [ -z "${rebase_boundary}" ] \
+        || git merge-base --is-ancestor "${applied_tag}" "${scoping_remote_ref}" \
+      ; then
+        rebase_boundary="${scoping_remote_ref}"
+      fi
     fi
   fi
 
