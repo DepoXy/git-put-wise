@@ -143,8 +143,8 @@ put_wise_push_remotes_go () {
     local local_ref="$2"
 
     if ! ${PW_OPTION_FORCE_PUSH:-false} \
-      && [ -n "${remote_ref}" ] \
-      && [ -n "${local_ref}" ] \
+      && git_is_valid_object "${remote_ref}" \
+      && git_is_valid_object "${local_ref}" \
       && ! git merge-base --is-ancestor "${remote_ref}" "${local_ref}" \
     ; then
       >&2 warn "ALERT: Skipping diverged remote: ${remote_ref}"
