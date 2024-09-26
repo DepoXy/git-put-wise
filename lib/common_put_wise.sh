@@ -1861,15 +1861,12 @@ process_return_receipts_read_count_and_destroy () {
 
   cd "${project_path}"
 
-  # Currently (and possibly forever), return receipts only apply to the
-  # 'private' branch. We could support arbitrary branches, but there's
-  # no use case, and it complicates matters: we would need to know what
-  # remoteish tracking branch to use (because currently, per convention,
-  # we use the 'protected' branch to track how up-to-date are non-remote
-  # remote hosts with the 'private' branch).
+  # Currently (and possibly forever), return receipts only matter for
+  # private-private projects. Other projects will use other upstream
+  # refs (like publish/release, or entrust/scoping) to determine
+  # while commits to --archive, or where to --apply, etc.
   # - Note that you don't need a return receipt if you can pull.
-  #   - It's only when you can only archive/apply, which only applies
-  #     to the 'private' branch.
+  #   - It's only when you can only archive/apply that it matters.
   if [ ! -n "${host_nrev_lines}" ]; then
     >&2 echo "WARNING: Empty return receipt: "${gpg_rr}""
   else
