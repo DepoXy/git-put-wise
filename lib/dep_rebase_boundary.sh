@@ -147,7 +147,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   local sortless_msg=""
 
   # E.g., pw/release/in
-  local applied_tag="$(format_pw_tag_applied "${branch_name}")"
+  local pw_tag_applied="$(format_pw_tag_applied "${branch_name}")"
 
   # true if branch_name is 'release' or 'private'.
   local is_hyper_branch
@@ -172,8 +172,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # tag is just a fallback, but note that it means we won't move earlier
   # PROTECTED commits forward. Which we can say is a feature of not having a
   # 'release' branch.
-  if git_tag_exists "${applied_tag}"; then
-    rebase_boundary="${applied_tag}"
+  if git_tag_exists "${pw_tag_applied}"; then
+    rebase_boundary="${pw_tag_applied}"
   fi
 
   # ***
@@ -222,7 +222,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       # Pick the ref that's further along, so that you don't cause
       # a divergence ("in the force").
       if [ -z "${rebase_boundary}" ] \
-        || git merge-base --is-ancestor "${applied_tag}" "${scoping_remote_ref}" \
+        || git merge-base --is-ancestor "${pw_tag_applied}" "${scoping_remote_ref}" \
       ; then
         rebase_boundary="${scoping_remote_ref}"
       fi
@@ -290,8 +290,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
             && git merge-base --is-ancestor "${scoping_remote_ref}" "${branch_name}" \
           ; then
             rebase_boundary="${scoping_remote_ref}"
-          elif git_tag_exists "${applied_tag}"; then
-            rebase_boundary="${applied_tag}"
+          elif git_tag_exists "${pw_tag_applied}"; then
+            rebase_boundary="${pw_tag_applied}"
           else
             # Fallback latest version tag (see below).
             rebase_boundary=""
@@ -511,7 +511,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
     fi
 
     debug_alert_if_ref_tags_after_rebase_boundary \
-      "${branch_name}" "${rebase_boundary}" "${applied_tag}"
+      "${branch_name}" "${rebase_boundary}" "${pw_tag_applied}"
   fi
 }
 
@@ -873,7 +873,8 @@ is_range_sorted_and_signed_and_nothing_scoped_follows () {
 debug_alert_if_ref_tags_after_rebase_boundary () {
   local branch_name="$1"
   local rebase_boundary="$2"
-  local applied_tag="$3"
+  # E.g., pw/private/in
+  local pw_tag_applied="$3"
 
   if [ -z "${rebase_boundary}" ]; then
 
@@ -886,10 +887,10 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
   # E.g., 'pw/private/work'
   local pw_tag_starting="$(format_pw_tag_starting "${branch_name}")"
 
-  >&2 debug "Checking tags: ${applied_tag}, ${pw_tag_archived}, ${pw_tag_starting}"
+  >&2 debug "Checking tags: ${pw_tag_applied}, ${pw_tag_archived}, ${pw_tag_starting}"
 
   for tag_name in \
-    "${applied_tag}" \
+    "${pw_tag_applied}" \
     "${pw_tag_archived}" \
     "${pw_tag_starting}" \
   ; do
@@ -983,11 +984,11 @@ alert_cannot_identify_rebase_boundary () {
       >&2 echo "      Which you can override using the PW_OPTION_REMOTE environ."
     fi
   fi
-  >&2 echo "  - Set a tag named '${applied_tag}'"
+  >&2 echo "  - Set a tag named '${pw_tag_applied}'"
   >&2 echo "    - This tag is set by the git-put-wise-apply"
   >&2 echo "      command, but you can set it manually for"
   >&2 echo "      this purpose, e.g.,"
-  >&2 echo "        git tag ${applied_tag} <REF>"
+  >&2 echo "        git tag ${pw_tag_applied} <REF>"
   >&2 echo "  Then please try your command again."
 }
 
