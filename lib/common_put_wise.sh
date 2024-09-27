@@ -1980,6 +1980,18 @@ split_on_double_dash () {
   local text="$1"
   local count="$2"
 
+  if [ -n "${DRY_ECHO}" ]; then
+    # Same as what DRY_ECHO (__DRYRUN) does:
+    >&2 echo "python3 -c \
+      \"import re ; print(
+        re.sub(
+          '--',
+          ' ',
+          '${text}',
+          count=${count}
+    ))\""
+  fi
+
   python3 -c \
     "import re ; print(
       re.sub(
