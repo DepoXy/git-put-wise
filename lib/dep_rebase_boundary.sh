@@ -149,7 +149,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
   # E.g., pw/release/in
   local pw_tag_applied="$(format_pw_tag_applied "${branch_name}")"
 
-  # true if branch_name is 'release' or 'private'.
+  # is_hyper_branch is true if branch_name is 'release' or 'private'.
   local is_hyper_branch
   is_hyper_branch="$(print_is_hyper_branch "${branch_name}")"
 
