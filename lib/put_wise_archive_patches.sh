@@ -914,7 +914,8 @@ report_success () {
   echo "Prepared patchkage: ${crypt_path}"
   if [ ${LOG_LEVEL} -le ${LOG_LEVEL_DEBUG} ]; then
     #    "Prepared patchkage: ${crypt_path}"
-    echo "- Formatted thusly: ${PW_PATCHES_REPO}/hostname_sha--projpath_sha--starting_sha--endingat_sha--YYYY_MM_DD_XXhXXmXXs"
+    echo "- Formatted thusly:" \
+      "${PW_PATCHES_REPO}/hostname_sha--projpath_sha--starting_sha--endingat_sha--YYYY_MM_DD_XXhXXmXXs"
   fi
 }
 
