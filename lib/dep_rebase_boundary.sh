@@ -221,7 +221,13 @@ put_wise_identify_rebase_boundary_and_remotes () {
     if [ -n "${scoping_remote_ref}" ]; then
       # Pick the ref that's further along, so that you don't cause
       # a divergence ("in the force").
-      if [ -z "${rebase_boundary}" ] \
+      # - Except if scoping remote diverged and force-pushing.
+      if ${PW_OPTION_FORCE_PUSH:-false} \
+        && ! git merge-base --is-ancestor "${scoping_remote_ref}" "HEAD" \
+      ; then
+        # Don't use the diverged remote as the rebase boundary.
+        warn "ALERT: '${scoping_remote_ref}' not ancestor of '${branch_name}'"
+      elif [ -z "${rebase_boundary}" ] \
         || git merge-base --is-ancestor "${pw_tag_applied}" "${scoping_remote_ref}" \
       ; then
         rebase_boundary="${scoping_remote_ref}"
