@@ -1168,6 +1168,11 @@ apply_patches_unless_dry_run () {
   #   all the time (and the commands you might run most, --archive
   #   and --push, can be optimized).
 
+  # INERT/2024-09-22: We could filter (inhibit) stdout like sort-by-scope
+  # does, and show a countdown instead.
+  # - But I'd rather convert git-format-patch/git-am to git-bundle/git-pull,
+  #   and then we can revisit if we need to futz with the UX output here.
+
   echo
   echo "Applying patches..."
   echo "  git am --3way --committer-date-is-author-date --empty=keep *.patch"
