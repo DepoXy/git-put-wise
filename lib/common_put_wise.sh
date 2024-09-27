@@ -664,6 +664,15 @@ print_repo_return_receipts () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# SAVVY: The only useful long-lived tag is pw/in, which apply needs
+# to know where to start applying patches.
+# - FTREQ: Though if we replace git-format-patch/git-am with
+#   git-bundle/git-pull, then pw/in unnecessary but would be
+#   useful to keep the bundle size as small as possible.
+
+# Used on --archive to pick starting commit for range; though
+#   unnnecessary if upstream remote exists (archive will start
+#   at that commit instead).
 # Used on --apply to know where to start applying patches.
 format_pw_tag_applied () {
   local patch_branch="$1"
@@ -673,6 +682,7 @@ format_pw_tag_applied () {
 }
 
 # Used on --archive just to show user extent of latest archive.
+# - If removed, --archive will figure it out and replace pw/out.
 format_pw_tag_archived () {
   local patch_branch="$1"
 
@@ -680,7 +690,8 @@ format_pw_tag_archived () {
   printf "${PW_TAG_ARCHIVED_FORMAT}" "${patch_branch}"
 }
 
-# Moved on --apply to show indicate where previous pw/in was.
+# Moved on --apply to indicate where previous pw/in was.
+# - Solely informational.
 format_pw_tag_starting () {
   local patch_branch="$1"
 
@@ -688,7 +699,7 @@ format_pw_tag_starting () {
   printf "${PW_TAG_STARTING_FORMAT}" "${patch_branch}"
 }
 
-# Used on --apply to name the ephemeral branch.
+# Used on --apply to name the ephemeral branch, and not persisted.
 format_pw_tag_ephemeral_apply () {
   local patch_branch="$1"
 
@@ -696,7 +707,7 @@ format_pw_tag_ephemeral_apply () {
   printf "${PW_TAG_TMP_APPLY_FORMAT}" "${patch_branch}"
 }
 
-# Used on --pull to name the ephemeral branch.
+# Used on --pull to name the ephemeral branch, and not persisted.
 format_pw_tag_ephemeral_pull () {
   local patch_branch="$1"
 

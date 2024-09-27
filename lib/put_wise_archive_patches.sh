@@ -718,8 +718,11 @@ must_produce_nonempty_patch () {
   fi
 
   # Tell the other side what project this is.
-  # - Note that ${project_path} might be relative,
-  #   but that we're currently in that directory.
+  # - This is for apply-all, where remote unpacks each archive
+  #   and reads '.manifest.pw' to determine the project path
+  #   (because you cannot reverse sha1sum to reveal the path).
+  #   - But on apply, user specifies path, and GPW can generate
+  #     the SHA and then look for matching archive name.
   local homely_path
   homely_path=$(home_agnostic_current_path)
 
