@@ -1436,6 +1436,13 @@ sh_err_trap_user_hook () {
   local proc_name
   proc_name="$(ps -o comm= ${PW_PID_KILL_ON_ERROR})"
 
+  if [ -z "${proc_name}" ]; then
+    # If you call git-bump-version-tag via tig, which calls GPW,
+    # this trap runs twice.
+
+    return 0
+  fi
+
   local says_who=""
   if [ ${return_value} -ne 0 ]; then
     says_who="nonzero exit"
