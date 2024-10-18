@@ -1610,7 +1610,8 @@ is_git_fetch_backoff_expired () {
   # E.g., "tools.git-put-wise", or
   # "tools.git-rebase-sort-by-scope-protected-private".
   cfg_section="tools.${PROG_NAME}"
-  cfg_last_fetch="lastfetch--${remote_name}${branch_name:+--${branch_name}}"
+  # Substitute /'s to create valid config key: ${parameter//pattern/string}
+  cfg_last_fetch="lastfetch--${remote_name}${branch_name:+--${branch_name////X}}"
 
   local last_update="$(git config ${cfg_section}.${cfg_last_fetch})"
 
