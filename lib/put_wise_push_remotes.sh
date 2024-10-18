@@ -79,7 +79,7 @@ put_wise_push_remotes_go () {
 
   local release_boundary_or_HEAD="${scoping_boundary_or_HEAD}"
   # remote_name is set only if remote_current is set only if feature branch.
-  if [ -n "${remote_name}" ]; then
+  if [ -n "${remote_name}" ] && [ -n "${local_release}" ]; then
     # Current branch is a feature branch (not 'release' or 'private').
     # - In this workflow, user self-manages the local 'release' pointer,
     #   which we'll push if ahead of publish/release. But we won't move
