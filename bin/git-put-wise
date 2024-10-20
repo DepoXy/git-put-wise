@@ -39,7 +39,7 @@ check_dep_with_hint () {
 
   >&2 echo "ERROR: Requires ‘${cmd}’"
   >&2 echo "- Hint: Install ‘${cmd}’, e.g.:"
-  os_is_macos && hint_install_brew || hint_install_deb 
+  os_is_macos && hint_install_brew || hint_install_deb
 
   return 1
 }
