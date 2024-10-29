@@ -771,10 +771,16 @@ insist_single_author_used_since () {
     author_pattern="${PW_OPTION_AUTHOR_PATTERN}"
   fi
 
+  # SAVVY: Ensure Git has Perl regexp enabled, or else:
+  #   "fatal: cannot use Perl-compatible regexes when not compiled with USE_LIBPCRE"
   local latest_other_commit
-  latest_other_commit="$( \
+  if ! latest_other_commit="$( \
     git log -n 1 --format="%H" --perl-regexp --author="^(?!(${author_pattern})).*\$"
-  )"
+  )"; then
+    print_error_git_without_libpcre
+
+    return 1
+  fi
 
   # If no latest commit, indicates same author throughout # Mono-authorship
 
@@ -829,6 +835,17 @@ insist_single_author_used_since () {
   printf "%s" "${exclusive_boundary}"
 
   ! ${failed_checks} || return 1
+}
+
+# ***
+
+print_error_git_without_libpcre () {
+  >&2 echo "ERROR: The ‘git’ command does not support Perl regex"
+  >&2 echo "- Hint:"
+  >&2 echo "  - Build it with, e.g.,"
+  >&2 echo "      ./configure --prefix=\${HOME}/.local --with-libpcre"
+  >&2 echo "  - Or install it with, e.g.,"
+  >&2 echo "      brew install git"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
