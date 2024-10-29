@@ -840,7 +840,7 @@ insist_single_author_used_since () {
 # ***
 
 print_error_git_without_libpcre () {
-  >&2 echo "ERROR: The ‘git’ command does not support Perl regex"
+  >&2 echo "ERROR: The local ‘git’ command does not support Perl regex"
   >&2 echo "- Hint:"
   >&2 echo "  - Build it with, e.g.,"
   >&2 echo "      ./configure --prefix=\${HOME}/.local --with-libpcre"
