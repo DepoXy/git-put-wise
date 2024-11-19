@@ -53,8 +53,8 @@ print_project_root () {
 
 git-rebase-sort-by-scope-protected-private () {
   local starting_ref="$1"
-  local use_magic_starting_ref="${2:-false}"
-  local enable_gpg_sign_if_signingkey="${3:-false}"
+  local enable_gpg_sign_if_signingkey="${2:-false}"
+  local use_magic_starting_ref="${3:-false}"
   local insist_signing_key="${4:-false}"
   local normalize_committer="${5:-false}"
 

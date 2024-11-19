@@ -1216,8 +1216,8 @@ git_sort_by_scope () {
   # CXREF: ~/.kit/git/git-put-wise/bin/git-rebase-sort-by-scope-protected-private
   ${DRY_ECHO} git-rebase-sort-by-scope-protected-private \
     "${rebase_boundary}" \
-    "${_magic_starting_ref:-false}" \
     "${enable_gpg_sign}" \
+    "${_magic_starting_ref:-false}" \
     "${_insist_signing_key:-false}" \
     "${normalize_committer}"
 }
