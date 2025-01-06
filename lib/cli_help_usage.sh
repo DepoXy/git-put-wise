@@ -38,6 +38,11 @@ Specify one:
 
   -R|--reset                (Re)create the patches repo
 
+  --move-pw-in-tag          Moves the floating reference tag which some
+                            operations use as the rebase starting point (for
+                            archive, apply, and sort-by-scope commands) (for
+                            branch named 'private', defaults 'pw/private/in')
+
   --rebase-boundary         Print rebase boundary (for sort & sign)
 
   --scope|scope             Print PRIVATE/PROTECTED boundary SHA
@@ -127,6 +132,7 @@ Environment variables you can use instead of options above:
   -y|--apply|apply          PW_ACTION_APPLY=true|false
   -A|--apply-all|...        PW_ACTION_APPLY_ALL=true|false
   -R|--reset                PW_ACTION_RESET=true|false
+  --move-pw-in-tag          PW_ACTION_MOVE_PW_IN_TAG=true|false
   --rebase-boundary         PW_ACTION_REBASE_BOUNDARY=true|false
   --scope|scope             PW_ACTION_SCOPE=true|false
   --sha|sha [<path>]        PW_ACTION_SHA=true PW_PROJECT_PATH=\"<path>\"

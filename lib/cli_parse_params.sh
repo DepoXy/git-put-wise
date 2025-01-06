@@ -45,6 +45,7 @@ PW_ACTION_ARCHIVE=${PW_ACTION_ARCHIVE:-false}
 PW_ACTION_APPLY=${PW_ACTION_APPLY:-false}
 PW_ACTION_APPLY_ALL=${PW_ACTION_APPLY_ALL:-false}
 PW_ACTION_RESET=${PW_ACTION_RESET:-false}
+PW_ACTION_MOVE_PW_IN_TAG=${PW_ACTION_MOVE_PW_IN_TAG:-false}
 PW_ACTION_REBASE_BOUNDARY=${PW_ACTION_REBASE_BOUNDARY:-false}
 PW_ACTION_SCOPE=${PW_ACTION_SCOPE:-false}
 PW_ACTION_SHA=${PW_ACTION_SHA:-false}
@@ -165,6 +166,15 @@ cli_parse_params () {
         PW_ACTION_RESET=true
 
         shift
+        ;;
+
+      --move-pw-in-tag)
+        option_value_must_be_specified "$@"
+        PW_OPTION_STARTING_REF="$2"
+
+        shift 2
+
+        PW_ACTION_MOVE_PW_IN_TAG=true
         ;;
 
       --rebase-boundary)
@@ -466,6 +476,7 @@ cli_parse_params () {
                 PW_ACTION_RESET=true
                 ;;
               # These options do not have single-chars option string options:
+              #   PW_ACTION_MOVE_PW_IN_TAG=true
               #   PW_ACTION_REBASE_BOUNDARY=true
               #   PW_ACTION_SCOPE=true
               #   PW_ACTION_SHA=true
@@ -656,6 +667,7 @@ cli_must_verify_action_specified () {
     ${PW_ACTION_APPLY} ||
     ${PW_ACTION_APPLY_ALL} ||
     ${PW_ACTION_RESET} ||
+    ${PW_ACTION_MOVE_PW_IN_TAG} ||
     ${PW_ACTION_REBASE_BOUNDARY} ||
     ${PW_ACTION_SCOPE} ||
     ${PW_ACTION_SHA} ||

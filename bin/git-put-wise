@@ -137,6 +137,7 @@ main () {
     ${PW_ACTION_PUSH} ||
     ${PW_ACTION_PULL} ||
     ${PW_ACTION_PULL_CLEANUP} ||
+    ${PW_ACTION_MOVE_PW_IN_TAG} ||
     ${PW_ACTION_REBASE_BOUNDARY} ||
     ${PW_ACTION_SCOPE} ||
     ${PW_ACTION_SHA} ||
@@ -174,6 +175,11 @@ main () {
       ;;
     ${PW_ACTION_RESET})
       put_wise_reset_patches_repo
+      ;;
+    ${PW_ACTION_MOVE_PW_IN_TAG})
+      # If user passed additional arg, it was interpreted as path,
+      # which we'll pass so we can throw an error.
+      put_wise_move_pw_in_tag "${PW_OPTION_STARTING_REF}" ${PW_PROJECT_PATH}
       ;;
     ${PW_ACTION_REBASE_BOUNDARY})
       put_wise_print_rebase_boundary

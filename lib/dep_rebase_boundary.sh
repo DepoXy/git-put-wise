@@ -87,6 +87,11 @@
 #   to remote release branch).
 # - Set PW_OPTION_ORPHAN_TAGS=true (--orphan-tags) to not exit nonzero
 #   if tags found within the rebase area.
+# - Use PW_ACTION_MOVE_PW_IN_TAG=true (--move-pw-in-tag) to move the
+#   floating rebase reference tag, which may or may not be used to
+#   suss the rebase starting boundary. This tag is often named
+#   'pw/private/in' and can also be moved manually:
+#     git tag -f pw/private/in <commit>
 # - Use PW_ACTION_REBASE_BOUNDARY=true (--rebase-boundary) to call
 #   this function from the command line, and to print its results.
 

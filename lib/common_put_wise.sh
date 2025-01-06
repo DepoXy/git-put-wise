@@ -493,6 +493,33 @@ project_path_same_as_patches_repo () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
+# `put-wise --move-pw-in-tag` / PW_ACTION_MOVE_PW_IN_TAG=true
+put_wise_move_pw_in_tag () {
+  local gitref="$1"
+
+  if [ $# -lt 1 ]; then
+    >&2 echo "ERROR: Please specify the gitref (even if its HEAD)"
+
+    exit_1
+  elif [ $# -gt 1 ]; then
+    >&2 echo "ERROR: Please specify the gitref (and nothing else)"
+
+    exit_1
+  fi
+
+  local branch_name="$(git_branch_name)"
+
+  local pw_tag_applied="$(format_pw_tag_applied "${branch_name}")"
+
+  if ! git tag -f "${pw_tag_applied}" "${gitref}"; then
+    >&2 echo "ERROR: Failed to move floating tag \"${pw_tag_applied}\""
+
+    exit_1
+  fi
+}
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
+
 # `put-wise --rebase-boundary` / PW_ACTION_REBASE_BOUNDARY=true
 
 put_wise_print_rebase_boundary () {
