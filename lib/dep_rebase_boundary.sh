@@ -146,7 +146,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   local sortless_msg=""
 
-  # E.g., pw/release/in
+  # E.g., pw/private/in
   local pw_tag_applied="$(format_pw_tag_applied "${branch_name}")"
 
   # is_hyper_branch is true if branch_name is 'release' or 'private'.
