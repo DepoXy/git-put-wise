@@ -345,7 +345,10 @@ print_todo_maybe () {
 # ***
 
 gnu_awk () {
-  command -v gawk || command -v awk
+  for cmd in "gawk" "awk"; do
+    ( unset -f ${cmd}; unalias ${cmd}; command -v ${cmd} ) 2> /dev/null \
+      && break
+  done
 }
 
 # ***
