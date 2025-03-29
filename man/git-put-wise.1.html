@@ -109,7 +109,21 @@ Other commands
 
 -R|--reset                (Re)create the patches repo
 
+--move-pw-in-tag          Moves the floating reference tag which some
+                          operations use as the rebase starting point (for
+                          archive, apply, and sort-by-scope commands) (for
+                          branch named 'private', defaults 'pw/private/in')
+
+--rebase-boundary         Print rebase boundary (for sort &amp; sign)
+
+--scope|scope             Print PRIVATE/PROTECTED boundary SHA
+
 --sha|sha [&lt;path>]        Print &lt;path> SHA (defaults to project directory)
+
+--continue|continue       Restart the rebasing process after having resolved
+                            a merge conflict (Or call \`git rebase --continue\`)
+--abort|abort             Abort the rebase operation and restore state (Use
+                            this command and do not call \`git rebase --abort\`)
 </code></pre>
 
 <h2 id="PATH-ARG">PATH ARG</h2>
@@ -128,7 +142,7 @@ Other commands
 
 <pre><code>-J|--project-path &lt;path>  Project or archive path to use (this is an alt-
                             ernative to using the final &lt;path> argument,
-                            so `git put-wise -J .` == `git put-wise .`)
+                            so \`git put-wise -J .\` == \`git put-wise .\`)
 
 -O|--patches-repo &lt;repo>  Directory path to repo of patch archives (those
                             created on --archive and consumed on --apply*)
@@ -138,7 +152,7 @@ Other commands
                             will be prompted twice by GPG for each archive)
 
 -c|--cleanup              With --apply*, git-rm each processed archive and
-                            /bin/rm -rf its unpacked directory [default]
+                            \`rm -rf\` its unpacked directory [default]
 -C|--no-cleanup           With --apply*, don’t cleanup (leave both)
 
 -N|--author-name &lt;name>   With --apply, set commit author name to &lt;name>
@@ -152,6 +166,22 @@ Other commands
 
 --explain                 With --push, explain how tig prompt works [default]
 -E|--no-explain           With --push, don’t explain how tig prompt works
+
+-y|--yes                  With --push, skip tig dialog push confirmation
+--no-yes                  With --push, don't skip tig push confirmation
+
+--skip-rebase             On --push/--archive, skip sort &amp; sign
+--no-skip-rebase          On --push/--archive, don’t --skip-rebase [default]
+
+--orphan-tags             On --push/--archive, allow rebase that orphans tags
+--no-orphan-tags          On --push/--archive, don’t --orphan-tags [default]
+
+--ignore-author           On --push/--archive, allow rebase multiple author commits
+--no-ignore-author        On --push/--archive, don’t --ignore-author [default]
+
+--fetch-backoff           On --push/--archive, git-fetch only ever this often
+                            E.g., --fetch-backoff=\"-1 hour\"  # [default]
+--no-fetch-backoff        On --push/--archive, always git-fetch
 
 -u|--squash               Fixup commits to the patches repo [default]
 -U|--no-squash            Make new commits to patches repo
@@ -180,30 +210,45 @@ Other commands
 -y|--apply|apply          PW_ACTION_APPLY=true|false
 -A|--apply-all|...        PW_ACTION_APPLY_ALL=true|false
 -R|--reset                PW_ACTION_RESET=true|false
---sha|sha [&lt;path>]        PW_ACTION_SHA=true PW_PROJECT_PATH="&lt;path>"
+--move-pw-in-tag          PW_ACTION_MOVE_PW_IN_TAG=true|false
+--rebase-boundary         PW_ACTION_REBASE_BOUNDARY=true|false
+--scope|scope             PW_ACTION_SCOPE=true|false
+--sha|sha [&lt;path>]        PW_ACTION_SHA=true PW_PROJECT_PATH=\"&lt;path>\"
+--continue|continue       PW_ACTION_REBASE_CONTINUE=true|false
+--abort|abort             PW_ACTION_REBASE_ABORT=true|false
 
--J|--project-path &lt;path>  PW_PROJECT_PATH="&lt;path>"
--O|--patches-repo &lt;repo>  PW_PATCHES_REPO="&lt;repo>"
+-J|--project-path &lt;path>  PW_PROJECT_PATH=\"&lt;path>\"
+-O|--patches-repo &lt;repo>  PW_PATCHES_REPO=\"&lt;repo>\"
 
--n|--pass-name            PW_OPTION_PASS_NAME="&lt;name>"
+-n|--pass-name            PW_OPTION_PASS_NAME=\"&lt;name>\"
 
 -C|--no-cleanup           PW_OPTION_NO_CLEANUP=true
 -c|--cleanup              PW_OPTION_NO_CLEANUP=false
 
--N|--author-name &lt;name>   PW_OPTION_APPLY_AUTHOR_NAME="&lt;name>"
--M|--author-email &lt;mail>  PW_OPTION_APPLY_AUTHOR_EMAIL="&lt;mail>"
--L|--leave-author         PW_OPTION_RESET_AUTHOR_DISABLE=true
+-N|--author-name &lt;name>   PW_OPTION_APPLY_AUTHOR_NAME=\"&lt;name>\"
+-M|--author-email &lt;mail>  PW_OPTION_APPLY_AUTHOR_EMAIL=\"&lt;mail>\"
+-a|--leave-author         PW_OPTION_RESET_AUTHOR_DISABLE=true
 --reset-author            PW_OPTION_RESET_AUTHOR_DISABLE=false
 
 -f|--force/-F|--no-force  PW_OPTION_FORCE_PUSH=true|false
 --explain/-E|--no-explain PW_OPTION_QUICK_TIG=false|true
+--yes/-y|--no-yes         PW_OPTION_AUTO_CONFIRM=true|false
+
+--skip-rebase/--no-skip-rebase
+                          PW_OPTION_SKIP_REBASE=true|false
+--orphan-tags/--no-orphan-tags
+                          PW_OPTION_ORPHAN_TAGS=true|false
+--ignore-author/--no-ignore-author
+                          PW_OPTION_IGNORE_AUTHOR=true|false
+--fetch-backoff &lt;time>/--no-fetch-backoff
+                          PW_OPTION_FETCH_BACKOFF=\"&lt;time>\"
 
 -U|--no-squash            PW_OPTION_SKIP_SQUASH=true
 -u|--squash               PW_OPTION_SKIP_SQUASH=false
 
--S|--starting-ref &lt;ref>   PW_OPTION_STARTING_REF="&lt;ref>"
--b|--branch &lt;name>        PW_OPTION_BRANCH="&lt;name>"
--r|--remote &lt;name>        PW_OPTION_REMOTE="&lt;name>"
+-S|--starting-ref &lt;ref>   PW_OPTION_STARTING_REF=\"&lt;ref>\"
+-b|--branch &lt;name>        PW_OPTION_BRANCH=\"&lt;name>\"
+-r|--remote &lt;name>        PW_OPTION_REMOTE=\"&lt;name>\"
 
 -v|--[no-]verbose         PW_OPTION_VERBOSE=true|false
 -T|--dry-run              PW_OPTION_DRY_RUN=true|false
@@ -277,7 +322,7 @@ refine it, and finally publish it.</p></li>
 
 <h2 id="AUTHOR">AUTHOR</h2>
 
-<p><strong>git-put-wise</strong> is Copyright (c) 2022-2023 Landon Bouma &lt;<a href="&#109;&#x61;&#x69;&#108;&#116;&#x6f;&#x3a;&#100;&#x65;&#x70;&#x6f;&#x78;&#x79;&#64;&#116;&#x61;&#x6c;&#x6c;&#x79;&#x62;&#x61;&#x72;&#107;&#x2e;&#99;&#x6f;&#109;" data-bare-link="true">&#100;&#101;&#x70;&#111;&#120;&#121;&#64;&#x74;&#97;&#x6c;&#108;&#121;&#98;&#97;&#114;&#107;&#x2e;&#99;&#111;&#109;</a>&gt;</p>
+<p><strong>git-put-wise</strong> is Copyright (c) 2022-2023 Landon Bouma &lt;<a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#x6f;&#58;&#x64;&#101;&#112;&#111;&#x78;&#x79;&#x40;&#x74;&#97;&#108;&#x6c;&#121;&#98;&#x61;&#114;&#x6b;&#46;&#99;&#111;&#x6d;" data-bare-link="true">&#100;&#x65;&#112;&#111;&#120;&#121;&#x40;&#116;&#97;&#x6c;&#108;&#x79;&#x62;&#97;&#x72;&#107;&#46;&#99;&#x6f;&#109;</a>&gt;</p>
 
 <p>This software is released under the MIT license (see <var>LICENSE</var> file for more)</p>
 
@@ -291,8 +336,8 @@ refine it, and finally publish it.</p></li>
 
 
   <ol class='man-decor man-foot man foot'>
-    <li class='tl'>git-put-wise version 1.0.0 (DepoXy)</li>
-    <li class='tc'>February 2023</li>
+    <li class='tl'>git-put-wise version 1.3.0 (DepoXy)</li>
+    <li class='tc'>March 2025</li>
     <li class='tr'>git-put-wise(1)</li>
   </ol>
 

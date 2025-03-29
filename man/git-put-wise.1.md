@@ -37,7 +37,21 @@ git-put-wise — Seamlessly manage private commits 🥨
 
     -R|--reset                (Re)create the patches repo
 
+    --move-pw-in-tag          Moves the floating reference tag which some
+                              operations use as the rebase starting point (for
+                              archive, apply, and sort-by-scope commands) (for
+                              branch named 'private', defaults 'pw/private/in')
+
+    --rebase-boundary         Print rebase boundary (for sort & sign)
+
+    --scope|scope             Print PRIVATE/PROTECTED boundary SHA
+
     --sha|sha [<path>]        Print <path> SHA (defaults to project directory)
+
+    --continue|continue       Restart the rebasing process after having resolved
+                                a merge conflict (Or call \`git rebase --continue\`)
+    --abort|abort             Abort the rebase operation and restore state (Use
+                                this command and do not call \`git rebase --abort\`)
 
 ## PATH ARG
 
@@ -54,7 +68,7 @@ git-put-wise — Seamlessly manage private commits 🥨
 
     -J|--project-path <path>  Project or archive path to use (this is an alt-
                                 ernative to using the final <path> argument,
-                                so `git put-wise -J .` == `git put-wise .`)
+                                so \`git put-wise -J .\` == \`git put-wise .\`)
 
     -O|--patches-repo <repo>  Directory path to repo of patch archives (those
                                 created on --archive and consumed on --apply*)
@@ -64,7 +78,7 @@ git-put-wise — Seamlessly manage private commits 🥨
                                 will be prompted twice by GPG for each archive)
 
     -c|--cleanup              With --apply*, git-rm each processed archive and
-                                /bin/rm -rf its unpacked directory [default]
+                                \`rm -rf\` its unpacked directory [default]
     -C|--no-cleanup           With --apply*, don’t cleanup (leave both)
 
     -N|--author-name <name>   With --apply, set commit author name to <name>
@@ -78,6 +92,22 @@ git-put-wise — Seamlessly manage private commits 🥨
 
     --explain                 With --push, explain how tig prompt works [default]
     -E|--no-explain           With --push, don’t explain how tig prompt works
+
+    -y|--yes                  With --push, skip tig dialog push confirmation
+    --no-yes                  With --push, don't skip tig push confirmation
+
+    --skip-rebase             On --push/--archive, skip sort & sign
+    --no-skip-rebase          On --push/--archive, don’t --skip-rebase [default]
+
+    --orphan-tags             On --push/--archive, allow rebase that orphans tags
+    --no-orphan-tags          On --push/--archive, don’t --orphan-tags [default]
+
+    --ignore-author           On --push/--archive, allow rebase multiple author commits
+    --no-ignore-author        On --push/--archive, don’t --ignore-author [default]
+
+    --fetch-backoff           On --push/--archive, git-fetch only ever this often
+                                E.g., --fetch-backoff=\"-1 hour\"  # [default]
+    --no-fetch-backoff        On --push/--archive, always git-fetch
 
     -u|--squash               Fixup commits to the patches repo [default]
     -U|--no-squash            Make new commits to patches repo
@@ -105,30 +135,45 @@ git-put-wise — Seamlessly manage private commits 🥨
     -y|--apply|apply          PW_ACTION_APPLY=true|false
     -A|--apply-all|...        PW_ACTION_APPLY_ALL=true|false
     -R|--reset                PW_ACTION_RESET=true|false
-    --sha|sha [<path>]        PW_ACTION_SHA=true PW_PROJECT_PATH="<path>"
+    --move-pw-in-tag          PW_ACTION_MOVE_PW_IN_TAG=true|false
+    --rebase-boundary         PW_ACTION_REBASE_BOUNDARY=true|false
+    --scope|scope             PW_ACTION_SCOPE=true|false
+    --sha|sha [<path>]        PW_ACTION_SHA=true PW_PROJECT_PATH=\"<path>\"
+    --continue|continue       PW_ACTION_REBASE_CONTINUE=true|false
+    --abort|abort             PW_ACTION_REBASE_ABORT=true|false
 
-    -J|--project-path <path>  PW_PROJECT_PATH="<path>"
-    -O|--patches-repo <repo>  PW_PATCHES_REPO="<repo>"
+    -J|--project-path <path>  PW_PROJECT_PATH=\"<path>\"
+    -O|--patches-repo <repo>  PW_PATCHES_REPO=\"<repo>\"
 
-    -n|--pass-name            PW_OPTION_PASS_NAME="<name>"
+    -n|--pass-name            PW_OPTION_PASS_NAME=\"<name>\"
 
     -C|--no-cleanup           PW_OPTION_NO_CLEANUP=true
     -c|--cleanup              PW_OPTION_NO_CLEANUP=false
 
-    -N|--author-name <name>   PW_OPTION_APPLY_AUTHOR_NAME="<name>"
-    -M|--author-email <mail>  PW_OPTION_APPLY_AUTHOR_EMAIL="<mail>"
-    -L|--leave-author         PW_OPTION_RESET_AUTHOR_DISABLE=true
+    -N|--author-name <name>   PW_OPTION_APPLY_AUTHOR_NAME=\"<name>\"
+    -M|--author-email <mail>  PW_OPTION_APPLY_AUTHOR_EMAIL=\"<mail>\"
+    -a|--leave-author         PW_OPTION_RESET_AUTHOR_DISABLE=true
     --reset-author            PW_OPTION_RESET_AUTHOR_DISABLE=false
 
     -f|--force/-F|--no-force  PW_OPTION_FORCE_PUSH=true|false
     --explain/-E|--no-explain PW_OPTION_QUICK_TIG=false|true
+    --yes/-y|--no-yes         PW_OPTION_AUTO_CONFIRM=true|false
+
+    --skip-rebase/--no-skip-rebase
+                              PW_OPTION_SKIP_REBASE=true|false
+    --orphan-tags/--no-orphan-tags
+                              PW_OPTION_ORPHAN_TAGS=true|false
+    --ignore-author/--no-ignore-author
+                              PW_OPTION_IGNORE_AUTHOR=true|false
+    --fetch-backoff <time>/--no-fetch-backoff
+                              PW_OPTION_FETCH_BACKOFF=\"<time>\"
 
     -U|--no-squash            PW_OPTION_SKIP_SQUASH=true
     -u|--squash               PW_OPTION_SKIP_SQUASH=false
 
-    -S|--starting-ref <ref>   PW_OPTION_STARTING_REF="<ref>"
-    -b|--branch <name>        PW_OPTION_BRANCH="<name>"
-    -r|--remote <name>        PW_OPTION_REMOTE="<name>"
+    -S|--starting-ref <ref>   PW_OPTION_STARTING_REF=\"<ref>\"
+    -b|--branch <name>        PW_OPTION_BRANCH=\"<name>\"
+    -r|--remote <name>        PW_OPTION_REMOTE=\"<name>\"
 
     -v|--[no-]verbose         PW_OPTION_VERBOSE=true|false
     -T|--dry-run              PW_OPTION_DRY_RUN=true|false
