@@ -169,6 +169,29 @@ DX_SHOW_TODO=${DX_SHOW_TODO:-false}
 #   END of the document. Such an easy tweak to support merges!
 #   (Though beware END prints to stdout, not the -i inplace file.)
 
+# SAVVY/2025-08-27: As of git 2.51.0 (or recently), the rebase-todo
+# now includes a comment-space between the commit hash and the commit
+# subject, e.g.,
+#
+#   label onto
+#
+#   reset onto
+#   pick ebbbdbd # foo bar baz
+#   pick a777d70 # qux quux quuz
+#
+# - Where these ↑↑ columns are new.
+#
+# - See also the Git config value, rebase.instructionFormat. E.g.,
+#   `git -c rebase.instructionFormat="XXX %s" rebase -i HEAD^^^`
+#   prints lines like, "pick ebbbdbd # XXX foo bar baz".
+#
+# - Author first noticed the change in Homebrew Git 2.51.0, though
+#   I run homebrew-autoupdate, so it may have changed in an earlier
+#   version than that.
+#   - I also tried to identify the commit that changed this, or to
+#     find documentation on it, but I cannot (and man git-rebase
+#     still shows the old rebase-todo format, sans the octothorpe).
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # This is the special tag at the end of the 'exec' line that
@@ -261,11 +284,11 @@ git_rebase_sort_by_scope() {
     }
 
     {
-      if (\$0 ~ /^pick [0-9a-f]+ ${PRIVATE_PREFIX:-PRIVATE: }/) {
+      if (\$0 ~ /^pick [0-9a-f]+ (# )?${PRIVATE_PREFIX:-PRIVATE: }/) {
         private[i_priv] = \$0
         i_priv++;
         next;
-      } else if (\$0 ~ /^pick [0-9a-f]+ ${SCOPING_PREFIX:-PROTECTED: }/) {
+      } else if (\$0 ~ /^pick [0-9a-f]+ (# )?${SCOPING_PREFIX:-PROTECTED: }/) {
         protected[i_prot] = \$0
         i_prot++;
         next;
