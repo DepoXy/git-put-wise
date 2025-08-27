@@ -178,7 +178,7 @@ GITSMART_POST_REBASE_EXECS_TAG=" #git-abort"
 
 # Git passes us the full path to the temporary rebase-todo file, e.g.,
 #   /path/to/project/.git/rebase-merge/git-rebase-todo
-git_rebase_sort_by_scope () {
+git_rebase_sort_by_scope() {
   local rebase_todo_path="$1"
 
   # DX: A dev switch and input-waiter useful for debugging the awk.
@@ -221,7 +221,7 @@ git_rebase_sort_by_scope () {
 
   # ***
 
-  local exec_countdown="$( \
+  local exec_countdown="$(
     print_exec_fcn_countdown \
       "${_PUTWISE_SBS_OPT_ENABLE_GPG_SIGN}" \
       "${_PUTWISE_SBS_OPT_NORMALIZE_COMMITTER}"
@@ -330,7 +330,7 @@ git_rebase_sort_by_scope () {
 
 # ***
 
-print_todo_maybe () {
+print_todo_maybe() {
   local rebase_todo_path="$1"
   local context="$2"
 
@@ -344,16 +344,20 @@ print_todo_maybe () {
 
 # ***
 
-gnu_awk () {
+gnu_awk() {
   for cmd in "gawk" "awk"; do
-    ( unset -f ${cmd}; unalias ${cmd}; command -v ${cmd} ) 2> /dev/null \
-      && break
+    (
+      unset -f ${cmd}
+      unalias ${cmd}
+      command -v ${cmd}
+    ) 2>/dev/null &&
+      break
   done
 }
 
 # ***
 
-prepare_progress_messaging () {
+prepare_progress_messaging() {
   local n_commits="${1:-0}"
   local enable_gpg_sign="${2:-false}"
   local normalize_committer="${3:-false}"
@@ -362,9 +366,9 @@ prepare_progress_messaging () {
 
   local countdown_f="$(print_rebase_countdown_file)"
 
-  printf "%s" "${n_commits}" > "${countdown_f}"
+  printf "%s" "${n_commits}" >"${countdown_f}"
 
-  local prog_prefix="$( \
+  local prog_prefix="$(
     print_rebase_prog_prefix "${enable_gpg_sign}" "${normalize_committer}"
   )"
 
@@ -373,7 +377,7 @@ prepare_progress_messaging () {
   printf "%s" "${progress_orig_msg}"
 }
 
-print_rebase_prog_prefix () {
+print_rebase_prog_prefix() {
   local enable_gpg_sign="${1:-false}"
   local normalize_committer="${2:-false}"
 
@@ -396,19 +400,19 @@ print_rebase_prog_prefix () {
   printf "%s" "${prog_prefix}"
 }
 
-seq_editor_cache_options () {
+seq_editor_cache_options() {
   local enable_gpg_sign="${1:-false}"
   local normalize_committer="${2:-false}"
 
   local opts_gpg_sign_f="$(print_rebase_options_filename)"
 
-  cat <<EOF > "${opts_gpg_sign_f}"
+  cat <<EOF >"${opts_gpg_sign_f}"
 _PUTWISE_SBS_OPT_ENABLE_GPG_SIGN="${enable_gpg_sign}"
 _PUTWISE_SBS_OPT_NORMALIZE_COMMITTER="${normalize_committer}"
 EOF
 }
 
-seq_editor_load_options () {
+seq_editor_load_options() {
   _PUTWISE_SBS_OPT_ENABLE_GPG_SIGN=false
   _PUTWISE_SBS_OPT_NORMALIZE_COMMITTER=false
 
@@ -422,20 +426,20 @@ seq_editor_load_options () {
 }
 
 # Temporary .git/ file used to persist the countdown value.
-# - We'll expand this path in the 'exec' string, but you can also 
+# - We'll expand this path in the 'exec' string, but you can also
 #   `export PW_REBASE_CACHE_COUNTDOWN=...` from your sell and it
 #   will work in the exec (though not export from seq. editor).
 PW_REBASE_CACHE_COUNTDOWN="${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 
-print_rebase_countdown_file () {
+print_rebase_countdown_file() {
   printf "%s" "${PW_REBASE_CACHE_COUNTDOWN:-.git/put-wise-countdown}"
 }
 
-print_rebase_options_filename () {
+print_rebase_options_filename() {
   printf "%s" "${PW_REBASE_CACHE_OPTS_GPG_SIGN:-.git/put-wise-sort-by-scope}"
 }
 
-seq_editor_cleanup_rebase_files () {
+seq_editor_cleanup_rebase_files() {
   command rm -f -- "$(print_rebase_countdown_file)"
   command rm -f -- "$(print_rebase_options_filename)"
 }
@@ -443,22 +447,22 @@ seq_editor_cleanup_rebase_files () {
 # ***
 
 # Remove forbidden newlines, and condense whitespace for readability.
-print_exec_fcn_countdown () {
+print_exec_fcn_countdown() {
   local enable_gpg_sign="${1:-false}"
   local normalize_committer="${2:-false}"
 
-  print_exec_fcn_countdown_raw "${enable_gpg_sign}" "${normalize_committer}" \
-    | sanitize_exec_fcn | escape_double_quotes
+  print_exec_fcn_countdown_raw "${enable_gpg_sign}" "${normalize_committer}" |
+    sanitize_exec_fcn | escape_double_quotes
 }
 
-print_exec_gpg_sign () {
+print_exec_gpg_sign() {
   local normalize_committer="${1:-false}"
 
-  print_exec_gpg_sign_raw "${normalize_committer}" \
-    | sanitize_exec_fcn | escape_double_quotes
+  print_exec_gpg_sign_raw "${normalize_committer}" |
+    sanitize_exec_fcn | escape_double_quotes
 }
 
-print_exec_normalize_committer () {
+print_exec_normalize_committer() {
   print_exec_normalize_committer_raw | sanitize_exec_fcn | escape_double_quotes
 }
 
@@ -468,14 +472,14 @@ print_exec_normalize_committer () {
 # remove forbidden newlines;
 # condense whitespace for readability; and
 # sometimes followed by escape_double_quotes.
-sanitize_exec_fcn () {
-  sed -e '/^ *#/d' \
-  | tr -d '\n' \
-  | sed -e 's/ \+/ /g'
+sanitize_exec_fcn() {
+  sed -e '/^ *#/d' |
+    tr -d '\n' |
+    sed -e 's/ \+/ /g'
 }
 
 # Escape double quotes.
-escape_double_quotes () {
+escape_double_quotes() {
   sed -e 's/"/\\"/g'
 }
 
@@ -489,7 +493,7 @@ escape_double_quotes () {
 #     -q : be quiet, else prints, e.g.,
 #          "[detached HEAD 76fc9f4] <message>"
 
-print_exec_fcn_countdown_raw () {
+print_exec_fcn_countdown_raw() {
   local enable_gpg_sign="${1:-false}"
   local normalize_committer="${2:-false}"
 
@@ -497,7 +501,7 @@ print_exec_fcn_countdown_raw () {
   local countdown_f="$(print_rebase_countdown_file)"
 
   # E.g., "Sorting commits" or "Signing commits"
-  local prog_prefix="$( \
+  local prog_prefix="$(
     print_rebase_prog_prefix "${enable_gpg_sign}" "${normalize_committer}"
   )"
 
@@ -520,7 +524,7 @@ print_exec_fcn_countdown_raw () {
   '
 }
 
-print_exec_gpg_sign_raw () {
+print_exec_gpg_sign_raw() {
   local normalize_committer="${1:-false}"
 
   # Note that we never sign scoped (PROTECTED or PRIVATE) commits.
@@ -558,7 +562,7 @@ print_exec_gpg_sign_raw () {
 #   print_exec_normalize_committer_raw
 # - See also git-nubs git-rebaser:
 #   git_rebase_set_committer_same_as_author
-print_exec_normalize_committer_raw () {
+print_exec_normalize_committer_raw() {
   echo '
     exec_normalize_committer () {
       set -e;
@@ -573,11 +577,10 @@ print_exec_normalize_committer_raw () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-_seq_editor_sort_by_scope_protected_private_main () {
+_seq_editor_sort_by_scope_protected_private_main() {
   git_rebase_sort_by_scope "$@"
 }
 
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   _seq_editor_sort_by_scope_protected_private_main "$@"
 fi
-
