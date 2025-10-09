@@ -15,7 +15,7 @@ DRY_ECHO=""
 
 # The user called us on a specific project, and not the transport repo,
 # so we'll update just the current project's active branch.
-put_wise_pull_remotes () {
+put_wise_pull_remotes() {
   ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
@@ -42,7 +42,7 @@ put_wise_pull_remotes () {
 # - But if there's no pw/out tag, if means there are no conflicting
 #   revision we need to drop, and this can be treated like a normal
 #   pull.
-put_wise_pull_remotes_go () {
+put_wise_pull_remotes_go() {
   local branch_name="$(git_branch_name)"
 
   # Look for pw/out tag.
@@ -65,7 +65,7 @@ put_wise_pull_remotes_go () {
 
 # ***
 
-put_wise_pull_unspecially () {
+put_wise_pull_unspecially() {
   local branch_name="$1"
   local pw_tag_archived="$2"
 
@@ -87,8 +87,8 @@ put_wise_pull_unspecially () {
 
   local retcode=0
 
-  git pull --rebase --autostash "${upstream_remote}" "${upstream_branch}" \
-    || retcode=$?
+  git pull --rebase --autostash "${upstream_remote}" "${upstream_branch}" ||
+    retcode=$?
 
   if [ ${retcode} -ne 0 ]; then
     # Set rebase-todo 'exec' to call optional user hook, GIT_POST_REBASE_EXEC.
@@ -110,7 +110,7 @@ put_wise_pull_unspecially () {
 # are not upstream. This includes any revision after the latest
 # pw/<branch>/out tag, which represents the latest --archive we
 # sent to the remote, which is presumably what's being pulled.
-put_wise_pull_complicated () {
+put_wise_pull_complicated() {
   local branch_name="$1"
   local pw_tag_archived="$2"
   local pick_from="$3"
@@ -141,8 +141,8 @@ put_wise_pull_complicated () {
   must_confirm_commit_at_or_behind_commit \
     "${pick_from}" "${protected_boundary_or_HEAD}" \
     ${divergent_ok} \
-    "${pw_tag_archived}" "private-scoping-boundary-or-HEAD" \
-    || exit_1
+    "${pw_tag_archived}" "private-scoping-boundary-or-HEAD" ||
+    exit_1
 
   # ***
 
@@ -190,9 +190,9 @@ put_wise_pull_complicated () {
     let "visitation_cnt += 1"
 
     local tot_adds_dels=""
-    tot_adds_dels="$( \
-      git --no-pager diff ${pick_from}..${visitor} --numstat \
-      | awk '{ total += $1 + $2 } END { print total }' \
+    tot_adds_dels="$(
+      git --no-pager diff ${pick_from}..${visitor} --numstat |
+        awk '{ total += $1 + $2 } END { print total }'
     )"
 
     local rev_range="$(shorten_sha "${pick_from}")..$(shorten_sha "${visitor}")"
@@ -229,9 +229,8 @@ put_wise_pull_complicated () {
       echo
 
       break
-    elif [ ${least_diffy_cnt} -eq -1 ] \
-      || [ ${tot_adds_dels} -lt ${least_diffy_cnt} ]; \
-    then
+    elif [ ${least_diffy_cnt} -eq -1 ] ||
+      [ ${tot_adds_dels} -lt ${least_diffy_cnt} ]; then
       least_diffy_cnt=${tot_adds_dels}
       least_diffy_ref="${visitor}"
     fi
@@ -278,20 +277,20 @@ bind generic E !sh -c \" \\
 
   # REFER: These all show up in tig @linux: pw-🚩🏁🔀🖖🆚
   local pw_tag_least_diffy_ref="pw/🆚/diff-distance/${least_diffy_cnt}/${upstream_ref}"
-  git tag -f "${pw_tag_least_diffy_ref}" "${pick_from}" > /dev/null
+  git tag -f "${pw_tag_least_diffy_ref}" "${pick_from}" >/dev/null
 
   local approved=true
 
   print_tig_review_instructions_pull \
-    "${pw_tag_least_diffy_ref}" "${upstream_ref}" "${least_diffy_ref_short}" "${pick_from}" \
-    || approved=false
+    "${pw_tag_least_diffy_ref}" "${upstream_ref}" "${least_diffy_ref_short}" "${pick_from}" ||
+    approved=false
 
   if ${approved}; then
-    prompt_user_to_review_action_plan_using_tig "${diff_binding}" \
-      || approved=false
+    prompt_user_to_review_action_plan_using_tig "${diff_binding}" ||
+      approved=false
   fi
 
-  git tag -d "${pw_tag_least_diffy_ref}" > /dev/null 2>&1 || true
+  git tag -d "${pw_tag_least_diffy_ref}" >/dev/null 2>&1 || true
 
   if ! ${approved}; then
     >&2 echo "${PW_USER_CANCELED_GOODBYE}"
@@ -319,7 +318,7 @@ bind generic E !sh -c \" \\
     return 1
   fi
 
-  ephemeral_branch="$(\
+  ephemeral_branch="$(
     prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${reset_ref}"
   )" || exit_1
 
@@ -375,7 +374,7 @@ bind generic E !sh -c \" \\
   fi
 
   GIT_ABORT=false \
-  ${cleanup_func} \
+    ${cleanup_func} \
     "${branch_name}" \
     "${pw_tag_archived}" \
     "${pick_from}" \
@@ -388,7 +387,7 @@ bind generic E !sh -c \" \\
   return ${retcode}
 }
 
-put_wise_pull_remotes_cleanup () {
+put_wise_pull_remotes_cleanup() {
   local branch_name="$1"
   local pw_tag_archived="$2"
   local pick_from="$3"
@@ -425,7 +424,7 @@ put_wise_pull_remotes_cleanup () {
 
     # Don't blather or we besmirch user's terminal,
     # because 'exec' ran in background (&).
-    # 
+    #
     #  echo "resume branch \"${branch_name}\""
 
     git branch -q -D "${branch_name}"
@@ -454,9 +453,8 @@ put_wise_pull_remotes_cleanup () {
 
   manage_pw_tracking_tags "${branch_name}" "${reset_ref}" "${pw_tag_archived}"
 
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
-    && [ "${reset_ref}" = "refs/remotes/${REMOTE_BRANCH_RELEASE}" ]; \
-  then
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] &&
+    [ "${reset_ref}" = "refs/remotes/${REMOTE_BRANCH_RELEASE}" ]; then
     maybe_move_branch_forward "${LOCAL_BRANCH_RELEASE}" "${reset_ref}"
   fi
 
@@ -466,7 +464,7 @@ put_wise_pull_remotes_cleanup () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_identify_rebase_base () {
+must_identify_rebase_base() {
   local branch_name="$1"
 
   # ***
@@ -489,7 +487,7 @@ must_identify_rebase_base () {
   # CXREF: ~/.kit/git/git-put-wise/lib/dep_rebase_boundary.sh
   if put_wise_identify_rebase_boundary_and_remotes \
     "${_action_desc:-pull}" "${_inhibit_exit_if_unidentified:-true}" \
-  ; then
+    ; then
     # Note the identify fcn. sets remote strings if remote exists but
     # branch absent, i.e., if user can create new branch on push. So
     # here we also check if branch actually exists.
@@ -535,14 +533,14 @@ must_identify_rebase_base () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-print_tig_review_instructions_pull () {
+print_tig_review_instructions_pull() {
   local pw_tag_least_diffy_ref="$1"
   local upstream_ref="$2"
   local least_diffy_ref_short="$3"
   local pick_from="$4"
 
   # COPYD: See similar `print_tig_review_instructions` function(s) elsewhere.
-  print_tig_review_instructions () {
+  print_tig_review_instructions() {
     echo "Please review and confirm the *pull plan*"
     echo
     echo "We'll run tig, and you can look for this tag in the revision history:"
@@ -575,7 +573,7 @@ print_tig_review_instructions_pull () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-add_patch_history_tags () {
+add_patch_history_tags() {
   local branch_name="$1"
   local old_head="$2"
   local pick_from="$3"
@@ -605,7 +603,7 @@ add_patch_history_tags () {
 
 # ***
 
-manage_pw_tracking_tags () {
+manage_pw_tracking_tags() {
   local branch_name="$1"
   local reset_ref="$2"
   local pw_tag_archived="$3"
@@ -614,20 +612,20 @@ manage_pw_tracking_tags () {
   pw_tag_applied="$(format_pw_tag_applied "${branch_name}")"
 
   # Set pw/in.
-  ! ${GIT_ABORT:-false} \
-    || echo "  git tag -f \"${pw_tag_applied}\" \"${reset_ref}\""
-  ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${reset_ref}" > /dev/null
+  ! ${GIT_ABORT:-false} ||
+    echo "  git tag -f \"${pw_tag_applied}\" \"${reset_ref}\""
+  ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${reset_ref}" >/dev/null
 
   # Remove pw/out. Confirms user has consolidated with remote.
   # - If they run put-wise --pull again, calls normal git-pull.
-  ! ${GIT_ABORT:-false} \
-    || echo "  git tag -d \"${pw_tag_archived}\""
-  ${DRY_ECHO} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
+  ! ${GIT_ABORT:-false} ||
+    echo "  git tag -d \"${pw_tag_archived}\""
+  ${DRY_ECHO} git tag -d "${pw_tag_archived}" >/dev/null 2>&1 || true
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-maybe_move_branch_forward () {
+maybe_move_branch_forward() {
   local local_ref="$1"
   local remote_ref="$2"
 
@@ -639,19 +637,19 @@ maybe_move_branch_forward () {
   local local_sha="$(git_commit_object_name "${local_ref}")"
 
   local remote_sha=""
-  remote_sha="$(git_remote_branch_object_name "${remote_ref}")" \
-    || true
+  remote_sha="$(git_remote_branch_object_name "${remote_ref}")" ||
+    true
 
   # Only advance 'release' if it's strictly behind the remote.
   local ancestor_sha
   ancestor_sha="$(git merge-base "${local_sha}" "${remote_sha}")"
 
   if [ "${ancestor_sha}" = "${local_sha}" ]; then
-    ! ${GIT_ABORT:-false} \
-      || echo "Advance “${local_ref}” to match “${remote_ref}”."
+    ! ${GIT_ABORT:-false} ||
+      echo "Advance “${local_ref}” to match “${remote_ref}”."
 
-    ! ${GIT_ABORT:-false} \
-      || echo "git branch -f --no-track \"${local_ref}\" \"${remote_ref}\""
+    ! ${GIT_ABORT:-false} ||
+      echo "git branch -f --no-track \"${local_ref}\" \"${remote_ref}\""
 
     ${DRY_ECHO} git branch -f --no-track "${local_ref}" "${remote_ref}"
   fi
@@ -662,4 +660,3 @@ maybe_move_branch_forward () {
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
-
