@@ -629,10 +629,10 @@ maybe_move_branch_forward() {
   local local_ref="$1"
   local remote_ref="$2"
 
-  [ -n "${local_ref}" ] || return
+  [ -n "${local_ref}" ] || return 0
 
   # Only advance 'release' if this is not the 'release' branch already.
-  [ "$(git_branch_name)" != "${local_ref}" ] || return
+  [ "$(git_branch_name)" != "${local_ref}" ] || return 0
 
   local local_sha="$(git_commit_object_name "${local_ref}")"
 

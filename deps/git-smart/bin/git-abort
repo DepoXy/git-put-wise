@@ -168,7 +168,7 @@ git_abort_post_rebase_execs_cleanup() {
 
 git_abort_post_rebase_execs_run_maybe() {
   [ -s "${GITSMART_POST_REBASE_EXECS_PATH}" ] ||
-    return
+    return 0
 
   while read pre_line; do
     local post_rebase_exec="${pre_line#exec }"
