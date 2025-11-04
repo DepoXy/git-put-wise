@@ -123,7 +123,7 @@
 #     or to call must_confirm_shares_history_with_head directly, which
 #     will `exit 1` (exit_1) if rebase_boundary ahead or divergent.
 
-put_wise_identify_rebase_boundary_and_remotes () {
+put_wise_identify_rebase_boundary_and_remotes() {
   local action_desc="$1"
   # This fcn. will exit if the boundary cannot be identified and the
   # commits are not sorted & signed, or will return nonzero instead
@@ -215,10 +215,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
   local scoping_remote_ref
 
-  if scoping_remote_ref="$( \
+  if scoping_remote_ref="$(
     fetch_and_check_branch_exists_or_remote_online \
       "${SCOPING_REMOTE_NAME}" \
-      "${scoping_branch}" \
+      "${scoping_branch}"
   )"; then
     remote_protected="${SCOPING_REMOTE_NAME}/${scoping_branch}"
     # The scoping_remote_ref is the empty string if the remote
@@ -227,14 +227,14 @@ put_wise_identify_rebase_boundary_and_remotes () {
       # Pick the ref that's further along, so that you don't cause
       # a divergence ("in the force").
       # - Except if scoping remote diverged and force-pushing.
-      if ${PW_OPTION_FORCE_PUSH:-false} \
-        && ! git merge-base --is-ancestor "${scoping_remote_ref}" "HEAD" \
-      ; then
+      if ${PW_OPTION_FORCE_PUSH:-false} &&
+        ! git merge-base --is-ancestor "${scoping_remote_ref}" "HEAD" \
+        ; then
         # Don't use the diverged remote as the rebase boundary.
         warn "ALERT: '${scoping_remote_ref}' not ancestor of '${branch_name}'"
-      elif [ -z "${rebase_boundary}" ] \
-        || git merge-base --is-ancestor "${pw_tag_applied}" "${scoping_remote_ref}" \
-      ; then
+      elif [ -z "${rebase_boundary}" ] ||
+        git merge-base --is-ancestor "${pw_tag_applied}" "${scoping_remote_ref}" \
+        ; then
         rebase_boundary="${scoping_remote_ref}"
       fi
     fi
@@ -249,10 +249,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
   #   time pinging it (or showing progress messages), because feature
   #   branch won't use it unless local 'release' branch exists.
   if ${is_hyper_branch} || git_branch_exists "${LOCAL_BRANCH_RELEASE}"; then
-    if remote_ref="$( \
+    if remote_ref="$(
       fetch_and_check_branch_exists_or_remote_online \
         "${RELEASE_REMOTE_NAME}" \
-        "${RELEASE_REMOTE_BRANCH}" \
+        "${RELEASE_REMOTE_BRANCH}"
     )"; then
       remote_release_exists=true
       remote_release="${REMOTE_BRANCH_RELEASE}"
@@ -290,16 +290,16 @@ put_wise_identify_rebase_boundary_and_remotes () {
       if ! must_confirm_commit_at_or_behind_commit \
         "${remote_release}" "${local_release}" ${divergent_ok} \
         "remote-release" "local-release" \
-      ; then
+        ; then
         if ! ${PW_OPTION_FORCE_PUSH:-false}; then
 
           return 1
         elif [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ]; then
           # Force-pushing, so don't use publish/release as boundary
           # (because if user force-pushing, likely diverged).
-          if [ -n "${scoping_remote_ref}" ] \
-            && git merge-base --is-ancestor "${scoping_remote_ref}" "${branch_name}" \
-          ; then
+          if [ -n "${scoping_remote_ref}" ] &&
+            git merge-base --is-ancestor "${scoping_remote_ref}" "${branch_name}" \
+            ; then
             rebase_boundary="${scoping_remote_ref}"
           elif git_tag_exists "${pw_tag_applied}"; then
             rebase_boundary="${pw_tag_applied}"
@@ -346,9 +346,9 @@ put_wise_identify_rebase_boundary_and_remotes () {
       remote_release=""
 
       if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ]; then
-        if ${remote_release_exists:-false} \
-          && ! git merge-base --is-ancestor "${REMOTE_BRANCH_RELEASE}" "HEAD" \
-        ; then
+        if ${remote_release_exists:-false} &&
+          ! git merge-base --is-ancestor "${REMOTE_BRANCH_RELEASE}" "HEAD" \
+          ; then
           # Tell user to checkout 'release' to force-push it.
           # - Note user should sort & sign from the 'private' branch, and
           #   then `git br -f release <sha>` the 'release' branch to the
@@ -391,8 +391,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
     #     branch.<name>.merge
     #     branch.<name>.remote -> remote.pushDefault -> branch.<name>.pushRemote
     local tracking_branch
-    tracking_branch="$(git_tracking_branch)" \
-      || true
+    tracking_branch="$(git_tracking_branch)" ||
+      true
 
     # Honor PW_OPTION_REMOTE, but not PW_OPTION_BRANCH (use branch_name).
     remote_name="${PW_OPTION_REMOTE}"
@@ -420,10 +420,10 @@ put_wise_identify_rebase_boundary_and_remotes () {
       rebase_boundary="${tracking_branch}"
     fi
 
-    if remote_ref="$( \
+    if remote_ref="$(
       fetch_and_check_branch_exists_or_remote_online \
         "${remote_name}" \
-        "${branch_name}" \
+        "${branch_name}"
     )"; then
       # Note we don't use PW_OPTION_BRANCH here, but the current branch.
       remote_current="${remote_name}/${branch_name}"
@@ -488,8 +488,8 @@ put_wise_identify_rebase_boundary_and_remotes () {
         "${enable_gpg_sign}" \
         "${_until_ref:-HEAD}" \
         "${normalize_committer}" \
-          > /dev/null \
-      ; then
+        >/dev/null \
+        ; then
         # Tells caller all commits are sorted and signed, and that
         # no rebase boundary was identified.
         rebase_boundary=""
@@ -511,7 +511,7 @@ put_wise_identify_rebase_boundary_and_remotes () {
       return 0
     fi
 
-    if ! rebase_boundary="$( \
+    if ! rebase_boundary="$(
       insist_rebase_range_free_from_canonicals \
         "${rebase_boundary}" \
         "${enable_gpg_sign}" \
@@ -528,13 +528,13 @@ put_wise_identify_rebase_boundary_and_remotes () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-print_is_hyper_branch () {
+print_is_hyper_branch() {
   local branch_name="$1"
 
   local is_hyper_branch=false
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
-    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
-  ; then
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] ||
+    [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+    ; then
     is_hyper_branch=true
   fi
 
@@ -543,7 +543,7 @@ print_is_hyper_branch () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-fetch_and_check_branch_exists_or_remote_online () {
+fetch_and_check_branch_exists_or_remote_online() {
   local remote_name="$1"
   local branch_name="$2"
 
@@ -561,7 +561,7 @@ fetch_and_check_branch_exists_or_remote_online () {
 
     if ! git_fetch_with_backoff "${remote_name}" "${branch_name}"; then
       >&2 echo " ...failed!"
-      if git ls-remote ${remote_name} -q 2> /dev/null; then
+      if git ls-remote ${remote_name} -q 2>/dev/null; then
         >&2 echo "- Remote exists but not the branch: ‘${upstream}’"
         # If case remote branch was deleted, remove local ref.
         git fetch -q --prune "${remote_name}"
@@ -591,7 +591,7 @@ fetch_and_check_branch_exists_or_remote_online () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-verify_rebase_boundary_exists () {
+verify_rebase_boundary_exists() {
   local rebase_boundary="$1"
 
   if [ -z "${rebase_boundary}" ]; then
@@ -604,25 +604,25 @@ verify_rebase_boundary_exists () {
     return 0
   fi
 
-  git_commit_object_name ${rebase_boundary} > /dev/null
+  git_commit_object_name ${rebase_boundary} >/dev/null
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-insist_rebase_range_free_from_canonicals () {
+insist_rebase_range_free_from_canonicals() {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local normalize_committer="${3:-false}"
 
   local failed_checks=false
 
-  if ! rebase_boundary="$( \
+  if ! rebase_boundary="$(
     insist_nothing_tagged_after "${rebase_boundary}" "${enable_gpg_sign}" "${normalize_committer}"
   )"; then
     failed_checks=true
   fi
 
-  if ! rebase_boundary="$( \
+  if ! rebase_boundary="$(
     insist_single_author_used_since "${rebase_boundary}" "${enable_gpg_sign}" "${normalize_committer}"
   )"; then
     failed_checks=true
@@ -637,7 +637,7 @@ insist_rebase_range_free_from_canonicals () {
 
 PW_OPTION_ORPHAN_TAGS="${PW_OPTION_ORPHAN_TAGS:-false}"
 
-insist_nothing_tagged_after () {
+insist_nothing_tagged_after() {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local normalize_committer="${3:-false}"
@@ -665,9 +665,9 @@ insist_nothing_tagged_after () {
   local recent_tag
   recent_tag="$(git_most_recent_tag "${gitref}")"
 
-  if [ -n "${recent_ver}" ] \
-    || [ -n "${recent_tag}" ] \
-  ; then
+  if [ -n "${recent_ver}" ] ||
+    [ -n "${recent_tag}" ] \
+    ; then
     local msg_fiver="ERROR"
     if ${PW_OPTION_ORPHAN_TAGS:-false}; then
       msg_fiver="ALERT"
@@ -681,16 +681,16 @@ insist_nothing_tagged_after () {
 
     local newer_tag="${recent_ver}"
     if [ -n "${recent_tag}" ]; then
-      if [ -z "${recent_ver}" ] \
-        || git merge-base --is-ancestor "refs/tags/${recent_ver}" "refs/tags/${recent_tag}" \
-      ; then
+      if [ -z "${recent_ver}" ] ||
+        git merge-base --is-ancestor "refs/tags/${recent_ver}" "refs/tags/${recent_tag}" \
+        ; then
         newer_tag="${recent_tag}"
       fi
     fi
 
     if is_range_sorted_and_signed_and_nothing_scoped_follows \
       "${rebase_boundary}" "${enable_gpg_sign}" "${newer_tag}" "${normalize_committer}" \
-    ; then
+      ; then
       tags_will_not_be_orphaned=true
 
       exclusive_boundary="${newer_tag}"
@@ -757,7 +757,7 @@ insist_nothing_tagged_after () {
 #
 # - Not really sure why .* needed but it is.
 
-insist_single_author_used_since () {
+insist_single_author_used_since() {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local normalize_committer="${3:-false}"
@@ -779,7 +779,7 @@ insist_single_author_used_since () {
   # SAVVY: Ensure Git has Perl regexp enabled, or else:
   #   "fatal: cannot use Perl-compatible regexes when not compiled with USE_LIBPCRE"
   local latest_other_commit
-  if ! latest_other_commit="$( \
+  if ! latest_other_commit="$(
     git log -n 1 --format="%H" --perl-regexp --author="^(?!(${author_pattern})).*\$"
   )"; then
     print_error_git_without_libpcre
@@ -789,11 +789,12 @@ insist_single_author_used_since () {
 
   # If no latest commit, indicates same author throughout # Mono-authorship
 
-  if [ -n "${latest_other_commit}" ] \
-    && ( [ -z "${rebase_boundary}" ] \
-      || [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
-      || ! git merge-base --is-ancestor "${latest_other_commit}" "${rebase_boundary}"
-  ); then
+  if [ -n "${latest_other_commit}" ] &&
+    (
+      [ -z "${rebase_boundary}" ] ||
+        [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] ||
+        ! git merge-base --is-ancestor "${latest_other_commit}" "${rebase_boundary}"
+    ); then
     local msg_fiver="ERROR"
     if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
       msg_fiver="ALERT"
@@ -807,7 +808,7 @@ insist_single_author_used_since () {
 
     if is_range_sorted_and_signed_and_nothing_scoped_follows \
       "${rebase_boundary}" "${enable_gpg_sign}" "${latest_other_commit}" "${normalize_committer}" \
-    ; then
+      ; then
       commits_will_not_be_changed=true
 
       exclusive_boundary="${latest_other_commit}"
@@ -844,7 +845,7 @@ insist_single_author_used_since () {
 
 # ***
 
-print_error_git_without_libpcre () {
+print_error_git_without_libpcre() {
   >&2 echo "ERROR: The local ‘git’ command does not support Perl regex"
   >&2 echo "- Hint:"
   >&2 echo "  - Build it with, e.g.,"
@@ -867,7 +868,7 @@ print_error_git_without_libpcre () {
 # rebase_boundary commit is PROTECTED, than it'd be okay if only
 # PRIVATE commits followed. But seems like busy work to implement.)
 
-is_range_sorted_and_signed_and_nothing_scoped_follows () {
+is_range_sorted_and_signed_and_nothing_scoped_follows() {
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
   local until_ref="$3"
@@ -876,15 +877,15 @@ is_range_sorted_and_signed_and_nothing_scoped_follows () {
   # Side-effect: Sets bools: already_sorted, already_signed, already_normed
   if is_already_sorted_and_signed \
     "${rebase_boundary}" "${enable_gpg_sign}" "${until_ref}" "${normalize_committer}" \
-    > /dev/null \
-  ; then
+    >/dev/null \
+    ; then
     local scoping_boundary_or_HEAD
-    scoping_boundary_or_HEAD="$( \
-      identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
+    scoping_boundary_or_HEAD="$(
+      identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}"
     )"
 
     if git merge-base --is-ancestor "${until_ref}" "${scoping_boundary_or_HEAD}" \
-    ; then
+      ; then
 
       return 0
     fi
@@ -898,7 +899,7 @@ is_range_sorted_and_signed_and_nothing_scoped_follows () {
 # Overzealous UX reporting if diverging from tags, not sure why I care
 # to alert user.
 
-debug_alert_if_ref_tags_after_rebase_boundary () {
+debug_alert_if_ref_tags_after_rebase_boundary() {
   local branch_name="$1"
   local rebase_boundary="$2"
   # E.g., pw/private/in
@@ -920,21 +921,20 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
   for tag_name in \
     "${pw_tag_applied}" \
     "${pw_tag_archived}" \
-    "${pw_tag_starting}" \
-  ; do
+    "${pw_tag_starting}"; do
     if ! git_tag_exists "${tag_name}"; then
 
       continue
     fi
 
-    if $(must_confirm_shares_history_with_head "${tag_name}" > /dev/null 2>&1); then
+    if $(must_confirm_shares_history_with_head "${tag_name}" >/dev/null 2>&1); then
       local divergent_ok=false
 
-      if ! $( \
+      if ! $(
         must_confirm_commit_at_or_behind_commit \
           "${tag_name}" "${rebase_boundary}" ${divergent_ok} \
           "tag-name" "sort-from" \
-            > /dev/null 2>&1 \
+          >/dev/null 2>&1
       ); then
         >&2 debug "- FYI: '${tag_name}' tag moving to headless sequence" \
           "until reused by future put-wise"
@@ -945,7 +945,7 @@ debug_alert_if_ref_tags_after_rebase_boundary () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-alert_cannot_identify_rebase_boundary () {
+alert_cannot_identify_rebase_boundary() {
   local branch_name="$1"
   local tracking_remote_name="$2"
   local rebase_boundary="$3"
@@ -996,9 +996,9 @@ alert_cannot_identify_rebase_boundary () {
     >&2 echo "      git checkout -b ${LOCAL_BRANCH_RELEASE} <REF>"
   fi
   >&2 echo "  - Push to one of the known remote branches, e.g.,"
-  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] \
-    || [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
-  ; then
+  if [ "${branch_name}" = "${LOCAL_BRANCH_PRIVATE}" ] ||
+    [ "${branch_name}" = "${LOCAL_BRANCH_RELEASE}" ] \
+    ; then
     >&2 echo "      git push ${RELEASE_REMOTE_NAME} <REF>:refs/heads/${RELEASE_REMOTE_BRANCH}"
     >&2 echo "      git push ${SCOPING_REMOTE_NAME} <REF>:refs/heads/${SCOPING_REMOTE_BRANCH}"
   else
@@ -1025,4 +1025,3 @@ alert_cannot_identify_rebase_boundary () {
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
-

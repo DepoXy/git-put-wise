@@ -39,19 +39,19 @@ GIT_REBASE_TODO_PATH=".git/rebase-merge/git-rebase-todo"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-source_deps () {
+source_deps() {
   # Pull in WIP and post-rebase cmds (maybe_stash_changes, git_post_rebase_*).
   # - Also deps/logger.sh, deps/git-nubs.sh, lib/common_*, lib/dep_*.
   . "$(print_project_root)/bin/git-put-wise"
 }
 
-print_project_root () {
+print_project_root() {
   printf "%s" "$(dirname -- "$(realpath -- "${BASH_SOURCE[0]}")")/.."
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-git-rebase-sort-by-scope-protected-private () {
+git-rebase-sort-by-scope-protected-private() {
   local starting_ref="$1"
   local enable_gpg_sign_if_signingkey="${2:-false}"
   local use_magic_starting_ref="${3:-false}"
@@ -60,16 +60,16 @@ git-rebase-sort-by-scope-protected-private () {
 
   # CXREF: ~/.kit/git/git-put-wise/bin/seq-editor-sort-by-scope-protected-private
   local seq_editor
-  seq_editor="$(must_locate_seq_editor)" \
-    || exit_1
+  seq_editor="$(must_locate_seq_editor)" ||
+    exit_1
 
-  starting_ref="$(must_verify_starting_ref "${starting_ref}")" \
-    || exit_1
+  starting_ref="$(must_verify_starting_ref "${starting_ref}")" ||
+    exit_1
 
   local enable_gpg_sign=${enable_gpg_sign_if_signingkey}
 
   local gpg_sign
-  gpg_sign="$( \
+  gpg_sign="$(
     insist_print_gpg_sign_arg ${enable_gpg_sign_if_signingkey} ${insist_signing_key}
   )" || exit_1
 
@@ -91,11 +91,12 @@ git-rebase-sort-by-scope-protected-private () {
   # ***
 
   local rebase_boundary=""
-  rebase_boundary="$(print_rebase_boundary \
-    "${starting_ref}" \
-    "${use_magic_starting_ref}" \
-    "${enable_gpg_sign}" \
-    "${normalize_committer}" \
+  rebase_boundary="$(
+    print_rebase_boundary \
+      "${starting_ref}" \
+      "${use_magic_starting_ref}" \
+      "${enable_gpg_sign}" \
+      "${normalize_committer}"
   )" || exit_1
 
   if [ -z "${rebase_boundary}" ]; then
@@ -106,8 +107,8 @@ git-rebase-sort-by-scope-protected-private () {
   fi
 
   # Verify rebase_boundary. Called fcn. echoes rebase_boundary, or prints "HEAD".
-  must_confirm_shares_history_with_head "${rebase_boundary}" > /dev/null \
-    || exit_1
+  must_confirm_shares_history_with_head "${rebase_boundary}" >/dev/null ||
+    exit_1
 
   # Check if commit range rebase_boundary through HEAD is sorted (always),
   # and if signed and/or normalized (depending on what's enabled).
@@ -126,7 +127,7 @@ git-rebase-sort-by-scope-protected-private () {
     "${enable_gpg_sign}" \
     "${_until_ref:-HEAD}" \
     "${normalize_committer}" \
-  ; then
+    ; then
     maybe_unstash_changes ${pop_after}
 
     return 0
@@ -141,8 +142,8 @@ git-rebase-sort-by-scope-protected-private () {
   n_commits="$(git rev-list --count ${rev_list_commits})"
 
   local progress_orig_msg=""
-  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign} || ${normalize_committer}; then \
-    progress_orig_msg="$( \
+  if ${PW_REBASE_COUNTDOWN_ALWAYS:-false} || ${enable_gpg_sign} || ${normalize_committer}; then
+    progress_orig_msg="$(
       prepare_progress_messaging \
         "${n_commits}" \
         "${enable_gpg_sign}" \
@@ -157,7 +158,7 @@ git-rebase-sort-by-scope-protected-private () {
   # ***
 
   local did_normalize=false
-  ! ( ${normalize_committer} && ! ${already_normed} ) || did_normalize=true
+  ! (${normalize_committer} && ! ${already_normed}) || did_normalize=true
 
   local retcode=0
 
@@ -169,14 +170,14 @@ git-rebase-sort-by-scope-protected-private () {
     "${did_normalize}" \
     "${n_commits}" \
     "${head_sha_before_rebase}" \
-    "${progress_orig_msg}" \
-    || retcode=$?
+    "${progress_orig_msg}" ||
+    retcode=$?
 
   seq_editor_cleanup_rebase_files
 
   print_hint_if_rebase_incomplete_or_new_state_suspicious \
-    "${head_sha_before_rebase}" "${rev_count_before_rebase}" "${retcode}" \
-    || retcode=$?
+    "${head_sha_before_rebase}" "${rev_count_before_rebase}" "${retcode}" ||
+    retcode=$?
 
   # Always run optional user hook (GIT_POST_REBASE_EXEC) and also pop WIP...
   if [ -f "${GIT_REBASE_TODO_PATH}" ]; then
@@ -215,7 +216,7 @@ git-rebase-sort-by-scope-protected-private () {
 
 # ***
 
-must_locate_seq_editor () {
+must_locate_seq_editor() {
   local seq_editor="$(print_project_root)/bin/seq-editor-sort-by-scope-protected-private"
 
   if [ ! -e "${seq_editor}" ]; then
@@ -229,7 +230,7 @@ must_locate_seq_editor () {
 
 # ***
 
-must_verify_starting_ref () {
+must_verify_starting_ref() {
   local starting_ref="$1"
 
   if [ -z "${starting_ref}" ]; then
@@ -265,7 +266,7 @@ must_verify_starting_ref () {
 # - Makes it easy to resort unpublished commits without having to specify
 #   the commit, e.g., `git sort-by-scope HEAD true`. (Though more so
 #   intended for automation (see '%' `tig` binding in DepoXy project)).
-print_rebase_boundary () {
+print_rebase_boundary() {
   local starting_ref="$1"
   local use_magic_starting_ref="$2"
   local enable_gpg_sign="$3"
@@ -273,9 +274,9 @@ print_rebase_boundary () {
 
   local prog_name="$(basename -- "$0")"
 
-  if ! ${use_magic_starting_ref:-false} \
-    && [ -z "${starting_ref}" ] \
-  ; then
+  if ! ${use_magic_starting_ref:-false} &&
+    [ -z "${starting_ref}" ] \
+    ; then
     >&2 echo "ERROR: Please specify a starting ref to sort & sign from"
     >&2 echo "- E.g, specify a gitref:"
     >&2 echo "    ${prog_name} <REF>"
@@ -288,9 +289,9 @@ print_rebase_boundary () {
   fi
 
   # Uses: git rev-parse --verify --end-of-options "${gitref}^{commit}" 2> /dev/null
-  if [ -n "${starting_ref}" ] && ( \
-    ! ${use_magic_starting_ref:-false} \
-    || ! git_is_same_commit "${starting_ref}" "HEAD" \
+  if [ -n "${starting_ref}" ] && (
+    ! ${use_magic_starting_ref:-false} ||
+      ! git_is_same_commit "${starting_ref}" "HEAD"
   ); then
 
     # LATER/2024-09-03: We'll try this for now, but it might be too strict.
@@ -303,7 +304,7 @@ print_rebase_boundary () {
     #   - Or we could add a separate tig binding that disables this check,
     #     since author mostly uses this rebase script via tig bindings.
     #   - But I'd rather *harden* the code now, and see how it shakes out.
-    if ! starting_ref="$( \
+    if ! starting_ref="$(
       insist_rebase_range_free_from_canonicals \
         "${starting_ref}" \
         "${enable_gpg_sign}" \
@@ -344,7 +345,7 @@ print_rebase_boundary () {
     "${_inhibit_exit_if_unidentified:-false}" \
     "${_skip_integrity_checks:-false}" \
     "${normalize_committer}" \
-  ; then
+    ; then
     >&2 echo "ERROR: Could not identify rebase boundary"
     >&2 echo "- Hint: You can specify the boundary explicitly to skip this step"
 
@@ -383,7 +384,7 @@ print_rebase_boundary () {
 # resort generally runs in a split second, faster than you'd care
 # about, or could read, in the moment.
 
-git_rebase_resort_scoped_and_sign_commits () {
+git_rebase_resort_scoped_and_sign_commits() {
   local seq_editor="$1"
   local gpg_sign="$2"
   local rebase_boundary="$3"
@@ -400,18 +401,18 @@ git_rebase_resort_scoped_and_sign_commits () {
   fi
 
   local errs
-  errs="$( \
+  errs="$(
     GIT_SEQUENCE_EDITOR="${seq_editor}" \
-      git -c color.advice=always rebase -i --rebase-merges ${rebase_boundary} 3>&1 >&2 2>&3 3>&- \
-      | sed \
+      git -c color.advice=always rebase -i --rebase-merges ${rebase_boundary} 3>&1 >&2 2>&3 3>&- |
+      sed \
         -e '/Rebasing ([0-9]\+\/[0-9]\+)/d' \
         -e '/Executing: exec_countdown () { /d' \
         -e '/Executing: exec_gpg_sign () { /d' \
-        -e '/Successfully rebased and updated .*\.$/d' \
-      | tr -d '\r';
+        -e '/Successfully rebased and updated .*\.$/d' |
+      tr -d '\r'
     return ${PIPESTATUS[0]}
-  )" \
-    || retcode=$?
+  )" ||
+    retcode=$?
 
   if [ -n "${errs}" ] || [ ${retcode} -ne 0 ]; then
     >&2 echo
@@ -449,7 +450,7 @@ git_rebase_resort_scoped_and_sign_commits () {
   return ${retcode}
 }
 
-print_hint_if_rebase_incomplete_or_new_state_suspicious () {
+print_hint_if_rebase_incomplete_or_new_state_suspicious() {
   local head_sha_before_rebase="$1"
   local rev_count_before_rebase="$2"
   local sort_and_sign_retcode="$3"
@@ -496,7 +497,7 @@ print_hint_if_rebase_incomplete_or_new_state_suspicious () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-main () {
+main() {
   set -e
 
   # Load: set_traps, clear_traps, exit_0, exit_1, os_is_macos.
@@ -514,4 +515,3 @@ main () {
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   main "$@"
 fi
-
