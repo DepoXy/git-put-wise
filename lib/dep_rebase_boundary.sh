@@ -818,14 +818,18 @@ insist_single_author_used_since() {
 
     # ***
 
-    >&2 echo "${msg_fiver}: Commits found within rebase range from other author(s)"
-    >&2 echo "- Latest author email: ${latest_author_email}"
-    >&2 echo "- Latest other commit: ${latest_other_commit}"
-    >&2 echo "- Other commit email: $(git log -1 --format=%ae ${latest_other_commit})"
-    >&2 echo "- Rebase boundary: ${rebase_boundary:-${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}}"
+    if ! ${PW_OPTION_IGNORE_AUTHOR:-false} || ! ${commits_will_not_be_changed}; then
+      >&2 echo "${msg_fiver}: Commits found within rebase range from other author(s)"
+      >&2 echo "- Latest author email: ${latest_author_email}"
+      >&2 echo "- Latest other commit: ${latest_other_commit}"
+      >&2 echo "- Other commit email: $(git log -1 --format=%ae ${latest_other_commit})"
+      >&2 echo "- Rebase boundary: ${rebase_boundary:-${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}}"
+    fi
 
     if ${commits_will_not_be_changed}; then
-      >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"
+      if ! ${PW_OPTION_IGNORE_AUTHOR:-false}; then
+        >&2 echo "- But it's okay — the related commit(s) will be untouched on rebase"
+      fi
     else
       >&2 echo "- USAGE: Set PW_OPTION_AUTHOR_PATTERN=\".*<name@dom>|.*<user@tld>|...\" to ignore authors"
       if ${PW_OPTION_IGNORE_AUTHOR:-false}; then
