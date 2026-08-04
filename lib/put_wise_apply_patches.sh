@@ -42,7 +42,7 @@ DRY_ECHO=""
 # - PW_PROJECT_PATH might be a legit project directory path;
 #   or it might be a path to an archive file in PW_PATCHES_REPO;
 #   or it might be empty if --apply-all.
-put_wise_apply_patches () {
+put_wise_apply_patches() {
   ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
@@ -60,7 +60,7 @@ put_wise_apply_patches () {
   cd "${before_cd}"
 }
 
-put_wise_apply_patches_apply_all () {
+put_wise_apply_patches_apply_all() {
   cd "${PW_PATCHES_REPO}"
 
   if [ -n "${PW_PROJECT_PATH}" ]; then
@@ -96,7 +96,7 @@ put_wise_apply_patches_apply_all () {
   fi
 }
 
-put_wise_apply_patches_apply_one () {
+put_wise_apply_patches_apply_one() {
   local gpgf=""
 
   local patch_dir_exists=false
@@ -104,10 +104,10 @@ put_wise_apply_patches_apply_one () {
   if [ -f "${PW_PROJECT_PATH}" ]; then
     # User specified a specific archive file.
     gpgf="${PW_PROJECT_PATH}"
-  elif [ -z "${PW_PROJECT_PATH}" ] \
-    || [ -d "${PW_PROJECT_PATH}" ] \
-    || ! [ -e "${PW_PROJECT_PATH}" ] \
-  ; then
+  elif [ -z "${PW_PROJECT_PATH}" ] ||
+    [ -d "${PW_PROJECT_PATH}" ] ||
+    ! [ -e "${PW_PROJECT_PATH}" ] \
+    ; then
     # User wants to apply patches to a specific project, so we
     # need to find a patch archive file for that project path
     # (which defaults to current directory ".").
@@ -145,11 +145,11 @@ put_wise_apply_patches_apply_one () {
     decrypt_and_unpack_patchkage "${gpgf}"
   fi
 
-  process_patch_archive "${gpgf}" \
-    || exit_1
+  process_patch_archive "${gpgf}" ||
+    exit_1
 }
 
-decrypt_and_unpack_patchkage () {
+decrypt_and_unpack_patchkage() {
   local gpgf="$1"
 
   local progress_msg="Unpacking archive “${gpgf}”... "
@@ -167,14 +167,14 @@ decrypt_and_unpack_patchkage () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_verify_project_path_and_not_patches_repo () {
+must_verify_project_path_and_not_patches_repo() {
   # Don't care if project doesn't exist: process_unpacked_patchkage
   # will `mkdir` and `git init .` if necessary. Otherwise canonicalize
   # PW_PROJECT_PATH (and if run in subdir, change to repo root).
-  if [ -d "${PW_PROJECT_PATH:-.}" ] \
-    && [ -n "$(command ls -A)" ] \
-    && git rev-parse --abbrev-ref HEAD > /dev/null 2>&1 \
-  ; then
+  if [ -d "${PW_PROJECT_PATH:-.}" ] &&
+    [ -n "$(command ls -A)" ] &&
+    git rev-parse --abbrev-ref HEAD >/dev/null 2>&1 \
+    ; then
     local before_cd="$(pwd -L)"
 
     # Side effect: `cd`'s, and updates PW_PROJECT_PATH, to canonicalize.
@@ -188,7 +188,7 @@ must_verify_project_path_and_not_patches_repo () {
   must_not_be_patches_repo_or_hint_and_exit
 }
 
-must_not_be_patches_repo_or_hint_and_exit () {
+must_not_be_patches_repo_or_hint_and_exit() {
   if ! must_not_be_patches_repo; then
     >&2 echo "- HINT: To unpack and apply a specific archive, specify its path."
     >&2 echo "  - Or to unpack and apply all archives, use --apply-all."
@@ -205,7 +205,7 @@ must_not_be_patches_repo_or_hint_and_exit () {
 #
 # - UCASE: Run `pw archive -v`, remove local project, then test `pw apply`.
 
-must_find_one_patches_archive_for_project_path_and_print () {
+must_find_one_patches_archive_for_project_path_and_print() {
   local projpath_sha="$(print_project_path_ref "${PW_PROJECT_PATH}")"
 
   local before_cd="$(pwd -L)"
@@ -216,9 +216,9 @@ must_find_one_patches_archive_for_project_path_and_print () {
   archive_list="$(print_repo_archive_list_filtered "")"
 
   local repo_matches
-  repo_matches="$( \
-    echo "${archive_list}" \
-    | grep -e "^[[:xdigit:]]\+--${projpath_sha}[[:xdigit:]]*--[[:xdigit:]]\+--.*"
+  repo_matches="$(
+    echo "${archive_list}" |
+      grep -e "^[[:xdigit:]]\+--${projpath_sha}[[:xdigit:]]*--[[:xdigit:]]\+--.*"
   )"
 
   cd "${before_cd}"
@@ -243,7 +243,7 @@ must_find_one_patches_archive_for_project_path_and_print () {
   printf "${one_match}"
 }
 
-unpack_target_is_not_nonempty_else_info_stderr () {
+unpack_target_is_not_nonempty_else_info_stderr() {
   local gpgf="$1"
 
   local nonempty=0
@@ -273,7 +273,7 @@ unpack_target_is_not_nonempty_else_info_stderr () {
 
 # ***
 
-print_repo_archive_list_filtered () {
+print_repo_archive_list_filtered() {
   local option="$1"
 
   local hostname_sha
@@ -290,7 +290,7 @@ print_repo_archive_list_filtered () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-unpack_apply_all_patchkages () {
+unpack_apply_all_patchkages() {
   unpack_all_encrypted_patchkage_archives
 
   apply_all_decrypted_unpacked_patchkages
@@ -300,7 +300,7 @@ unpack_apply_all_patchkages () {
 
 # First pass: Iterate over the GPG *patchkages*,
 # and unpack (*unpatchk*?) each one.
-unpack_all_encrypted_patchkage_archives () {
+unpack_all_encrypted_patchkage_archives() {
   local gpgf
 
   # BWARE: If unpacked path already exists, tar overwrites silently.
@@ -312,7 +312,7 @@ unpack_all_encrypted_patchkage_archives () {
 # ***
 
 # Second pass: Process each unpacked *patchkage*.
-apply_all_decrypted_unpacked_patchkages () {
+apply_all_decrypted_unpacked_patchkages() {
   local gpgf
 
   local patchkages=()
@@ -325,8 +325,8 @@ apply_all_decrypted_unpacked_patchkages () {
   done < <(print_repo_archive_list_filtered "-z")
 
   for gpgf in "${patchkages[@]}"; do
-    process_patch_archive "${gpgf}" \
-      || true
+    process_patch_archive "${gpgf}" ||
+      true
   done
 }
 
@@ -334,7 +334,7 @@ apply_all_decrypted_unpacked_patchkages () {
 
 # Process the indicated archive, given its obscured packed name:
 # This code simply looks for a directory name with the same prefix.
-process_patch_archive () {
+process_patch_archive() {
   local gpgf="$1"
 
   debug "Scanning for unpacked “${gpgf}”"
@@ -360,8 +360,8 @@ process_patch_archive () {
   local RET_REC_PLAIN_NAME
   # Note the OR-ing disables errexit for nonzero return, but not exit.
   # - (Though `$(subprocess) || retval=$?` would prevent `exit`.)
-  process_unpacked_patchkage "${patch_dir}" "${gpgf}" "${ret_rec_crypt_path}" \
-    || retval=$?
+  process_unpacked_patchkage "${patch_dir}" "${gpgf}" "${ret_rec_crypt_path}" ||
+    retval=$?
 
   # If process_unpacked_patchkage "failed", it may not have cd'd back.
   cd "${before_cd}"
@@ -391,7 +391,7 @@ process_patch_archive () {
 # (because POSIX) dishonors errexit within the function. So just
 # be aware you gotta handle all expected errors. The code will
 # otherwise keep running.
-process_unpacked_patchkage () {
+process_unpacked_patchkage() {
   local patch_dir="$1"
   local gpgf="$2"
   local ret_rec_crypt_path="$3"
@@ -419,8 +419,8 @@ process_unpacked_patchkage () {
   set -- $(split_on_double_dash "${patch_dir}" 6)
   local hostname_sha="$1"
   local projpath_sha="$2"
-  local starting_sha="$3"  # If remote pulls (not applies), matches one of ours.
-  local endingat_sha="$4"  # Not used/relevant to us.
+  local starting_sha="$3" # If remote pulls (not applies), matches one of ours.
+  local endingat_sha="$4" # Not used/relevant to us.
   local timestamp_id="$5"
   local remoteish_br_encoded="$6"
   local project_name="$7"
@@ -432,8 +432,8 @@ process_unpacked_patchkage () {
   local patch_path="$(pwd -L)"
 
   local project_path
-  project_path="$(must_determine_project_path_from_meta_file "${patch_dir}")" \
-    || exit_1
+  project_path="$(must_determine_project_path_from_meta_file "${patch_dir}")" ||
+    exit_1
 
   # ***
 
@@ -500,12 +500,12 @@ process_unpacked_patchkage () {
     "${patch_branch}" "${starting_sha}" "${endingat_sha}" "${pw_tag_applied}"
 
   # Insist that the ephemeral branch does not exist.
-  must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}" \
-    || exit_1
+  must_insist_ephemeral_branch_does_not_exist "${ephemeral_branch}" ||
+    exit_1
 
   # ***
 
-  if ! git_branch_name > /dev/null; then
+  if ! git_branch_name >/dev/null; then
     if ! ${fresh_repo}; then
       echo "Unpacking project to empty repo: ${project_path}"
     fi
@@ -520,7 +520,7 @@ process_unpacked_patchkage () {
     git branch -m "${patch_branch}"
   elif ! prompt_user_and_change_branch_if_working_branch_different_patches \
     "${patch_dir}" "${patch_branch}" "${project_path}" \
-  ; then
+    ; then
 
     ${PW_OPTION_FAIL_ELEVENSES:-false} && return ${PW_ELEVENSES} || return 0
   fi
@@ -537,7 +537,7 @@ process_unpacked_patchkage () {
   # set this value before prompting user to change branches, because we
   # told them that's what we wanted to do (and we didn't tell them we'd
   # switch back). That function also has an await that allows the user
-  # to create a local branch if they need, in which case it was the user 
+  # to create a local branch if they need, in which case it was the user
   # who changed the branch, another reason not to set it back.)
   # - Catch nonzero return if no branch name, e.g., fresh repo.
   local working_branch
@@ -591,7 +591,7 @@ process_unpacked_patchkage () {
     git switch -q --orphan ${ephemeral_branch}
   else
     # Run some checks, then create and checkout ephemeral branch.
-    if ! ephemeral_branch="$(\
+    if ! ephemeral_branch="$(
       prepare_ephemeral_branch_if_commit_scoping "${ephemeral_branch}" "${patch_base}"
     )"; then
       maybe_unstash_changes ${pop_after}
@@ -605,9 +605,9 @@ process_unpacked_patchkage () {
     #   - Though makes me wonder if convention of relying on errexit to die
     #     is lazy and sloppy. Even how `return 1` can kill the script. It's
     #     definitely not a programming language best practice.
-    if [ -n "${ephemeral_branch}" ] && \
+    if [ -n "${ephemeral_branch}" ] &&
       ! git check-ref-format --branch "${ephemeral_branch}" \
-    ; then
+      ; then
       maybe_unstash_changes ${pop_after}
 
       return 1
@@ -632,8 +632,8 @@ process_unpacked_patchkage () {
   local retcode=0
 
   # Checkout and rebase working branch.
-  rebase_working_atop_ephemeral_branch "${working_branch}" "${ephemeral_branch}" \
-    || retcode=$?
+  rebase_working_atop_ephemeral_branch "${working_branch}" "${ephemeral_branch}" ||
+    retcode=$?
 
   if [ ${retcode} -ne 0 ]; then
     if must_rebase_todo_exist; then
@@ -646,7 +646,7 @@ process_unpacked_patchkage () {
   fi
 
   GIT_ABORT=false \
-  ${cleanup_func} \
+    ${cleanup_func} \
     "${patch_dir}" \
     "${gpgf}" \
     "${ret_rec_crypt_path}" \
@@ -677,7 +677,7 @@ process_unpacked_patchkage () {
   return ${retcode}
 }
 
-put_wise_apply_patches_cleanup () {
+put_wise_apply_patches_cleanup() {
   # (lb): I'm so sorry for this unwieldy list!
   # - SAVVY: Run `getconf ARG_MAX` to see your distro's shell args. limit.
   #   - On Linux Mint (Bash and dash), it's 2,097,152.
@@ -771,7 +771,7 @@ put_wise_apply_patches_cleanup () {
 
 # ***
 
-fake_the_return_receipt () {
+fake_the_return_receipt() {
   local project_path="${PW_PROJECT_PATH}"
 
   if [ ! -d "${PW_PROJECT_PATH}" ]; then
@@ -868,7 +868,7 @@ fake_the_return_receipt () {
 
 # ***
 
-must_determine_project_path_from_meta_file () {
+must_determine_project_path_from_meta_file() {
   local patch_dir="$1"
 
   local meta_file="${PW_ARCHIVE_MANIFEST:-.manifest.pw}"
@@ -895,7 +895,7 @@ must_determine_project_path_from_meta_file () {
 
 # ***
 
-print_applying_onto_progress () {
+print_applying_onto_progress() {
   local patch_path="$1"
   local project_path="$2"
 
@@ -913,7 +913,7 @@ print_applying_onto_progress () {
 # - The tag has the format:
 #     pw/<branch>/<apply-datetime>/starting/<starting-sha>
 #   We know everything but the datetime, which we'll glob out.
-git_insist_not_applied_per_tags () {
+git_insist_not_applied_per_tags() {
   local patch_branch="$1"
   local starting_sha="$2"
 
@@ -943,7 +943,7 @@ git_insist_not_applied_per_tags () {
 
 # ***
 
-git_insist_not_applied_per_history () {
+git_insist_not_applied_per_history() {
   local patch_branch="$1"
   local starting_sha="$2"
   local endingat_sha="$3"
@@ -960,16 +960,16 @@ git_insist_not_applied_per_history () {
   # ALTLY: if ! git_is_empty_tree "${starting_sha}" \
   #         && git_is_valid_object "${starting_sha}" \
   #         && git merge-base --is-ancestor "${starting_sha}" "${patch_branch}" \
-  if git_commit_object_name "${starting_sha}" > /dev/null \
-    && git merge-base --is-ancestor "${starting_sha}" "${patch_branch}" \
-  ; then
+  if git_commit_object_name "${starting_sha}" >/dev/null &&
+    git merge-base --is-ancestor "${starting_sha}" "${patch_branch}" \
+    ; then
 
     start_is_known_commit=true
   fi
 
-  if git_is_valid_object "${endingat_sha}" \
-    && git merge-base --is-ancestor "${endingat_sha}" "${patch_branch}" \
-  ; then
+  if git_is_valid_object "${endingat_sha}" &&
+    git merge-base --is-ancestor "${endingat_sha}" "${patch_branch}" \
+    ; then
     >&2 echo "ERROR: The incoming archive has already been applied, apparently!"
     >&2 echo
     >&2 echo "- The ending-at sha is already in history"
@@ -989,9 +989,9 @@ git_insist_not_applied_per_history () {
   # date/name/email can be made to match, it's now possible to have
   # matching SHAs between hosts, hence this new if-block). But the
   # changes after this commit should be unique.
-  if ${start_is_known_commit} \
-    && ! git_is_same_commit "${starting_sha}" "${pw_tag_applied}" \
-  ; then
+  if ${start_is_known_commit} &&
+    ! git_is_same_commit "${starting_sha}" "${pw_tag_applied}" \
+    ; then
     >&2 warn
     >&2 warn "ALERT: Unexpected: starting_sha != pw_tag_applied"
     >&2 warn "- $(git_sha_shorten "${starting_sha}") / starting_sha"
@@ -1005,12 +1005,12 @@ git_insist_not_applied_per_history () {
 
 # ***
 
-must_confirm_projpath_sha_identical () {
+must_confirm_projpath_sha_identical() {
   local archive_projpath_sha="$1"
   local local_projpath_sha="$2"
 
   [ "${archive_projpath_sha}" != "${local_projpath_sha}" ] || return 0
-  
+
   # Smells like a dev error, if it's possible at all.
   # (I suppose the user could hack the manifest, but would they?)
   >&2 echo "ERROR: The path-ref's don't match:"
@@ -1019,7 +1019,7 @@ must_confirm_projpath_sha_identical () {
     "!= archive path-sha (${archive_projpath_sha})."
   >&2 echo "- That is, the project_path path-ref is different from the archive path-ref."
   >&2 echo "This is likely a very rare error, and probably a DEV issue, i.e.," \
-                                                      "it's not you, it's me."
+    "it's not you, it's me."
 
   return 1
 }
@@ -1036,7 +1036,7 @@ must_confirm_projpath_sha_identical () {
 # completes, right? It'd be like a shell function that `cd`'s somewhere
 # to do some work, finishes there, and leaves your terminal there.
 
-prompt_user_and_change_branch_if_working_branch_different_patches () {
+prompt_user_and_change_branch_if_working_branch_different_patches() {
   local patch_dir="$1"
   local patch_branch="$2"
   local project_path="$3"
@@ -1044,15 +1044,15 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
   local branch_name
   branch_name="$(git_branch_name)"
 
-  maybe_prompt_user_and_change_branch () {
+  maybe_prompt_user_and_change_branch() {
     local to_branch="$1"
 
-    [ "${branch_name}" != "${to_branch}" ] \
-      || return 0
+    [ "${branch_name}" != "${to_branch}" ] ||
+      return 0
 
     local will_commit_wip=false
-    test -z "$(git status --porcelain=v1)" \
-      || will_commit_wip=true
+    test -z "$(git status --porcelain=v1)" ||
+      will_commit_wip=true
 
     echo "ALERT: These patches were not generated from the"
     echo "       same-named branch as the current branch."
@@ -1090,9 +1090,8 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
   if [ "${branch_name}" != "${patch_branch}" ]; then
     if git_branch_exists "${patch_branch}"; then
       maybe_prompt_user_and_change_branch "${patch_branch}" || return 1
-    elif [ "${patch_branch}" = "${LOCAL_BRANCH_RELEASE}" ] \
-      && git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; \
-    then
+    elif [ "${patch_branch}" = "${LOCAL_BRANCH_RELEASE}" ] &&
+      git_branch_exists "${LOCAL_BRANCH_PRIVATE}"; then
       maybe_prompt_user_and_change_branch "${LOCAL_BRANCH_PRIVATE}" || return 1
     else
       echo "ALERT: Applying patches to new branch: ${patch_branch}"
@@ -1155,7 +1154,7 @@ prompt_user_and_change_branch_if_working_branch_different_patches () {
 #   applies the patches in order.
 #   - REFER: `man bash` *Pathname Expansion*: "alphabetically sorted list".
 
-apply_patches_unless_dry_run () {
+apply_patches_unless_dry_run() {
   local patch_path="$1"
 
   # Note that we're not `git fetch`'ing. We could fetch 'protected', but if
@@ -1177,14 +1176,13 @@ apply_patches_unless_dry_run () {
   echo "Applying patches..."
   echo "  git am --3way --committer-date-is-author-date --empty=keep *.patch"
 
-  if ! \
-    ${DRY_ECHO} \
+  if ! ${DRY_ECHO} \
     git am \
-      --3way \
-      --committer-date-is-author-date \
-      --empty=keep \
-      "${patch_path}"/*.patch \
-  ; then
+    --3way \
+    --committer-date-is-author-date \
+    --empty=keep \
+    "${patch_path}"/*.patch \
+    ; then
     # This program flow should be extremely rare, perhaps unreachable
     # if the user is using put-wise how we expect, and not playing with
     # fire.
@@ -1228,7 +1226,7 @@ apply_patches_unless_dry_run () {
 
 # ***
 
-must_await_user_resolve_conflicts () {
+must_await_user_resolve_conflicts() {
   >&2 echo "============================================"
   >&2 echo
   >&2 echo "Ope! You got conflicts. Resolve them. We'll wait for you..."
@@ -1244,8 +1242,8 @@ must_await_user_resolve_conflicts () {
   # why, so use todo as signal instead.
   while [ -f "${GIT_REBASE_TODO_PATH}" ]; do
     # This is just a curiosity:
-    [ -f ".git/REBASE_HEAD" ] \
-      || >&2 echo "UNEXPECTED: Not found: .git/REBASE_HEAD"
+    [ -f ".git/REBASE_HEAD" ] ||
+      >&2 echo "UNEXPECTED: Not found: .git/REBASE_HEAD"
 
     >&2 echo "============================================"
     >&2 echo
@@ -1256,11 +1254,11 @@ must_await_user_resolve_conflicts () {
     must_await_user_resolve_stoppage_read_input
   done
 
-  [ ! -f "${GIT_REBASE_TODO_PATH}" ] \
-    || >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
+  [ ! -f "${GIT_REBASE_TODO_PATH}" ] ||
+    >&2 echo "UNEXPECTED: Not not found: ${GIT_REBASE_TODO_PATH}"
 }
 
-must_await_user_resolve_stoppage_read_input () {
+must_await_user_resolve_stoppage_read_input() {
   read input
 
   local opt_chosen
@@ -1320,7 +1318,7 @@ must_await_user_resolve_stoppage_read_input () {
 #
 # Which we'll fix here. (Sigh.)
 
-set_committer_same_as_author () {
+set_committer_same_as_author() {
   local patch_path="$1"
   local patch_base="$2"
 
@@ -1338,14 +1336,14 @@ set_committer_same_as_author () {
   ${DRY_ECHO} git rebase --exec "${exec_reset_committer}; exec_reset_committer" ${gitref}
 }
 
-print_exec_fcn_reset_committer () {
+print_exec_fcn_reset_committer() {
   print_exec_fcn_reset_committer_raw "$@" | sanitize_exec_fcn
 }
 
 # CXREF: Compare similar fcns:
 #   print_exec_fcn_reset_committer_raw
 #   print_exec_normalize_committer_raw
-print_exec_fcn_reset_committer_raw () {
+print_exec_fcn_reset_committer_raw() {
   local patch_path="$1"
   local old_head="$2"
 
@@ -1413,7 +1411,7 @@ print_exec_fcn_reset_committer_raw () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-rebase_working_atop_ephemeral_branch () {
+rebase_working_atop_ephemeral_branch() {
   local working_branch="$1"
   local ephemeral_branch="$2"
 
@@ -1441,7 +1439,7 @@ rebase_working_atop_ephemeral_branch () {
 # then you'll know that
 #   pw-private-abcd1234-apply-old_head
 # shows the old branch, from before you ran --apply.
-add_patch_history_tags () {
+add_patch_history_tags() {
   local old_head="$1"
   local last_patch="$2"
   local patch_branch="$3"
@@ -1491,7 +1489,7 @@ add_patch_history_tags () {
 #     So the next --archive will start from (parent of new pw/branch/in),
 #     after we move pw/branch/in here to the final patch commit from the
 #     git-am we just ran.
-manage_pw_tracking_tags () {
+manage_pw_tracking_tags() {
   local pw_tag_applied="$1"
   local pw_tag_archived="$2"
   local last_patch="$3"
@@ -1502,27 +1500,27 @@ manage_pw_tracking_tags () {
 
   # Move pw/in.
   echo "git tag -f \"${pw_tag_applied}\" \"${last_patch}\""
-  ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${last_patch}" > /dev/null
+  ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${last_patch}" >/dev/null
 
   # Delete pw/out.
   echo "git tag -d \"${pw_tag_archived}\""
   # Don't show not-found output, e.g., "error: tag 'foo' not found."
-  ${DRY_ECHO} git tag -d "${pw_tag_archived}" > /dev/null 2>&1 || true
+  ${DRY_ECHO} git tag -d "${pw_tag_archived}" >/dev/null 2>&1 || true
 
   # Move pw/work.
   # - This is purely referential, for the user, and shows where latest
   #   --apply started.
   echo "git tag -f \"${pw_tag_starting}\" \"${patch_base}\""
-  ${DRY_ECHO} git tag -f "${pw_tag_starting}" "${patch_base}" > /dev/null
+  ${DRY_ECHO} git tag -f "${pw_tag_starting}" "${patch_base}" >/dev/null
 
   # Delete user's pw-apply-here.
   echo "git tag -d \"${PW_TAG_ONTIME_APPLY}\""
-  ${DRY_ECHO} git tag -d "${PW_TAG_ONTIME_APPLY}" > /dev/null 2>&1 || true
+  ${DRY_ECHO} git tag -d "${PW_TAG_ONTIME_APPLY}" >/dev/null 2>&1 || true
 }
 
 # ***
 
-prepare_return_receipt_hydrate () {
+prepare_return_receipt_hydrate() {
   local rev_count="$1"
   local ret_rec_plain_name="$2"
   local patch_branch="$3"
@@ -1546,7 +1544,7 @@ prepare_return_receipt_hydrate () {
 
   echo \
     "${rev_count} ${hostname_sha} ${patch_branch} ${starting_sha} ${last_patch}" \
-    >> "${ret_rec_plain_name}"
+    >>"${ret_rec_plain_name}"
 
   echo "  # cat \${ret_rec_plain_name}"
   echo "  \$ cat ${ret_rec_plain_name}"
@@ -1556,7 +1554,7 @@ prepare_return_receipt_hydrate () {
 
 # ***
 
-prepare_return_receipt_encrypt () {
+prepare_return_receipt_encrypt() {
   local ret_rec_crypt_path="$1"
   local ret_rec_plain_name="$2"
 
@@ -1588,7 +1586,7 @@ prepare_return_receipt_encrypt () {
 # directory, we expect it to have the same name as what git-put-wise
 # used when it was created, so that we can identify the GPG archive from
 # which it was unpacked. (Although we don't `exit_1` if violated.)
-remove_archive_from_git () {
+remove_archive_from_git() {
   local gpgf="$1"
 
   if [ ! -f "${gpgf}" ]; then
@@ -1613,7 +1611,7 @@ remove_archive_from_git () {
   fi
 }
 
-remove_plaintext_assets () {
+remove_plaintext_assets() {
   local patch_dir="$1"
   local ret_rec_plain_name="$2"
 
@@ -1625,7 +1623,7 @@ remove_plaintext_assets () {
   remove_plaintext_assets_file "${ret_rec_plain_name}"
 }
 
-remove_plaintext_assets_dir () {
+remove_plaintext_assets_dir() {
   local a_dir="$1"
 
   ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
@@ -1636,7 +1634,7 @@ remove_plaintext_assets_dir () {
   fi
 }
 
-remove_plaintext_assets_file () {
+remove_plaintext_assets_file() {
   local a_file="$1"
 
   ! ${PW_OPTION_NO_CLEANUP:-false} || return 0
@@ -1652,4 +1650,3 @@ remove_plaintext_assets_file () {
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
-

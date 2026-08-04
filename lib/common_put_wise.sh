@@ -103,11 +103,11 @@ PUT_WISE_REBASE_ALL_COMMITS="${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}"
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-__DRYRUN () { >&2 echo "$@"; }
+__DRYRUN() { >&2 echo "$@"; }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-maybe_create_patches_repo_and_canonicalize_path () {
+maybe_create_patches_repo_and_canonicalize_path() {
   local insist_repo=${1:false}
 
   ! ${insist_repo} || must_verify_patches_repo_specified
@@ -119,7 +119,7 @@ maybe_create_patches_repo_and_canonicalize_path () {
   must_canonicalize_path_and_verify_nothing_staged
 }
 
-must_verify_patches_repo_specified () {
+must_verify_patches_repo_specified() {
   if [ -z "${PW_PATCHES_REPO}" ]; then
     >&2 echo "ERROR: Please specify the patches archive repo" \
       "using -T/--patches-repo or the PW_PATCHES_REPO environ."
@@ -130,7 +130,7 @@ must_verify_patches_repo_specified () {
   return 0
 }
 
-must_verify_patches_repo_is_directory_if_specified () {
+must_verify_patches_repo_is_directory_if_specified() {
   [ -n "${PW_PATCHES_REPO}" ] || return 0
 
   if [ -e "${PW_PATCHES_REPO}" ] && [ ! -d "${PW_PATCHES_REPO}" ]; then
@@ -143,7 +143,7 @@ must_verify_patches_repo_is_directory_if_specified () {
   return 0
 }
 
-must_ensure_patches_repo_exists () {
+must_ensure_patches_repo_exists() {
   maybe_prompt_user_and_prepare_patches_repo
 
   local before_cd="$(pwd -L)"
@@ -155,10 +155,9 @@ must_ensure_patches_repo_exists () {
   cd "${before_cd}"
 }
 
-maybe_prompt_user_and_prepare_patches_repo () {
-  if [ -d "${PW_PATCHES_REPO}" ] && \
-    [ -n "$(command ls -A "${PW_PATCHES_REPO}")" ]; \
-  then
+maybe_prompt_user_and_prepare_patches_repo() {
+  if [ -d "${PW_PATCHES_REPO}" ] &&
+    [ -n "$(command ls -A "${PW_PATCHES_REPO}")" ]; then
     return 0
   fi
 
@@ -175,7 +174,7 @@ maybe_prompt_user_and_prepare_patches_repo () {
   create_patches_parents_and_repo
 }
 
-maybe_prompt_user_to_create_parent_path () {
+maybe_prompt_user_to_create_parent_path() {
   local parent_dir="$(dirname -- "${PW_PATCHES_REPO}")"
 
   if [ ! -d "${parent_dir}" ]; then
@@ -185,7 +184,7 @@ maybe_prompt_user_to_create_parent_path () {
   return 0
 }
 
-create_patches_parents_and_repo () {
+create_patches_parents_and_repo() {
   mkdir -p "${PW_PATCHES_REPO}"
 
   local before_cd="$(pwd -L)"
@@ -197,7 +196,7 @@ create_patches_parents_and_repo () {
   cd "${before_cd}"
 }
 
-must_verify_looks_like_our_repo () {
+must_verify_looks_like_our_repo() {
   local first_message=""
 
   first_message="$(git_first_commit_message)"
@@ -238,7 +237,7 @@ must_verify_looks_like_our_repo () {
   return 0
 }
 
-must_canonicalize_path_and_verify_nothing_staged () {
+must_canonicalize_path_and_verify_nothing_staged() {
   # Both --archive and --apply* commit to the patches repo.
   # - On --archive, the new archive will be added.
   # - On --apply*, the processed archive(s) will be removed,
@@ -264,13 +263,13 @@ must_canonicalize_path_and_verify_nothing_staged () {
   cd "${before_cd}"
 }
 
-git_insist_git_repo_and_is_git_repo_root () {
+git_insist_git_repo_and_is_git_repo_root() {
   git_insist_git_repo
 
   git_insist_is_git_repo_root
 }
 
-git_insist_is_git_repo_root () {
+git_insist_is_git_repo_root() {
   if ! git_is_git_repo_root; then
     # This might be a GAFFE, i.e., dev mistake...
     >&2 echo "ERROR: Expected a Git repo root: ${PW_PATCHES_REPO}"
@@ -279,7 +278,7 @@ git_insist_is_git_repo_root () {
   fi
 }
 
-prompt_user_to_create_patches_repo () {
+prompt_user_to_create_patches_repo() {
   local patches_path="$1"
 
   echo "The patches repo has not been created yet."
@@ -292,7 +291,7 @@ prompt_user_to_create_patches_repo () {
   [ "${opt_chosen}" = "y" ] && return 0 || return 1
 }
 
-prompt_user_to_create_parent_path () {
+prompt_user_to_create_parent_path() {
   local parent_dir="$1"
 
   echo
@@ -306,7 +305,7 @@ prompt_user_to_create_parent_path () {
   [ "${opt_chosen}" = "y" ] && return 0 || return 1
 }
 
-git_init_patches_repo () {
+git_init_patches_repo() {
   local emptiness="${PW_PATCHES_REPO_HINT}"
 
   git -c init.defaultBranch="${PATCHES_REPO_BRANCH}" init .
@@ -319,7 +318,7 @@ git_init_patches_repo () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-put_wise_reset_patches_repo () {
+put_wise_reset_patches_repo() {
   if [ -e "${PW_PATCHES_REPO}" ] && [ ! -d "${PW_PATCHES_REPO}" ]; then
     >&2 echo "ERROR: Patches repo path not a directory: “${PW_PATCHES_REPO}”."
 
@@ -372,7 +371,7 @@ put_wise_reset_patches_repo () {
   echo "- Hint: Now wire the remote, set the upstream, and force-push"
 }
 
-prompt_user_to_recreate_patches_repo () {
+prompt_user_to_recreate_patches_repo() {
   local patches_repo="$1"
 
   echo
@@ -388,7 +387,7 @@ prompt_user_to_recreate_patches_repo () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-git_repo_canonicalize_environ_path () {
+git_repo_canonicalize_environ_path() {
   local envvar="$1"
 
   local before_cd="$(pwd -L)"
@@ -424,7 +423,7 @@ git_repo_canonicalize_environ_path () {
 # - --apply calls this function if user specified project repo,
 #   and --apply always calls its own insist-git and not-protected.
 # - --archive, --push, and --pull each call this function immediately.
-must_cd_project_path_and_verify_repo () {
+must_cd_project_path_and_verify_repo() {
   PW_PROJECT_PATH="${PW_PROJECT_PATH:-.}"
 
   if [ ! -d "${PW_PROJECT_PATH}" ]; then
@@ -448,7 +447,7 @@ must_cd_project_path_and_verify_repo () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_not_be_patches_repo () {
+must_not_be_patches_repo() {
   project_path_same_as_patches_repo || return 0
 
   >&2 echo "ERROR: This command does not work on the patches repo: “${PW_PATCHES_REPO}”"
@@ -456,7 +455,7 @@ must_not_be_patches_repo () {
   exit_1
 }
 
-project_path_same_as_patches_repo () {
+project_path_same_as_patches_repo() {
   # Assumes both current directory and patches repo at git_project_root,
   # otherwise you could trick git-put-wise into running git-format-patch
   # or git-am on the patches repo.
@@ -483,18 +482,24 @@ project_path_same_as_patches_repo () {
   #   - One could mount same dir at two sep paths to fool this check,
   #     among other shortfalls, but it's good enough for us, even the
   #     echo-dot protects against the most unlikeliest of scenarios.
-  project_path_abs="$(cd -- "${PW_PROJECT_PATH}" && pwd -P; echo .)"
-  patches_repo_abs="$(cd -- "${PW_PATCHES_REPO}" && pwd -P; echo .)"
+  project_path_abs="$(
+    cd -- "${PW_PROJECT_PATH}" && pwd -P
+    echo .
+  )"
+  patches_repo_abs="$(
+    cd -- "${PW_PATCHES_REPO}" && pwd -P
+    echo .
+  )"
 
-  [ "${project_path_abs}" = "${patches_repo_abs}" ] \
-    && return 0 \
-    || return 1
+  [ "${project_path_abs}" = "${patches_repo_abs}" ] &&
+    return 0 ||
+    return 1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # `put-wise --move-pw-in-tag` / PW_ACTION_MOVE_PW_IN_TAG=true
-put_wise_move_pw_in_tag () {
+put_wise_move_pw_in_tag() {
   local gitref="$1"
 
   if [ $# -lt 1 ]; then
@@ -522,7 +527,7 @@ put_wise_move_pw_in_tag () {
 
 # `put-wise --rebase-boundary` / PW_ACTION_REBASE_BOUNDARY=true
 
-put_wise_print_rebase_boundary () {
+put_wise_print_rebase_boundary() {
   local branch_name=""
   local local_release=""
   local remote_release=""
@@ -536,7 +541,7 @@ put_wise_print_rebase_boundary () {
   local already_normed=false
   if ! put_wise_identify_rebase_boundary_and_remotes \
     "${_action_desc:-probe}" "${_inhibit_exit_if_unidentified:-true}" \
-  ; then
+    ; then
     # Cound not identify rebase boundary, and commits not sorted/signed.
     rebase_boundary="<unknown!>"
   fi
@@ -552,8 +557,7 @@ put_wise_print_rebase_boundary () {
     remote_name \
     already_sorted \
     already_signed \
-    already_normed \
-  ; do
+    already_normed; do
     echo "${var}: ${!var}"
   done
 }
@@ -562,10 +566,10 @@ put_wise_print_rebase_boundary () {
 
 # `put-wise --scope` / PW_ACTION_SCOPE=true
 
-put_wise_print_scoping_boundary_sha () {
+put_wise_print_scoping_boundary_sha() {
   local protected_boundary_or_HEAD
-  protected_boundary_or_HEAD="$( \
-    identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}" \
+  protected_boundary_or_HEAD="$(
+    identify_scope_ends_at "^${SCOPING_PREFIX}" "^${PRIVATE_PREFIX}"
   )"
 
   # identify-scope postfixes '^' parent shortcut, but this fcn derefs.
@@ -585,7 +589,7 @@ put_wise_print_scoping_boundary_sha () {
 #   print_project_path_ref
 
 # Aka `pw sha`.
-put_wise_print_sha_or_sha () {
+put_wise_print_sha_or_sha() {
   local path="$(git_project_root_relative)"
 
   if [ -n "${PW_PROJECT_PATH}" ]; then
@@ -599,13 +603,13 @@ put_wise_print_sha_or_sha () {
     "$(print_project_path_ref "${path}")"
 }
 
-print_project_path_ref () {
+print_project_path_ref() {
   local path="${1:-$(git_project_root_relative)}"
 
   print_sha "$(print_project_path_normalized "${path}")"
 }
 
-print_project_path_normalized () {
+print_project_path_normalized() {
   local path="$1"
 
   local project_path
@@ -618,16 +622,16 @@ print_project_path_normalized () {
 
 # ***
 
-print_sha () {
+print_sha() {
   local key="$1"
 
-  shorten_sha "$( \
-    printf "${PW_PROJECT_PATH_SALT}--${key}" \
-      | sha1sum | awk '{ print $1 }'
+  shorten_sha "$(
+    printf "${PW_PROJECT_PATH_SALT}--${key}" |
+      sha1sum | awk '{ print $1 }'
   )"
 }
 
-shorten_sha () {
+shorten_sha() {
   local string="$1"
   local maxlen="${2:-${PW_SHA1SUM_LENGTH}}"
 
@@ -636,7 +640,7 @@ shorten_sha () {
 
 # ***
 
-substitute_home_tilde () {
+substitute_home_tilde() {
   echo "$1" | sed -E "s#^${HOME}(/|$)#~\1#"
   # KLUGE/2023-05-28: Vim high issue:  ↑ ↑"
 }
@@ -647,7 +651,7 @@ substitute_home_tilde () {
 # assumptions we guarantee here, such as the archive being unpacked is
 # committed to the patches repo. This lets put-wise git-rm the archive
 # after applying it, without first checking if working in patches repo.
-must_verify_patches_repo_archive () {
+must_verify_patches_repo_archive() {
   local archive_file="$(basename -- "$1")"
 
   local before_cd="$(pwd -L)"
@@ -665,7 +669,7 @@ must_verify_patches_repo_archive () {
   cd "${before_cd}"
 }
 
-print_repo_archive_list () {
+print_repo_archive_list() {
   local option="$1"
   [ $# -eq 0 ] || shift
 
@@ -677,7 +681,7 @@ print_repo_archive_list () {
     "$@"
 }
 
-print_repo_return_receipts () {
+print_repo_return_receipts() {
   local option="$1"
   [ $# -eq 0 ] || shift
 
@@ -701,7 +705,7 @@ print_repo_return_receipts () {
 #   unnnecessary if upstream remote exists (archive will start
 #   at that commit instead).
 # Used on --apply to know where to start applying patches.
-format_pw_tag_applied () {
+format_pw_tag_applied() {
   local patch_branch="$1"
 
   # E.g., 'pw/private/in'
@@ -710,7 +714,7 @@ format_pw_tag_applied () {
 
 # Used on --archive just to show user extent of latest archive.
 # - If removed, --archive will figure it out and replace pw/out.
-format_pw_tag_archived () {
+format_pw_tag_archived() {
   local patch_branch="$1"
 
   # E.g., 'pw/private/out'
@@ -719,7 +723,7 @@ format_pw_tag_archived () {
 
 # Moved on --apply to indicate where previous pw/in was.
 # - Solely informational.
-format_pw_tag_starting () {
+format_pw_tag_starting() {
   local patch_branch="$1"
 
   # E.g., 'pw/private/work'
@@ -727,7 +731,7 @@ format_pw_tag_starting () {
 }
 
 # Used on --apply to name the ephemeral branch, and not persisted.
-format_pw_tag_ephemeral_apply () {
+format_pw_tag_ephemeral_apply() {
   local patch_branch="$1"
 
   # E.g., 'pw/private/apply'
@@ -735,7 +739,7 @@ format_pw_tag_ephemeral_apply () {
 }
 
 # Used on --pull to name the ephemeral branch, and not persisted.
-format_pw_tag_ephemeral_pull () {
+format_pw_tag_ephemeral_pull() {
   local patch_branch="$1"
 
   # E.g., 'pw/private/pull'
@@ -748,13 +752,13 @@ format_pw_tag_ephemeral_pull () {
 # - This fcn. is used by PW_ACTION_PUSH and PW_ACTION_ARCHIVE.
 # - Exits 1 if boundary is ahead of HEAD or diverged.
 # - Exits 0/11 if boundary is same as HEAD, i.e., no-op.
-resort_and_sign_commits_since_boundary () {
+resort_and_sign_commits_since_boundary() {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
   local normalize_committer="${3:-false}"
 
   local starting_sha_or_HEAD
-  starting_sha_or_HEAD="$( \
+  starting_sha_or_HEAD="$(
     must_confirm_shares_history_with_head "${rebase_boundary}"
   )" || exit_1
 
@@ -779,7 +783,7 @@ resort_and_sign_commits_since_boundary () {
     "${normalize_committer}"
 }
 
-resort_and_sign_commits_since_boundary_unless_unnecessary () {
+resort_and_sign_commits_since_boundary_unless_unnecessary() {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
   local normalize_committer="${3:-false}"
@@ -790,8 +794,8 @@ resort_and_sign_commits_since_boundary_unless_unnecessary () {
   git_sort_by_scope \
     "${rebase_boundary}" \
     "${enable_gpg_sign}" \
-    "${normalize_committer}" \
-      || retcode=$?
+    "${normalize_committer}" ||
+    retcode=$?
 
   if [ ${retcode} -ne 0 ] && [ -f "${GIT_REBASE_TODO_PATH}" ]; then
     # Callee set rebase-todo 'exec' to pop WIP, and to call optional user hook,
@@ -804,7 +808,7 @@ resort_and_sign_commits_since_boundary_unless_unnecessary () {
   return ${retcode}
 }
 
-exit_elevenses () {
+exit_elevenses() {
   if ${PW_OPTION_FAIL_ELEVENSES:-false}; then
 
     exit_11
@@ -815,7 +819,7 @@ exit_elevenses () {
 }
 
 # CXREF: ~/.kit/sh/sh-err-trap/lib/err-trap.sh
-exit_11 () {
+exit_11() {
   clear_traps true 11
 
   exit ${PW_ELEVENSES:-11}
@@ -859,7 +863,7 @@ exit_11 () {
 #   already_signed=true|false
 #   already_normed=true|false
 
-is_already_sorted_and_signed () {
+is_already_sorted_and_signed() {
   # rebase_boundary is a commit object, or magic name "ROOT".
   local rebase_boundary="$1"
   local enable_gpg_sign="$2"
@@ -898,10 +902,10 @@ is_already_sorted_and_signed () {
 
   local exclude_pattern="^(${PRIVATE_PREFIX:-PRIVATE: }|${SCOPING_PREFIX:-PROTECTED: }).*\$"
 
-  if ! ${enable_gpg_sign} \
-    || git_is_gpg_signed_since_commit \
+  if ! ${enable_gpg_sign} ||
+    git_is_gpg_signed_since_commit \
       "${since_commit}" "${until_ref}" "${exclude_pattern}" \
-  ; then
+    ; then
     if ${enable_gpg_sign}; then
       already_signed=true
 
@@ -913,12 +917,12 @@ is_already_sorted_and_signed () {
     but_not="but not signed"
   fi
 
-  if ! ${normalize_committer} \
-    || [ -z "$( \
+  if ! ${normalize_committer} ||
+    [ -z "$(
       git_oldest_commit_with_committer_different_than_author \
-        "${since_commit}" "${until_ref}" \
-      )" ] \
-  ; then
+        "${since_commit}" "${until_ref}"
+    )" ] \
+    ; then
     if ${normalize_committer}; then
       already_normed=true
 
@@ -946,17 +950,17 @@ is_already_sorted_and_signed () {
 
 # ***
 
-print_git_rev_list_commits () {
+print_git_rev_list_commits() {
   local rebase_boundary="$1"
   local until_ref="${2:-HEAD}"
 
   local rev_list_commits="${until_ref}"
 
-  if [ -n "${rebase_boundary}" ] \
-    && [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
-  ; then
+  if [ -n "${rebase_boundary}" ] &&
+    [ "${rebase_boundary}" != "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
+    ; then
     local object_name
-    if object_name="$(git rev-parse ${rebase_boundary} 2> /dev/null)"; then
+    if object_name="$(git rev-parse ${rebase_boundary} 2>/dev/null)"; then
       rev_list_commits="${object_name}..${until_ref}"
     fi
     # else, caller passed parent-of ref, e.g., <SHA>^ which means <SHA> is
@@ -970,7 +974,7 @@ print_git_rev_list_commits () {
 
 # ***
 
-print_generic_status_message () {
+print_generic_status_message() {
   local msg_prefix="$1"
   local msg_postfix="$2"
   local n_commits="$3"
@@ -986,7 +990,7 @@ print_generic_status_message () {
 
 # ***
 
-print_sorted_and_signed_message () {
+print_sorted_and_signed_message() {
   local gpg_sign="$1"
   local already_sorted="$2"
   local did_normalize="$3"
@@ -1037,15 +1041,15 @@ PW_GIT_CONFIG_SIGN_BEFORE_PUSH="put-wise.sign-before-push"
 #     error: gpg failed to sign the data
 #     ...
 
-insist_print_gpg_sign_arg () {
+insist_print_gpg_sign_arg() {
   local enable_gpg_sign_if_signingkey="${1:-false}"
   local insist_signing_key="${2:-false}"
 
   local gpg_sign=""
 
-  if ${enable_gpg_sign_if_signingkey} \
-    && [ "$(git config ${PW_GIT_CONFIG_SIGN_BEFORE_PUSH:-put-wise.sign-before-push})" = "true" ] \
-  ; then
+  if ${enable_gpg_sign_if_signingkey} &&
+    [ "$(git config ${PW_GIT_CONFIG_SIGN_BEFORE_PUSH:-put-wise.sign-before-push})" = "true" ] \
+    ; then
     if [ -n "$(git config user.signingkey)" ]; then
       # E.g., `git rebase -S|--gpg-sign`
       gpg_sign="--gpg-sign"
@@ -1061,9 +1065,9 @@ insist_print_gpg_sign_arg () {
 
 # ***
 
-print_is_gpg_sign_enabled () {
+print_is_gpg_sign_enabled() {
   local gpg_sign
-  gpg_sign="$( \
+  gpg_sign="$(
     insist_print_gpg_sign_arg \
       ${_enable_gpg_sign_if_signingkey:-true} \
       ${_insist_signing_key:-false}
@@ -1086,7 +1090,7 @@ print_is_gpg_sign_enabled () {
 #     (via resort_and_sign_commits_since_boundary)
 # - git-rebase-sort-by-scope, and git-bump-version-tag
 #     (via directly)
-must_confirm_shares_history_with_head () {
+must_confirm_shares_history_with_head() {
   local rebase_boundary="$1"
 
   if git_is_empty_tree "${rebase_boundary}"; then
@@ -1099,9 +1103,9 @@ must_confirm_shares_history_with_head () {
     echo "HEAD"
 
     return 0
-  elif [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] \
-    || git merge-base --is-ancestor "${rebase_boundary}" "HEAD" \
-  ; then
+  elif [ "${rebase_boundary}" = "${PUT_WISE_REBASE_ALL_COMMITS:-ROOT}" ] ||
+    git merge-base --is-ancestor "${rebase_boundary}" "HEAD" \
+    ; then
     # The common ancestor is ${rebase_boundary},
     # i.e., rebase_boundary is behind HEAD.
 
@@ -1177,7 +1181,7 @@ must_confirm_shares_history_with_head () {
 
 # 2022-11-14: This function inspired by must_confirm_shares_history_with_head,
 # but markedly different, too, especially the ancestor_sha = remote_sha check.
-must_confirm_upstream_shares_history_with_head () {
+must_confirm_upstream_shares_history_with_head() {
   local remote_ref="$1"
   local strict_check="${2:-false}"
 
@@ -1230,7 +1234,7 @@ must_confirm_upstream_shares_history_with_head () {
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # Reorder commits in prep. to diff.
-git_sort_by_scope () {
+git_sort_by_scope() {
   local rebase_boundary="$1"
   local enable_gpg_sign="${2:-false}"
   local normalize_committer="${3:-false}"
@@ -1250,7 +1254,7 @@ git_sort_by_scope () {
 }
 
 # So that you can source common_put_wise.sh without also sourcing git-put-wise
-_common_source_dep () {
+_common_source_dep() {
   local dep_path="$1"
 
   if [ "$(type -t source_dep)" = "function" ]; then
@@ -1289,7 +1293,7 @@ _common_source_dep () {
 
 # Make a WIP commit if we must.
 # - Similar to git-smart's `git wip`.
-maybe_stash_changes () {
+maybe_stash_changes() {
   local context="${1:-git-put-wise}"
 
   # E.g., "PRIVATE: WIP [git-put-wise]"
@@ -1321,7 +1325,7 @@ maybe_stash_changes () {
   echo ${pop_after}
 }
 
-maybe_unstash_changes () {
+maybe_unstash_changes() {
   local pop_after="$1"
 
   if ${pop_after}; then
@@ -1337,22 +1341,22 @@ maybe_unstash_changes () {
   fi
 }
 
-is_latest_commit_wip_commit_staged () {
+is_latest_commit_wip_commit_staged() {
   git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX:-PRIVATE: }WIP .*(staged)$"
 }
 
-is_latest_commit_wip_commit_working () {
+is_latest_commit_wip_commit_working() {
   git log -1 --format=%s | grep -q -e "^${PRIVATE_PREFIX:-PRIVATE: }WIP .*(working)$"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-put_wise_rebase_continue () {
+put_wise_rebase_continue() {
   # Pretty bland.
   git rebase --continue
 }
 
-put_wise_rebase_abort () {
+put_wise_rebase_abort() {
   source_dep "deps/git-smart/bin/git-abort"
 
   # Calls our 'exec' callbacks (that were tagged " #git-abort").
@@ -1360,7 +1364,7 @@ put_wise_rebase_abort () {
 }
 
 # Set rebase-todo 'exec' to call optional user hook, GIT_POST_REBASE_EXEC.
-git_post_rebase_exec_inject () {
+git_post_rebase_exec_inject() {
   local pop_after="${1:-false}"
 
   must_rebase_todo_exist || return 1
@@ -1374,7 +1378,7 @@ git_post_rebase_exec_inject () {
 
   if [ -n "${GIT_POST_REBASE_EXEC}" ]; then
     echo "exec ${GIT_POST_REBASE_EXEC} ${GITSMART_POST_REBASE_EXECS_TAG}" \
-      >> "${GIT_REBASE_TODO_PATH}"
+      >>"${GIT_REBASE_TODO_PATH}"
   fi
 
   if ${pop_after}; then
@@ -1386,14 +1390,14 @@ git_post_rebase_exec_inject () {
       git log -1 --format=%s
         | grep -q -e \"^${PRIVATE_PREFIX:-PRIVATE: }WIP \\\\[.*(staged)$\"
       && git reset -q --soft @~1 ;
-      ) & ${GITSMART_POST_REBASE_EXECS_TAG}" \
-        | sed 's/^ \+/ /' \
-        | tr -d '\n' \
-        >> "${GIT_REBASE_TODO_PATH}"
+      ) & ${GITSMART_POST_REBASE_EXECS_TAG}" |
+      sed 's/^ \+/ /' |
+      tr -d '\n' \
+        >>"${GIT_REBASE_TODO_PATH}"
   fi
 }
 
-git_post_rebase_exec_run () {
+git_post_rebase_exec_run() {
   local pop_after="${1:-false}"
 
   maybe_unstash_changes ${pop_after}
@@ -1404,14 +1408,13 @@ git_post_rebase_exec_run () {
   fi
 }
 
-must_rebase_todo_exist () {
 # Not all rebase operations leave a rebase-todo.
 # - E.g., `git pull --rebase --autostash <remote> <branch>`,
 #   where the remote is one commit ahead, but you've got an
 #   uncommitted local file that would be replaced by the remote
 #   file (just a case I happened to test), will spew an error,
 #   finishing with "Aborting", and doesn't leave user mid-merge.
-
+must_rebase_todo_exist() {
   if [ ! -f "${GIT_REBASE_TODO_PATH}" ]; then
     # Should be unreachable unless Git changes something.
     # - Or if put-wise is in an unknown state, or has a misperception
@@ -1427,14 +1430,14 @@ must_rebase_todo_exist () {
 
 # ***
 
-git_post_rebase_exec_inject_callback () {
+git_post_rebase_exec_inject_callback() {
   must_rebase_todo_exist || return 1
 
   # Must sleep so git-rebase finishes (cannot cleanup while detached
   # HEAD or mess with branch too much, lest git-rebase fault us).
 
   echo "exec sleep 0.1 && \"$0\" $@ & ${GITSMART_POST_REBASE_EXECS_TAG}" \
-    >> "${GIT_REBASE_TODO_PATH}"
+    >>"${GIT_REBASE_TODO_PATH}"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -1446,14 +1449,14 @@ PW_PID_KILL_ON_ERROR=${PW_PID_KILL_ON_ERROR}
 
 # Used by tig config to kill tig on error, so that tig stops running
 # and dumps user back to console so that the user can see the error.
-sh_err_trap_user_hook () {
+sh_err_trap_user_hook() {
   local normal_exit="$1"
   local return_value="$2"
 
-  if [ -z "${PW_PID_KILL_ON_ERROR}" ] \
-    || ( [ ${return_value} -eq 0 ] \
-      && [ ! -f "${GIT_REBASE_TODO_PATH}" ] ) \
-  ; then
+  if [ -z "${PW_PID_KILL_ON_ERROR}" ] ||
+    ([ ${return_value} -eq 0 ] &&
+      [ ! -f "${GIT_REBASE_TODO_PATH}" ]) \
+    ; then
 
     return 0
   fi
@@ -1489,14 +1492,14 @@ sh_err_trap_user_hook () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_confirm_commit_at_or_behind_commit () {
+must_confirm_commit_at_or_behind_commit() {
   local early_commit="$1"
   local later_commit="${2:-HEAD}"
   local divergent_ok=${3:-false}
   local early_commit_name="$4"
   local later_commit_name="$5"
 
-  make_friendly () {
+  make_friendly() {
     local sha="$1"
     local name="$2"
 
@@ -1593,11 +1596,11 @@ must_confirm_commit_at_or_behind_commit () {
 
 # CXREF/2022-10-27: must_find_matching_commit from git-smart:
 #   ~/.kit/git/git-smart/bin/git-rebase-bubble-commit
-find_oldest_commit_by_message () {
+find_oldest_commit_by_message() {
   local matchstr="$1"
 
-  git --no-pager log --pretty=format:"%H" --grep "${matchstr}" 2> /dev/null \
-    | tail -1
+  git --no-pager log --pretty=format:"%H" --grep "${matchstr}" 2>/dev/null |
+    tail -1
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -1606,7 +1609,7 @@ find_oldest_commit_by_message () {
 #   ~/.kit/git/git-bump-version-tag/bin/git-bump-version-tag
 # - Though without branch_name support.
 
-git_fetch_with_backoff () {
+git_fetch_with_backoff() {
   local remote_name="$1"
   local branch_name="$2"
 
@@ -1617,7 +1620,7 @@ git_fetch_with_backoff () {
 
   if is_git_fetch_backoff_expired "${remote_name}" "${branch_name}"; then
     # git-fetch prints progress to stderr, which we ignore ('-q' also works).
-    if ! git fetch "${remote_name}" ${branch_ref} 2> /dev/null; then
+    if ! git fetch "${remote_name}" ${branch_ref} 2>/dev/null; then
       git config --unset ${cfg_section}.${cfg_last_fetch}
 
       return 1
@@ -1627,7 +1630,7 @@ git_fetch_with_backoff () {
   fi
 }
 
-is_git_fetch_backoff_expired () {
+is_git_fetch_backoff_expired() {
   local remote_name="$1"
   local branch_name="$2"
 
@@ -1650,7 +1653,7 @@ is_git_fetch_backoff_expired () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-commit_changes_and_counting () {
+commit_changes_and_counting() {
   if [ $(git_number_of_commits) -eq 1 ]; then
     # Very first --archive!
     # See also: PW_PATCHES_REPO_MESSAGE_INIT="🥨"
@@ -1697,22 +1700,22 @@ commit_changes_and_counting () {
   fi
 }
 
-patches_repo_commit_count () {
+patches_repo_commit_count() {
   git_latest_commit_message "$@" | sed "s/${PW_PATCHES_REPO_MESSAGE_CHCHCHANGES}//"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 # Git Reflog Expire Expire Now All and Garbage Collect Prune Now Quietly.
-git_gc_expire_all_prune_now () {
+git_gc_expire_all_prune_now() {
   local complained_du=false
 
-  verify_du () {
+  verify_du() {
     ! ${complained_du} || return 1
 
     # At least a few BSD commands don't have --version option.
     # - This guess-test checks if this is GNU coreutils' du.
-    ! command du --version > /dev/null 2>&1 || return 0
+    ! command du --version >/dev/null 2>&1 || return 0
 
     >&2 echo "ALERT: No \`du\` output because not coreutils \`du\`."
 
@@ -1727,21 +1730,21 @@ git_gc_expire_all_prune_now () {
   #     printf "%9d bytes\n" "$(du -d 0 -b --exclude .git . | awk '{ print $1 }')"
   #     printf "%9d bytes\n" "$(du -d 0 -b . | awk '{ print $1 }')"
 
-  tree_size_bytes_include_git () {
-    find . -type f -print0 \
-      | command du -b --total --files0-from - \
-      | tail -1 \
-      | awk '{ print $1 }'
+  tree_size_bytes_include_git() {
+    find . -type f -print0 |
+      command du -b --total --files0-from - |
+      tail -1 |
+      awk '{ print $1 }'
   }
 
-  tree_size_bytes_exclude_git () {
-    find . -path ./.git -prune -o -type f -print0 \
-      | command du -b --total --files0-from - \
-      | tail -1 \
-      | awk '{ print $1 }'
+  tree_size_bytes_exclude_git() {
+    find . -path ./.git -prune -o -type f -print0 |
+      command du -b --total --files0-from - |
+      tail -1 |
+      awk '{ print $1 }'
   }
 
-  du-h-d-0-I-.git-. () {
+  du-h-d-0-I-.git-.() {
     prefix="$1"
     prepos="$2"
 
@@ -1773,7 +1776,7 @@ git_gc_expire_all_prune_now () {
 #   . ~/.kit/git/git-put-wise/lib/common_put_wise.sh
 #   decrypt_asset "path" | tar xvJ
 
-encrypt_asset () {
+encrypt_asset() {
   local crypt_path="$1"
   local cleartext_name="$2"
 
@@ -1782,7 +1785,7 @@ encrypt_asset () {
   if [ -n "${cleartext_name}" ]; then
     if [ -n "${PW_OPTION_PASS_NAME}" ]; then
       # Warm the GPG cache.
-      pass "${PW_OPTION_PASS_NAME}" > /dev/null
+      pass "${PW_OPTION_PASS_NAME}" >/dev/null
 
       # Note that --passphrase-fd ignored unless --batch.
       pass "${PW_OPTION_PASS_NAME}" | head -1 |
@@ -1809,13 +1812,13 @@ encrypt_asset () {
   fi
 }
 
-decrypt_asset () {
+decrypt_asset() {
   local crypt_path="$1"
 
   if [ -n "${crypt_path}" ]; then
     if [ -n "${PW_OPTION_PASS_NAME}" ]; then
       # Warm the GPG cache.
-      pass "${PW_OPTION_PASS_NAME}" > /dev/null
+      pass "${PW_OPTION_PASS_NAME}" >/dev/null
 
       pass "${PW_OPTION_PASS_NAME}" | head -1 |
         gpg --batch --passphrase-fd 0 \
@@ -1837,7 +1840,7 @@ decrypt_asset () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-process_return_receipts () {
+process_return_receipts() {
   local projpath_sha="$1"
 
   # Same as PW_PROJECT_PATH, I suppose.
@@ -1861,7 +1864,7 @@ process_return_receipts () {
   cd "${project_path}"
 }
 
-process_return_receipts_read_count_and_destroy () {
+process_return_receipts_read_count_and_destroy() {
   local gpg_rr="$1"
   local project_path="$2"
 
@@ -1896,13 +1899,13 @@ process_return_receipts_read_count_and_destroy () {
 
   # E.g., "${host_sha}--${proj_sha}--${beg_sha}--${end_sha}--${time}--${branch}--${proj_name}"
   set -- $(split_on_double_dash "${ret_rec_plain_path}" 6)
-  local hostname_sha="$1"  # KNOWN: localhost
-  local projpath_sha="$2"  # KNOWN: project_path's sha
-  local starting_sha="$3"  # Don't care
-  local endingat_sha="$4"  # Don't care
-  local time_stamped="$5"  # Don't care
-  local patch_branch_encoded="$6"  # What we care about
-  local project_name="$7"  # Don't care
+  local hostname_sha="$1"         # KNOWN: localhost
+  local projpath_sha="$2"         # KNOWN: project_path's sha
+  local starting_sha="$3"         # Don't care
+  local endingat_sha="$4"         # Don't care
+  local time_stamped="$5"         # Don't care
+  local patch_branch_encoded="$6" # What we care about
+  local project_name="$7"         # Don't care
 
   local patch_branch="$(branch_name_path_decode "${patch_branch_encoded}")"
 
@@ -1939,8 +1942,7 @@ process_return_receipts_read_count_and_destroy () {
   local host_nrev_line
   for host_nrev_line in "${host_nrev_lines}"; do
     if ! echo "${host_nrev_line}" | grep -q \
-      -e "^[[:digit:]]\+ [[:xdigit:]]\+ [^[:space:]]\+ [[:xdigit:]]\+ [[:xdigit:]]\+$"; \
-    then
+      -e "^[[:digit:]]\+ [[:xdigit:]]\+ [^[:space:]]\+ [[:xdigit:]]\+ [[:xdigit:]]\+$"; then
       >&2 echo "ERROR: Unexpected return receipt line: “${host_nrev_line}”"
       >&2 echo "- From plaintext “${ret_rec_plain_path}”"
       >&2 echo "- From crypttext “${gpg_rr}”"
@@ -1965,8 +1967,8 @@ process_return_receipts_read_count_and_destroy () {
     debug "- remote_last_patch: ${remote_last_patch}"
 
     process_return_receipt_move_remoteish_tracking_branch \
-      "${patch_branch}" "${remote_rev_tot}" "${gpg_rr}" "${before_cd}" \
-      || failed=$?
+      "${patch_branch}" "${remote_rev_tot}" "${gpg_rr}" "${before_cd}" ||
+      failed=$?
 
     [ ${failed} -eq 0 ] || break
   done
@@ -1985,7 +1987,7 @@ process_return_receipts_read_count_and_destroy () {
 
 # ***
 
-must_find_path_starting_with_prefix_dash_dash () {
+must_find_path_starting_with_prefix_dash_dash() {
   local gpgf="$1"
 
   local file_guess
@@ -2011,7 +2013,7 @@ must_find_path_starting_with_prefix_dash_dash () {
 
 # ***
 
-split_on_double_dash () {
+split_on_double_dash() {
   local text="$1"
   local count="$2"
 
@@ -2037,9 +2039,9 @@ split_on_double_dash () {
   ))"
 }
 
-check_dep_python3 () {
-  hint_install_deb () { >&2 echo "  sudo apt-get install python3"; }
-  hint_install_brew () { >&2 echo "  brew install python@3.12"; }
+check_dep_python3() {
+  hint_install_deb() { >&2 echo "  sudo apt-get install python3"; }
+  hint_install_brew() { >&2 echo "  brew install python@3.12"; }
 
   check_dep_with_hint 'python3' || exit_1
 }
@@ -2050,7 +2052,7 @@ check_dep_python3 () {
 # Then move branch named after remote host to the count specified, after
 # validating that both branches share history, and that new count is greater
 # than or equal to what it is currently.
-process_return_receipt_move_remoteish_tracking_branch () {
+process_return_receipt_move_remoteish_tracking_branch() {
   local patch_branch="$1"
   local remote_rev_tot="$2"
   local gpg_rr="$3"
@@ -2091,8 +2093,8 @@ process_return_receipt_move_remoteish_tracking_branch () {
   must_confirm_commit_at_or_behind_commit \
     "refs/tags/${pw_tag_applied}" "${patch_branch}" \
     ${divergent_ok} \
-    "pick-from" "this branch" \
-    || exit_1
+    "pick-from" "this branch" ||
+    exit_1
 
   local previous_cnt="$(git_number_of_commits "refs/tags/${pw_tag_applied}")"
 
@@ -2109,7 +2111,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
     # If (n_total_commits - remote_rev_tot) is 0, `set -e` bails, so || true.
     let "skip_commits = ${n_total_commits} - ${remote_rev_tot}" || true
 
-    local commit_hash=$( \
+    local commit_hash=$(
       git --no-pager log --format=%H --skip=${skip_commits} --max-count=1 "${patch_branch}"
     )
 
@@ -2123,7 +2125,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
     let "new_commits = ${remote_rev_tot} - ${previous_cnt}" || true
     echo "Advancing count ${new_commits} rev(s):"
     echo "  git tag -f ${pw_tag_applied} $(shorten_sha ${commit_hash})${prev_tag_sha}"
-    ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${commit_hash}" > /dev/null
+    ${DRY_ECHO} git tag -f "${pw_tag_applied}" "${commit_hash}" >/dev/null
   else
     echo "Disregarding count:"
     echo "  local count ${previous_cnt} [${pw_tag_applied}] >= receipt count ${remote_rev_tot}"
@@ -2134,7 +2136,7 @@ process_return_receipt_move_remoteish_tracking_branch () {
 
 # ***
 
-prompt_user_and_change_branch_if_working_branch_different_retrcpt () {
+prompt_user_and_change_branch_if_working_branch_different_retrcpt() {
   local patch_branch="$1"
   local ret_rec_plain_path="$2"
   local gpg_rr="$3"
@@ -2170,7 +2172,7 @@ prompt_user_and_change_branch_if_working_branch_different_retrcpt () {
 
 # ***
 
-checkout_branch_quietly () {
+checkout_branch_quietly() {
   local branch_name="$1"
 
   [ -n "${branch_name}" ] || return 0
@@ -2184,7 +2186,7 @@ checkout_branch_quietly () {
 #   man git-check-ref-format
 # https://git-scm.com/docs/git-check-ref-format
 
-branch_name_path_encode () {
+branch_name_path_encode() {
   local patch_branch="$1"
 
   local encoded_branch="$(echo "${patch_branch}" | sed 's#/#@@@#g')"
@@ -2192,7 +2194,7 @@ branch_name_path_encode () {
   printf "${encoded_branch}"
 }
 
-branch_name_path_decode () {
+branch_name_path_decode() {
   local encoded_branch="$1"
 
   local patch_branch="$(echo "${encoded_branch}" | sed 's#@@@#/#g')"
@@ -2202,7 +2204,7 @@ branch_name_path_decode () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-badger_user_rebase_failed () {
+badger_user_rebase_failed() {
   >&2 echo "============================================"
   >&2 echo
   >&2 echo "Uffda! You got work to do ☝ ☝ ☝."
@@ -2216,7 +2218,7 @@ badger_user_rebase_failed () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-prompt_read_single_keypress () {
+prompt_read_single_keypress() {
   local convenient_option="$1"
   local dissenting_option="$2"
   local print_newline=${3:-true}
@@ -2239,12 +2241,12 @@ READ_N_SUPPORTED=""
 # like `read -n`. This is useful to capture key_pressed="\n".
 # - CXREF: To view Homebrew's Bash v5 manpage:
 #     man /opt/homebrew/share/man/man1/bash.1
-read_single_keypress () {
+read_single_keypress() {
   if [ -z "${READ_N_SUPPORTED}" ]; then
     READ_N_SUPPORTED=true
     # When -N is supported, `read -N 0` doesn't return immediately, but
     # waits for EOF. So send a character to `read` to test if -N supported.
-    echo 'X' | read -N 1 key_pressed 2> /dev/null || READ_N_SUPPORTED=false
+    echo 'X' | read -N 1 key_pressed 2>/dev/null || READ_N_SUPPORTED=false
   fi
 
   ${READ_N_SUPPORTED} &&
@@ -2254,40 +2256,42 @@ read_single_keypress () {
 
 # ***
 
-pick_which_option_based_on_key_pressed () {
+pick_which_option_based_on_key_pressed() {
   local convenient_option="$1"
   local dissenting_option="$2"
   local key_pressed="$3"
 
-  normalize_case () {
+  normalize_case() {
     echo "$1" | tr '[:upper:]' '[:lower:]'
   }
 
   opt_chosen=""
 
-  if \
+  if
     [ "${key_pressed}" = "" ] ||
-    [ "${key_pressed}" = " " ] ||
-    [ "${key_pressed}" = $'\n' ] ||
-    [ "$(normalize_case "${key_pressed}")" = "$(normalize_case "${convenient_option}")" ] \
-  ; then
+      [ "${key_pressed}" = " " ] ||
+      [ "${key_pressed}" = $'\n' ] ||
+      [ "$(normalize_case "${key_pressed}")" = "$(normalize_case "${convenient_option}")" ] \
+      ;
+  then
     opt_chosen="${convenient_option}"
   fi
 
-  if \
+  if
     [ "$(normalize_case "${key_pressed}")" = "$(normalize_case "${dissenting_option}")" ] \
-  ; then
+      ;
+  then
     opt_chosen="${dissenting_option}"
   fi
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-echo_announce () {
+echo_announce() {
   echo $2 "$(fg_lightblue)$(bg_myrtle)${1}$(attr_reset)"
 }
 
-echo_alert () {
+echo_alert() {
   echo $2 "$(attr_bold)$(fg_black)$(bg_lightorange)${1}$(attr_reset)"
 }
 
@@ -2295,7 +2299,7 @@ echo_alert () {
 
 PROG_NAME="$(basename -- "$0")"
 
-insist_sourced_in_bash () {
+insist_sourced_in_bash() {
   # Alert if not being sourced in Bash, or if being executed.
   if [ -z "${BASH_SOURCE}" ] || [ "$0" = "${BASH_SOURCE[0]}" ]; then
     >&2 echo "ERROR: Source this script with Bash [${PROG_NAME}]"
@@ -2305,4 +2309,3 @@ insist_sourced_in_bash () {
 }
 
 insist_sourced_in_bash
-

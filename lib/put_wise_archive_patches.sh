@@ -13,7 +13,7 @@ DRY_ECHO=""
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-put_wise_archive_patches () {
+put_wise_archive_patches() {
   ${PW_OPTION_DRY_RUN:-false} && DRY_ECHO="${DRY_ECHO:-__DRYRUN}"
 
   local before_cd="$(pwd -L)"
@@ -29,7 +29,7 @@ put_wise_archive_patches () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-put_wise_archive_patches_go () {
+put_wise_archive_patches_go() {
   local starting_ref_arg="${PW_OPTION_STARTING_REF}"
 
   if [ -n "${starting_ref_arg}" ]; then
@@ -56,7 +56,7 @@ put_wise_archive_patches_go () {
   local starting_ref
   starting_ref="$(
     print_starting_ref_or_upstream_branch \
-      "${starting_ref_arg}" "${pw_tag_applied}" \
+      "${starting_ref_arg}" "${pw_tag_applied}"
   )" || exit_1
 
   local context=""
@@ -102,8 +102,8 @@ put_wise_archive_patches_go () {
   local already_archived=false
   must_not_already_be_archived "${crypt_name}" \
     "${hostname_sha}" "${projpath_sha}" \
-    "${starting_sha}" "${endingat_sha}" \
-  || already_archived=true
+    "${starting_sha}" "${endingat_sha}" ||
+    already_archived=true
 
   if ! ${already_archived}; then
     # Create the patch directory.
@@ -221,7 +221,7 @@ put_wise_archive_patches_go () {
 #     the default branch.
 # - This function also verifies that commits since starting_ref have
 #   not been shared with any remotes, at least verified as best it can.
-print_starting_ref_or_upstream_branch () {
+print_starting_ref_or_upstream_branch() {
   local starting_ref="$1"
   local pw_tag_applied="$2"
 
@@ -242,8 +242,8 @@ print_starting_ref_or_upstream_branch () {
 
   local upstream_ref_ref
   [ -z "${upstream_ref}" ] ||
-    upstream_ref_ref="$( \
-      git_commit_object_name "refs/remotes/${upstream_ref}" 2> /dev/null \
+    upstream_ref_ref="$(
+      git_commit_object_name "refs/remotes/${upstream_ref}" 2>/dev/null
     )"
 
   # ***
@@ -351,7 +351,7 @@ print_starting_ref_or_upstream_branch () {
 
 # ***
 
-identify_first_upstream_branch () {
+identify_first_upstream_branch() {
   # USYNC: must_identify_rebase_base (pull) & identify_first_upstream_branch (archive)
 
   # "Return" variable.
@@ -373,7 +373,7 @@ identify_first_upstream_branch () {
     "${_inhibit_exit_if_unidentified:-true}" \
     "${_skip_integrity_checks:-false}" \
     "${_normalize_committer:-true}" \
-  ; then
+    ; then
     # Identify first put-wise upstream: Check first for remote scoping
     # branch, then remote feature branch, then remote release branch,
     # then local release branch.
@@ -427,12 +427,12 @@ identify_first_upstream_branch () {
 #
 # IS_ON: Instead, check if any commits signed and alert user if so.
 
-insist_archive_commits_not_gpg_signed () {
+insist_archive_commits_not_gpg_signed() {
   local starting_ref="$1"
 
   if git_has_no_gpg_signage_since_commit \
     "${starting_ref}" "${_until_ref:-HEAD}" \
-  ; then
+    ; then
 
     return 0
   fi
@@ -519,7 +519,7 @@ insist_archive_commits_not_gpg_signed () {
 
 # Here we identify the final commit before PRIVATEs start, falling back
 # on HEAD if this branch does not contain any PRIVATE commits.
-identify_commit_range_end () {
+identify_commit_range_end() {
   local branch_name
   branch_name="$(git_branch_name)"
 
@@ -548,7 +548,7 @@ identify_commit_range_end () {
     >&2 echo "  a non-private upstream, set git-push to always require a refspec:"
     >&2 echo
     >&2 echo "    git config push.default nothing"
-  
+
     exit_1
   else
     commit_range_end="HEAD"
@@ -557,7 +557,7 @@ identify_commit_range_end () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_have_non_empty_rev_range_not_already_tagged () {
+must_have_non_empty_rev_range_not_already_tagged() {
   local starting_ref="$1"
   local commit_range_end="$2"
   local pw_tag_applied="$3"
@@ -645,7 +645,7 @@ must_have_non_empty_rev_range_not_already_tagged () {
     # ${divergent_ok} "out-tag" "archive-upto"
     if ! must_confirm_commit_at_or_behind_commit "${out_tag}" "${archive_upto}" \
       ${divergent_ok} "${pw_tag_archived}" "archive-upto" \
-    ; then
+      ; then
       >&2 warn "The '${pw_tag_archived}' tag is behind or not at (diverged from)" \
         "the archive-upto-ref we determined: '${archive_upto}'."
     fi
@@ -654,7 +654,7 @@ must_have_non_empty_rev_range_not_already_tagged () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-compose_filenames () {
+compose_filenames() {
   local starting_ref="$1"
   local projpath_sha="$2"
   local commit_range_end="$3"
@@ -685,7 +685,7 @@ compose_filenames () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_produce_nonempty_patch () {
+must_produce_nonempty_patch() {
   local starting_ref="$1"
   local commit_range_end="$2"
   local patch_dir="$3"
@@ -726,11 +726,11 @@ must_produce_nonempty_patch () {
   local homely_path
   homely_path=$(home_agnostic_current_path)
 
-  echo "${homely_path}" > "${patch_dir}/${PW_ARCHIVE_MANIFEST:-.manifest.pw}"
+  echo "${homely_path}" >"${patch_dir}/${PW_ARCHIVE_MANIFEST:-.manifest.pw}"
 }
 
-home_agnostic_current_path () {
-  pwd -L | sed "s#^${HOME}/#\$HOME/#" 
+home_agnostic_current_path() {
+  pwd -L | sed "s#^${HOME}/#\$HOME/#"
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
@@ -742,7 +742,7 @@ home_agnostic_current_path () {
 # - Specify files to pack using relative path, not absolute, lest message:
 #     tar: Removing leading '/' from member names
 #   Also tar unpacks according to the paths you use when packing.
-encrypt_archive_and_cleanup () {
+encrypt_archive_and_cleanup() {
   local success=true
 
   cd "${temp_dir}"
@@ -756,11 +756,11 @@ encrypt_archive_and_cleanup () {
 
   # Aka `cd "${before_cd}"`.
   # - Not that it matters: Called in a subshell.
-  cd - > /dev/null
+  cd - >/dev/null
 
   # Cleanup.
-  remove_temp_files \
-    || return 1
+  remove_temp_files ||
+    return 1
 
   if ${success}; then
     printf "${crypt_path}"
@@ -771,7 +771,7 @@ encrypt_archive_and_cleanup () {
 
 # ***
 
-remove_temp_files () {
+remove_temp_files() {
   [ -z "${cleartext_name}" ] && >&2 echo "ERROR: cleartext_name unset!" && return 1 || true
   [ -z "${temp_dir}" ] && >&2 echo "ERROR: temp_dir unset!" && return 1 || true
   ${DRY_ECHO} command rm -f "${cleartext_name}"
@@ -780,7 +780,7 @@ remove_temp_files () {
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-must_not_already_be_archived () {
+must_not_already_be_archived() {
   local crypt_name="$1"
   local hostname_sha="$2"
   local projpath_sha="$3"
@@ -792,8 +792,9 @@ must_not_already_be_archived () {
   cd "${PW_PATCHES_REPO}"
 
   local matching_archives
-  matching_archives="$(print_repo_archive_list "" ":!:${crypt_name}" |
-    grep -e "^${hostname_sha}[[:xdigit:]]*--${projpath_sha}[[:xdigit:]]*--${starting_sha}[[:xdigit:]]*--${endingat_sha}[[:xdigit:]]*--.*"
+  matching_archives="$(
+    print_repo_archive_list "" ":!:${crypt_name}" |
+      grep -e "^${hostname_sha}[[:xdigit:]]*--${projpath_sha}[[:xdigit:]]*--${starting_sha}[[:xdigit:]]*--${endingat_sha}[[:xdigit:]]*--.*"
   )" || true
 
   cd "${before_cd}"
@@ -815,7 +816,7 @@ must_not_already_be_archived () {
 
 # ***
 
-maybe_remove_outdated_archives () {
+maybe_remove_outdated_archives() {
   local crypt_name="$1"
   local hostname_sha="$2"
   local projpath_sha="$3"
@@ -824,8 +825,9 @@ maybe_remove_outdated_archives () {
   local outdated
 
   # See also: print_repo_archive_list.
-  outdated="$(print_repo_archive_list "" ":!:${crypt_name}" |
-    grep -e "^${hostname_sha}[[:xdigit:]]*--${projpath_sha}[[:xdigit:]]*--${starting_sha}[[:xdigit:]]*--.*"
+  outdated="$(
+    print_repo_archive_list "" ":!:${crypt_name}" |
+      grep -e "^${hostname_sha}[[:xdigit:]]*--${projpath_sha}[[:xdigit:]]*--${starting_sha}[[:xdigit:]]*--.*"
   )" || true
 
   if maybe_confirm_remove_outdated_archives "${crypt_name}" "${outdated}"; then
@@ -835,7 +837,7 @@ maybe_remove_outdated_archives () {
   return 0
 }
 
-maybe_confirm_remove_outdated_archives () {
+maybe_confirm_remove_outdated_archives() {
   local crypt_name="$1"
   local outdated="$2"
 
@@ -854,7 +856,7 @@ maybe_confirm_remove_outdated_archives () {
   [ "${opt_chosen}" = "y" ] && return 0 || return 1
 }
 
-remove_outdated_archives () {
+remove_outdated_archives() {
   local outdated="$1"
 
   local ux_prefix="- "
@@ -867,14 +869,14 @@ remove_outdated_archives () {
     ${DRY_ECHO} git rm -q "${archive}"
 
     ux_prefix="  "
-  done <<< "${outdated}"
+  done <<<"${outdated}"
 
   commit_changes_and_counting
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-add_archive_to_repo () {
+add_archive_to_repo() {
   local crypt_name="$1"
 
   local before_cd
@@ -893,22 +895,22 @@ add_archive_to_repo () {
 
 # git-tag is quiet if tag doesn't exist, otherwise `git tag -f`
 # will print, e.g., "Updated tag 'tagname' (was c5c32a3)".
-update_archive_tags () {
+update_archive_tags() {
   local pw_tag_applied="$1"
   local starting_sha="$2"
   local pw_tag_archived="$3"
   local endingat_sha="$4"
 
   echo "  git tag -f \"${pw_tag_applied}\" \"${starting_sha}\""
-  git tag -f "${pw_tag_applied}" "${starting_sha}" > /dev/null
+  git tag -f "${pw_tag_applied}" "${starting_sha}" >/dev/null
 
   echo "  git tag -f \"${pw_tag_archived}\" \"${endingat_sha}\""
-  git tag -f "${pw_tag_archived}" "${endingat_sha}" > /dev/null
+  git tag -f "${pw_tag_archived}" "${endingat_sha}" >/dev/null
 }
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-report_success () {
+report_success() {
   local crypt_path="$1"
 
   echo "Prepared patchkage: ${crypt_path}"
@@ -924,4 +926,3 @@ report_success () {
 if [ "$0" = "${BASH_SOURCE[0]}" ]; then
   >&2 echo "😶"
 fi
-
