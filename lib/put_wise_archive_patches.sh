@@ -710,7 +710,7 @@ must_produce_nonempty_patch() {
 
   git -c diff.noprefix=false format-patch -q --no-signature -o "${patch_dir}" ${rev_range}
 
-  if [ -z "$(command ls -A "${patch_dir}")" ]; then
+  if [ -z "$(command ls -A -- "${patch_dir}")" ]; then
     >&2 echo -e "Unexpected: Nothing archived! Try:\n" \
       " git diff ${rev_range}"
 

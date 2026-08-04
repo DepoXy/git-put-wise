@@ -257,7 +257,7 @@ unpack_target_is_not_nonempty_else_info_stderr() {
   # but lets other files be). In any case, we assume that user only
   # uses put-wise to manage patches repo, so we choose to vet less.
   local patch_dirs
-  patch_dirs="$(command ls -A1d "${gpgf}"--* 2> /dev/null)"
+  patch_dirs="$(command ls -A1d -- "${gpgf}"--* 2>/dev/null)"
 
   if [ -n "${patch_dirs}" ]; then
     nonempty=1

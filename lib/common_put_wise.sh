@@ -157,7 +157,7 @@ must_ensure_patches_repo_exists() {
 
 maybe_prompt_user_and_prepare_patches_repo() {
   if [ -d "${PW_PATCHES_REPO}" ] &&
-    [ -n "$(command ls -A "${PW_PATCHES_REPO}")" ]; then
+    [ -n "$(command ls -A -- "${PW_PATCHES_REPO}")" ]; then
     return 0
   fi
 
@@ -330,7 +330,7 @@ put_wise_reset_patches_repo() {
 
     cd "${PW_PATCHES_REPO}"
 
-    if [ -z "$(command ls -A "${PW_PATCHES_REPO}")" ]; then
+    if [ -z "$(command ls -A -- "${PW_PATCHES_REPO}")" ]; then
       PW_PATCHES_REPO="$(pwd -L)"
 
       cd "${before_cd}"
@@ -1991,7 +1991,7 @@ must_find_path_starting_with_prefix_dash_dash() {
   local gpgf="$1"
 
   local file_guess
-  file_guess="$(command ls -A1d "${gpgf}"--*)"
+  file_guess="$(command ls -A1d -- "${gpgf}"--*)"
 
   if [ $(printf "${file_guess}" | wc -l) -gt 0 ]; then
     >&2 warn "Found more than one match for “${gpgf}” (and using first one found)."
