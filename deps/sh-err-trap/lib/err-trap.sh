@@ -56,7 +56,9 @@ trap_exit() {
   # USAGE: Alert on unexpected error path, so you can add happy path.
   >&2 echo "ALERT: "$(basename -- "$0")" exited abnormally! (err-trap: ${return_value})"
   # Note that BASH_COMMAND and BASH_SOURCE[1] are caller's, but LINENO is this fcn's.
-  >&2 echo "- See: “${BASH_COMMAND}” in “${BASH_SOURCE[1]}”"
+  if [ -n "${BASH_SOURCE}" ]; then
+    >&2 echo "- See: “${BASH_COMMAND}” in “${BASH_SOURCE[1]}”"
+  fi
   # >&2 echo "- Hint: Enable \`set -x\` and run again, or"
   # >&2 echo "  maybe replace \`exit <n>\` with \`exit_1\`"
 
